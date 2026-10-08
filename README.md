@@ -198,15 +198,25 @@ flowchart TB
 
 Everyone contributes to implementation, testing, and code reviews. Coordination roles below are accountability hats on top of rotating feature-slice ownership (UI + logic + Firestore + tests).
 
-| Member | Coordination role | Focus on top of feature work |
-|---|---|---|
-| 🗂️ Donia Alhosin | Project Manager & Firebase Data Model | Planning, Jira/sprints, supervisor updates, Firestore model |
-| 🎨 Bishay Talaat | UI/UX Design & Branding | Design system, branding assets, animation consistency, final presentation |
-| 🏗️ Yousef Mohy | Flutter Architecture & Release | Project structure, state management, flavors, release builds, install link |
-| 🤖 Emad Hany | AI Matching & Prompt Engineering | Matching prompts, evaluation set, prompt versions, AI documentation |
-| 🛡️ Saga Maher | Quality Assurance & Security | CI/checks, test & security checklists, evaluation harness, regression |
+| Member | Coordination role | GitHub | Email |
+|---|---|---|---|
+| 🗂️ Donia Alhosin | Project Manager & Firebase Data Model | — | — |
+| 🎨 Bishay Talaat | UI/UX Design & Branding | — | [bishayezat9@gmail.com](mailto:bishayezat9@gmail.com) |
+| 🏗️ Yousef Mohy | Flutter Architecture & Release | — | [moheyy28@gmail.com](mailto:moheyy28@gmail.com) |
+| 🤖 Emad Hany | AI Matching & Prompt Engineering | [@3madhani](https://github.com/3madhani) | — |
+| 🛡️ Saga Maher | Quality Assurance & Security | — | [sagamaher2002@gmail.com](mailto:sagamaher2002@gmail.com) |
+
+| Member | Focus on top of feature work |
+|---|---|
+| Donia Alhosin | Planning, Jira/sprints, supervisor updates, Firestore model |
+| Bishay Talaat | Design system, branding assets, animation consistency, final presentation |
+| Yousef Mohy | Project structure, state management, flavors, release builds, install link |
+| Emad Hany | Matching prompts, evaluation set, prompt versions, AI documentation |
+| Saga Maher | CI/checks, test & security checklists, evaluation harness, regression |
 
 Deliverable leads (from the planning document) include planning (Donia), brand guide (Bishay), release builds (Yousef), AI matching (Emad), and QA/security & README coordination (Saga).
+
+> 💡 Add missing GitHub usernames and emails as team members share them, then update this table.
 
 ---
 
