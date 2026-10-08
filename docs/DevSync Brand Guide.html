@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DevSync Brand Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E2624;--card:#153532;--line:#1F4A45;--teal:#2EE0C8;--mint:#E8F5F2;--muted:#9FC4BD;
+--head:'Bricolage Grotesque','Trebuchet MS',sans-serif;--body:'Figtree','Segoe UI',Arial,sans-serif;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--mint);font:400 16px/1.6 var(--body)}
+main{max-width:980px;margin:0 auto;padding:0 20px 80px}
+h1,h2,h3{font-family:var(--head);margin:0;letter-spacing:-.02em;line-height:1.1}
+h2{font-size:26px;margin:64px 0 6px}
+.lead{color:var(--muted);margin:0 0 24px;max-width:60ch}
+:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:center;padding:56px 0 0}
+.hero h1{font-size:clamp(38px,7vw,68px);font-weight:800}
+.hero p{color:var(--muted);font-size:18px;max-width:44ch;margin:16px 0 0}
+.stage{background:var(--card);border-radius:28px;aspect-ratio:1;display:grid;place-items:center;color:var(--teal)}
+.stage svg{width:62%;height:auto}
+.n1,.n2{animation:in 1.2s cubic-bezier(.2,.8,.2,1) both}
+.n1{--dy:-24px}.n2{--dy:24px}
+@keyframes in{from{transform:translate(-50px,var(--dy));opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.n1,.n2{animation:none}}
+@media(max-width:760px){.hero{grid-template-columns:1fr}}
+.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:760px){.sw{grid-template-columns:repeat(2,1fr)}}
+.sw button{border:0;border-radius:18px;min-height:140px;padding:14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;font:500 14px/1.4 var(--body)}
+.sw b{font:700 16px var(--head);display:block}
+.sw small{opacity:.8}
+.hint{min-height:24px;font-size:14px;color:var(--muted);margin-top:8px}
+.logos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:760px){.logos{grid-template-columns:1fr}}
+.lg{border-radius:18px;padding:28px 16px;display:grid;place-items:center;gap:10px;font-size:14px;text-align:center}
+.lg.a{background:var(--card);color:var(--muted)}
+.lg.b{background:var(--teal);color:#0E2624}
+.lg.c{background:var(--mint);color:#2C5C56}
+.lock{display:flex;align-items:center;gap:10px;font:800 30px var(--head);letter-spacing:-.03em}
+.icons{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.ic{display:grid;place-items:center;border-radius:22%}
+.ic.d{background:var(--card);color:var(--teal);box-shadow:inset 0 0 0 1px var(--line)}
+.ic.t{background:var(--teal);color:#0E2624}
+.ic.r{border-radius:50%}
+.type{background:var(--card);border-radius:18px;padding:26px}
+.big{font:800 clamp(32px,6vw,52px)/1 var(--head)}
+.tr{display:grid;grid-template-columns:140px 1fr;gap:12px;padding-top:14px;margin-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+.tr div:last-child{color:var(--mint);font-size:17px}
+@media(max-width:560px){.tr{grid-template-columns:1fr}}
+.ui{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.ui{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:18px;padding:20px}
+.card h3{font-size:18px;margin-bottom:14px}
+.who{display:flex;gap:12px;align-items:center}
+.who b{display:block}.who span{color:var(--muted);font-size:14px}
+.score{margin-left:auto;font:800 24px var(--head);color:var(--teal)}
+.meter{height:8px;border-radius:8px;background:var(--line);margin:14px 0 12px;overflow:hidden}
+.meter i{display:block;height:100%;width:92%;background:var(--teal);border-radius:8px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tags i{font-style:normal;font-size:13px;padding:3px 10px;border-radius:99px;background:var(--line)}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:12px;padding:11px 18px;font:600 15px var(--body);cursor:pointer;transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.p{background:var(--teal);color:#0E2624}
+.s{background:transparent;color:var(--mint);box-shadow:inset 0 0 0 1.5px var(--teal)}
+.g{background:var(--line);color:var(--mint)}
+.nt{display:flex;gap:12px;background:var(--bg);border-radius:14px;padding:14px;margin-bottom:10px}
+.nt i{width:10px;height:10px;border-radius:50%;background:var(--teal);margin-top:7px;flex:none}
+.nt small{display:block;color:var(--muted)}
+.fl{display:flex;gap:10px}
+.fl div{flex:1;border-radius:14px;padding:14px;font-size:14px;color:var(--muted)}
+.fl b{display:block;font:700 17px var(--head);color:var(--mint)}
+.fl .free{background:var(--bg)}
+.fl .pro{background:var(--teal);color:#14423D}.fl .pro b{color:#0E2624}
+.rule{display:grid;grid-template-columns:1fr 1fr;gap:12px;color:var(--muted);font-size:15px}
+@media(max-width:560px){.rule{grid-template-columns:1fr}}
+.rule div{background:var(--card);border-radius:14px;padding:14px 16px}
+.rule b{color:var(--mint);display:block}
+</style>
+</head>
+<body>
+<main>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="m" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="48" cy="58" r="16" fill="currentColor" stroke="none"/><circle cx="48" cy="142" r="16" fill="currentColor" stroke="none"/><path d="M64 58 C110 58 100 100 132 100M64 142 C110 142 100 100 132 100" stroke-width="11"/><circle cx="154" cy="100" r="22" fill="currentColor" stroke="none"/></symbol></svg>
+
+<section class="hero">
+  <div>
+    <h1>Code with the right people.</h1>
+    <p>DevSync brand guide: logo, color, type and app components.</p>
+  </div>
+  <div class="stage" aria-hidden="true">
+    <svg viewBox="0 0 200 200" fill="none" stroke-linecap="round">
+      <g class="n1"><circle cx="48" cy="58" r="16" fill="currentColor"/></g>
+      <g class="n2"><circle cx="48" cy="142" r="16" fill="currentColor"/></g>
+      <path d="M64 58 C110 58 100 100 132 100M64 142 C110 142 100 100 132 100" stroke="currentColor" stroke-width="11"/>
+      <circle cx="154" cy="100" r="22" fill="currentColor"/>
+    </svg>
+  </div>
+</section>
+
+<h2>Color</h2>
+<p class="lead">One accent on a dark base. Tap a swatch to copy its hex.</p>
+<div class="sw" id="sw">
+  <button style="background:#2EE0C8;color:#0E2624" data-hex="#2EE0C8"><b>Teal</b>#2EE0C8<small>Accent, buttons, scores</small></button>
+  <button style="background:#0E2624;color:#E8F5F2;box-shadow:inset 0 0 0 1px #1F4A45" data-hex="#0E2624"><b>Forest</b>#0E2624<small>Background</small></button>
+  <button style="background:#E8F5F2;color:#0E2624" data-hex="#E8F5F2"><b>Mint</b>#E8F5F2<small>Text, light surfaces</small></button>
+  <button style="background:#153532;color:#E8F5F2" data-hex="#153532"><b>Surface</b>#153532<small>Cards, inputs</small></button>
+</div>
+<div class="hint" id="hint" aria-live="polite"></div>
+
+<h2>Logo</h2>
+<p class="lead">Two paths merge into one node. Keep clear space equal to the width of one small node. Do not recolor or add gradients.</p>
+<div class="logos">
+  <div class="lg a"><div class="lock" style="color:#E8F5F2"><svg width="40" height="40" style="color:#2EE0C8"><use href="#m"/></svg><span>Dev<span style="color:#2EE0C8">Sync</span></span></div>On Forest</div>
+  <div class="lg b"><div class="lock" style="color:#0E2624"><svg width="40" height="40"><use href="#m"/></svg><span>DevSync</span></div>On Teal</div>
+  <div class="lg c"><div class="lock" style="color:#0E2624"><svg width="40" height="40" style="color:#0E2624"><use href="#m"/></svg><span>DevSync</span></div>On Mint</div>
+</div>
+<div class="icons">
+  <div class="ic d" style="width:96px;height:96px"><svg width="62" height="62"><use href="#m"/></svg></div>
+  <div class="ic t" style="width:96px;height:96px"><svg width="62" height="62"><use href="#m"/></svg></div>
+  <div class="ic d r" style="width:72px;height:72px"><svg width="46" height="46"><use href="#m"/></svg></div>
+  <div class="ic d" style="width:40px;height:40px"><svg width="26" height="26"><use href="#m"/></svg></div>
+  <div class="ic d" style="width:24px;height:24px"><svg width="16" height="16"><use href="#m"/></svg></div>
+</div>
+<p class="lead" style="margin-top:10px;font-size:14px">App icon: dark default, teal alternate, round for Android adaptive icons. Minimum size 16 px.</p>
+
+<h2>Typography</h2>
+<div class="type">
+  <div class="big">Match. Review. Merge.</div>
+  <div class="tr"><div>Headings</div><div style="font-family:var(--head);font-weight:700">Bricolage Grotesque, 700 and 800</div></div>
+  <div class="tr"><div>Body and UI</div><div>Figtree, 400 to 600</div></div>
+</div>
+
+<h2>App components</h2>
+<div class="ui">
+  <div class="card">
+    <h3>Match card</h3>
+    <div class="who"><div><b>flutter-oss/charts</b><span>Needs a Dart contributor</span></div><div class="score">92%</div></div>
+    <div class="meter"><i></i></div>
+    <div class="tags"><i>Dart</i><i>Firebase</i><i>Animation</i></div>
+    <div class="btns"><button class="btn p">Request to collaborate</button><button class="btn g">Skip</button></div>
+  </div>
+  <div class="card">
+    <h3>FCM notifications</h3>
+    <div class="nt"><i></i><div>New collaboration request<small>Sara wants to join your project</small></div></div>
+    <div class="nt"><i style="background:var(--line)"></i><div>Project update<small>3 new commits on devsync-api</small></div></div>
+  </div>
+  <div class="card">
+    <h3>Buttons</h3>
+    <div class="btns"><button class="btn p">Primary</button><button class="btn s">Secondary</button><button class="btn g">Quiet</button></div>
+  </div>
+  <div class="card">
+    <h3>App flavors</h3>
+    <div class="fl"><div class="free"><b>Free</b>Dark card, teal icon</div><div class="pro"><b>Pro</b>Teal card, dark icon</div></div>
+  </div>
+</div>
+
+<h2>Usage rules</h2>
+<div class="rule">
+  <div><b>One accent</b>Teal is the only color for actions and highlights.</div>
+  <div><b>Quiet surfaces</b>Use Forest and Surface for layers. No extra hues.</div>
+  <div><b>Status</b>Use teal for active, Surface-light for read or inactive.</div>
+  <div><b>Contrast</b>Dark text on teal, mint text on forest.</div>
+</div>
+
+</main>
+<script>
+document.getElementById('sw').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  var h=b.dataset.hex, t=document.getElementById('hint');
+  try{navigator.clipboard.writeText(h).then(function(){t.textContent='Copied '+h},function(){t.textContent=h})}catch(_){t.textContent=h}
+});
+</script>
+</body>
+</html>
