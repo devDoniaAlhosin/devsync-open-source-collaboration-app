@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
+import '../../core/icons/app_icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/ds_card.dart';
+import '../../core/widgets/ds_icon.dart';
+import '../../core/widgets/ds_icon_button.dart';
 import '../../core/widgets/ds_logo.dart';
 import '../../core/widgets/ds_section_header.dart';
 
@@ -19,25 +22,29 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
   int _index = 0;
 
   static const _destinations = [
-    _Dest('Feed', Icons.auto_awesome_outlined, AppRoutes.feed, 'Emad'),
-    _Dest('Projects', Icons.folder_outlined, AppRoutes.projects, 'Bishay'),
-    _Dest('Requests', Icons.handshake_outlined, AppRoutes.requests, 'Yousef'),
-    _Dest('Profile', Icons.person_outline, AppRoutes.profile, 'Saga'),
+    _Dest('Feed', AppIcons.feed, AppRoutes.feed, 'Emad'),
+    _Dest('Projects', AppIcons.projects, AppRoutes.projects, 'Bishay'),
+    _Dest('Requests', AppIcons.requests, AppRoutes.requests, 'Yousef'),
+    _Dest('Profile', AppIcons.profile, AppRoutes.profile, 'Saga'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final dest = _destinations[_index];
+    final ds = context.ds;
 
     return Scaffold(
       appBar: AppBar(
         title: const DsLogo(height: 28),
         actions: [
-          IconButton(
-            tooltip: 'Design system',
-            onPressed: () =>
-                Navigator.of(context).pushNamed(AppRoutes.designSystem),
-            icon: const Icon(Icons.palette_outlined),
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            child: DsIconButton(
+              icon: AppIcons.designSystem,
+              tooltip: 'Design system',
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.designSystem),
+            ),
           ),
         ],
       ),
@@ -55,7 +62,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
               onTap: () => Navigator.of(context).pushNamed(dest.route),
               child: Row(
                 children: [
-                  Icon(dest.icon, color: AppColors.teal),
+                  DsIcon(dest.icon, color: AppColors.teal),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
@@ -63,24 +70,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.muted),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            DsCard(
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.tasks),
-              child: Row(
-                children: [
-                  const Icon(Icons.view_kanban_outlined, color: AppColors.teal),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      'Tasks board (if-time · Donia)',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.muted),
+                  DsIcon(AppIcons.chevronRight, color: ds.textMuted),
                 ],
               ),
             ),
@@ -90,12 +80,13 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.line,
+        backgroundColor: ds.background,
+        indicatorColor: AppColors.teal,
         destinations: [
           for (final d in _destinations)
             NavigationDestination(
-              icon: Icon(d.icon),
+              icon: DsIcon(d.icon, color: ds.textMuted),
+              selectedIcon: DsIcon(d.icon, color: AppColors.onTeal),
               label: d.label,
             ),
         ],

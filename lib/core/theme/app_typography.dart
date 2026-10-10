@@ -5,9 +5,12 @@ import 'app_colors.dart';
 
 /// Typography: Bricolage Grotesque (headings) + Figtree (body / UI).
 abstract final class AppTypography {
-  static TextTheme textTheme({Color? color}) {
-    final base = color ?? AppColors.mint;
-    final muted = AppColors.muted;
+  static TextTheme textTheme({
+    Color? color,
+    Color? muted,
+  }) {
+    final base = color ?? AppColors.lightText;
+    final soft = muted ?? AppColors.lightMuted;
 
     final heading = GoogleFonts.bricolageGrotesque;
     final body = GoogleFonts.figtree;
@@ -79,7 +82,7 @@ abstract final class AppTypography {
         fontSize: 13,
         fontWeight: FontWeight.w400,
         height: 1.45,
-        color: muted,
+        color: soft,
       ),
       labelLarge: body(
         fontSize: 15,
@@ -89,12 +92,12 @@ abstract final class AppTypography {
       labelMedium: body(
         fontSize: 13,
         fontWeight: FontWeight.w500,
-        color: muted,
+        color: soft,
       ),
       labelSmall: body(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: muted,
+        color: soft,
       ),
     );
   }

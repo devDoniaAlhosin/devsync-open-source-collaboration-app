@@ -30,7 +30,7 @@ DevSync is a Flutter graduation project that helps developers discover open-sour
 | **Primary platform** | Android (Free and Pro flavors) |
 | **Methodology** | Agile Scrum (Jira + GitHub pull requests) |
 
-> **Current repository status:** Planning, brand, and [per-member feature summaries](docs/DevSync-Feature-Summaries-All-Members.pdf) are in place. Application implementation is in early setup (Flutter project scaffold). Features below are the agreed product scope unless marked as implemented.
+> **Current repository status:** Design system, global Lucide icons, brand assets, and auth layouts (Welcome / Login / Register) are in the app. Firebase and product backends are still planned. See [§14 Built so far](#14-built-so-far-for-the-team).
 
 ---
 
@@ -49,6 +49,7 @@ DevSync is a Flutter graduation project that helps developers discover open-sour
 11. [Documentation](#11-documentation)
 12. [Security considerations](#12-security-considerations)
 13. [Project status and roadmap](#13-project-status-and-roadmap)
+14. [Built so far (for the team)](#14-built-so-far-for-the-team)
 
 ---
 
@@ -130,7 +131,9 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | Layer | Technology | Role |
 |---|---|---|
 | Mobile app | Flutter & Dart | Cross-platform UI (Android focus for this delivery) |
-| Auth | Firebase Authentication | Google and email/password sign-in |
+| Icons | [lucide_icons_flutter](https://pub.dev/packages/lucide_icons_flutter) | Global Lucide icon set via `AppIcons` / `DsIcon` (matches prototype) |
+| Fonts | google_fonts | Bricolage Grotesque (headings) + Figtree (body / UI) |
+| Auth | Firebase Authentication | Google and email/password sign-in (planned wiring) |
 | Database | Cloud Firestore | Users, projects, matches cache, requests, feedback |
 | Notifications | Firebase Cloud Messaging (FCM) | Push alerts for collaboration and updates |
 | Backend logic | Firebase Cloud Functions | FCM triggers; secure LLM API calls (keys never in the app) |
@@ -138,7 +141,7 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | AI matching | Gemini Flash-Lite (via Cloud Function) | Fit scores and short explanations; prompt versioning; evaluate one hosted open-source model (Llama / Qwen / gpt-oss) on the eval set |
 | Version control | Git & GitHub | Branches, pull requests, optional Releases for install builds |
 | Project management | Jira | Scrum board, sprints, task tracking |
-| Design | DevSync brand system | Teal / forest palette; Bricolage Grotesque + Figtree |
+| Design | DevSync brand system | Teal / forest palette; shared `Ds*` widgets in `lib/core/` |
 
 **Firestore collections (planned):** `users`, `projects`, `matches`, `feedback`, `requests`, `tasks`. Field names and the full collection map land with Foundation (Donia) and are documented in this README when merged.
 
@@ -261,31 +264,34 @@ Everyone owns full feature slices (UI + logic + Firestore + tests + docs) and re
 
 ## 8. Repository structure
 
-Current layout (will expand as feature modules are added under `lib/`):
-
 ```text
 devsync_open_source_collaboration_app/
-├── android/                 # Android host project
-├── ios/                     # iOS host (not in primary delivery scope)
-├── web/                     # Flutter web scaffold (not in primary delivery scope)
-├── linux/ macos/ windows/   # Desktop scaffolds from Flutter create
+├── assets/brand/png/        # App logos & icons (wired in pubspec)
+├── android/ ios/ web/ …     # Platform hosts (app name DevSync + brand launcher icon)
 ├── lib/
-│   └── main.dart            # App entry (scaffold; product features TBD)
-├── test/                    # Flutter tests
-├── docs/                    # Project documentation and brand assets
-│   ├── DevSync-1-Project-Planning-and-Management.pdf
-│   ├── DevSync-2-Literature-Review.pdf
-│   ├── DevSync-3-Requirements-Gathering.pdf
-│   ├── DevSync-Feature-Summaries-All-Members.pdf
-│   ├── DevSync_Brand_Guidelines.pdf
+│   ├── main.dart
+│   ├── app/                 # DevSyncApp + named routes
+│   ├── core/
+│   │   ├── icons/           # AppIcons (global Lucide map)
+│   │   ├── theme/           # colors, spacing, typography, animations, ThemeData
+│   │   ├── constants/       # AppAssets paths
+│   │   └── widgets/         # Shared Ds* components + DsIcon
+│   └── features/
+│       ├── auth/            # Welcome, Login, Register (+ auth widgets)
+│       ├── shell/           # Home nav shell, design-system gallery, stubs
+│       ├── matching/ profile/ projects/ requests/ tasks/
+├── test/
+├── docs/
+│   ├── index.html           # Interactive prototype (v27)
 │   ├── DevSync Brand Guide.html
-│   └── devsync-logos/       # Logo and icon assets
+│   ├── DevSync-Feature-Summaries-All-Members.pdf
+│   ├── favicon.png
+│   └── …planning PDFs & brand logos
 ├── pubspec.yaml
-├── analysis_options.yaml
 └── README.md
 ```
 
-Planned additions during development (not present yet): Firebase config files (kept out of secrets where required), Cloud Functions project, feature folders under `lib/`, and flavor-specific Android configuration.
+Still planned: Firebase config, Cloud Functions, Free/Pro flavors Gradle, feature backends.
 
 ---
 
@@ -313,7 +319,7 @@ cd devsync_open_source_collaboration_app
 flutter pub get
 ```
 
-### Run the app (local scaffold)
+### Run the app
 
 ```bash
 flutter run
@@ -325,6 +331,8 @@ Or pick a device explicitly:
 flutter devices
 flutter run -d <device_id>
 ```
+
+App opens on **Welcome** → Sign in / Get started. Design system gallery: Home → palette button, or Login → “Preview design system”.
 
 ### Analyze and test
 
@@ -385,12 +393,13 @@ Course and project documents live under [`docs/`](docs/). Use these as the sourc
 | Literature Review | [DevSync-2-Literature-Review.pdf](docs/DevSync-2-Literature-Review.pdf) |
 | Requirements Gathering | [DevSync-3-Requirements-Gathering.pdf](docs/DevSync-3-Requirements-Gathering.pdf) |
 | Feature Summaries (all members) | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
+| Interactive prototype (v27) | [docs/index.html](docs/index.html) |
 | Brand Guidelines | [DevSync_Brand_Guidelines.pdf](docs/DevSync_Brand_Guidelines.pdf) |
 | Brand Guide (HTML) | [DevSync Brand Guide.html](docs/DevSync%20Brand%20Guide.html) |
 
-The **Feature Summaries** PDF is the source of truth for per-member ownership, loads (story points), reviewers, backups, handoffs, and if-time work.
+The **Feature Summaries** PDF is the source of truth for per-member ownership, loads (story points), reviewers, backups, handoffs, and if-time work. Brand tokens and UI patterns also come from the Brand Guide and the prototype.
 
-Brand assets (logos/icons) are under [`docs/devsync-logos/`](docs/devsync-logos/).
+Brand assets (logos/icons) are under [`docs/devsync-logos/`](docs/devsync-logos/) and copied for the app into [`assets/brand/png/`](assets/brand/png/).
 
 ---
 
@@ -421,10 +430,13 @@ Do **not** commit `google-services.json` variants that embed private keys beyond
 |---|---|
 | Project planning & requirements docs | Available in `docs/` |
 | Per-member feature summaries | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
-| Brand guide, logo assets, design system plan | Brand in `docs/`; design system marked done in feature summary |
-| Flutter project scaffold | Present (`lib/main.dart` default template) |
+| Brand guide, logos, prototype | Available in `docs/` (+ `docs/index.html`) |
+| Design system (tokens + `Ds*` widgets) | Implemented in `lib/core/` |
+| Global Lucide icons (`AppIcons`) | Implemented — use instead of Material `Icons` |
+| App name + launcher / favicon | DevSync branding on Android / iOS / web / desktop |
+| Auth flow (Intro → Welcome → Login/Register/OTP) | UI implemented; Firebase Auth not wired yet (demo → Home) |
 | Firebase / GitHub / LLM integration | Planned — not implemented in-repo yet |
-| Product features (auth, matching, requests, etc.) | Planned (owners and due dates in §3) |
+| Remaining product features | Planned (owners and due dates in §3) |
 | Install-link release / App Bundle | First obfuscated build by 12 Nov; final 30 Nov 2026 |
 | App store deployment | Out of scope for this course delivery |
 
@@ -449,6 +461,90 @@ From the planning and requirements documents — **not committed for this delive
 - Real Pro plan with in-app payments
 - Issue-level matching, skill-gap hints, maintainer search, in-app chat, endorsements
 - Localization (e.g. Arabic RTL) and analytics dashboards
+
+---
+
+## 14. Built so far (for the team)
+
+Shared foundation everyone should reuse. Do **not** invent local colors, fonts, or Material `Icons` in feature PRs.
+
+### Design tokens (`lib/core/theme/`)
+
+| Token | Purpose |
+|---|---|
+| `AppColors` | Teal `#2EE0C8`, Forest `#0E2624`, Mint, Surface, Line, Muted, Danger, … |
+| `AppSpacing` | 48 dp min touch, 56 dp buttons, radii matching the prototype |
+| `AppTypography` | Bricolage Grotesque + Figtree via `google_fonts` |
+| `AppAnimations` | Prototype ease `cubic-bezier(.2,.8,.2,1)` |
+| `AppTheme.dark()` | Material 3 theme wired to the tokens |
+
+### Global icons (`lib/core/icons/app_icons.dart`)
+
+Package: **`lucide_icons_flutter`** (same family as the HTML prototype).
+
+```dart
+import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon.dart';
+
+DsIcon(AppIcons.feed, color: AppColors.teal);
+// or pass into buttons:
+DsButton(label: 'Next', icon: AppIcons.forward, onPressed: () {});
+```
+
+Add new icons **only** on `AppIcons` so the set stays global. Browse names at [lucide.dev](https://lucide.dev).
+
+### Shared widgets (`lib/core/widgets/`)
+
+Import barrel: `core/widgets/widgets.dart` — **use these everywhere**.
+
+| Component | Use for |
+|---|---|
+| `DsButton` | Primary / secondary / quiet / danger actions |
+| `DsTextField` | Floating-label inputs + errors |
+| `DsCard` | Surfaces / list containers |
+| `DsChip` | Tags, filters, step pills |
+| `DsPageHeader` | Eyebrow + title + body (auth & features) |
+| `DsFeatureTile` | Intro Discover / Collaborate tiles |
+| `DsInfoRow` | Icon + title + subtitle rows |
+| `DsOrb` | Gradient icon orb (recovery / verify) |
+| `DsOtpField` | 6-digit verification code |
+| `DsScoreMeter` / `DsScoreRing` | Match fit scores |
+| `DsAvatar` / `DsProjectAvatar` | People / project marks |
+| `DsIcon` / `DsIconButton` | Lucide icons via `AppIcons` |
+| `DsMatchCard` | Composed feed card |
+| `DsNotificationTile` / `DsBanner` | Alerts / notices |
+| `DsLogo` / `DsWordmark` | Brand mark |
+| `DsEmptyState` / `DsSegmentedControl` | Empty lists / tabs |
+
+Auth layout helpers (also for reuse): `AuthScaffold`, `AuthInlineHeading`, `AuthNote`, `AuthSocialButtons`, `AuthDivider`, `AuthProgressBar` in `lib/features/auth/widgets/`.
+
+Preview: run the app → Home → palette → **Design system** gallery.
+
+### Auth screens (`lib/features/auth/`) — matches `docs/index.html`
+
+| Screen | Route | Notes |
+|---|---|---|
+| Intro (launch) | `/` | Get started, Discover/Collaborate tiles, Sign in |
+| Welcome carousel | `/welcome` | 3 slides → Get started / Sign in |
+| Login | `/login` | Social + email, forgot password, email code |
+| Register | `/register` | Step 01/03, strength meter, terms |
+| Forgot password | `/forgot-password` | Recovery → verify code |
+| Sign in with code | `/code-sign-in` | Passwordless email → OTP |
+| Verify code | `/verify-code` | 6 boxes; demo OTP `123456` |
+
+Demo submit navigates to Home until Firebase Auth is connected (Donia · W2).
+
+### Branding
+
+- Display name: **DevSync** (Android / iOS / web / desktop)
+- Launcher + favicon generated from `assets/brand/png/devsync-app-icon.png`
+- Prototype favicon: `docs/favicon.png`
+
+### Team rule
+
+1. UI → `AppColors` / `AppSpacing` / `Ds*` widgets  
+2. Icons → `AppIcons` + `DsIcon` (Lucide)  
+3. Features → `lib/features/<area>/` and replace stubs behind `AppRoutes`
 
 ---
 

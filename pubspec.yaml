@@ -11,11 +11,32 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
+  lucide_icons_flutter: ^3.1.24
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: assets/brand/png/devsync-app-icon.png
+  adaptive_icon_background: "#0E2624"
+  adaptive_icon_foreground: assets/brand/png/devsync-app-icon.png
+  web:
+    generate: true
+    image_path: assets/brand/png/devsync-app-icon.png
+    background_color: "#0E2624"
+    theme_color: "#2EE0C8"
+  windows:
+    generate: true
+    image_path: assets/brand/png/devsync-app-icon.png
+  macos:
+    generate: true
+    image_path: assets/brand/png/devsync-app-icon.png
 
 flutter:
   uses-material-design: true

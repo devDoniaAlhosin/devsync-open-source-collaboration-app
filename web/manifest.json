@@ -1,11 +1,11 @@
 {
-    "name": "devsync_open_source_collaboration_app",
-    "short_name": "devsync_open_source_collaboration_app",
+    "name": "DevSync",
+    "short_name": "DevSync",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0E2624",
+    "theme_color": "#2EE0C8",
+    "description": "DevSync — AI-powered developer collaboration platform.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -19,6 +19,7 @@ class DsSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final ds = context.ds;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -29,14 +30,17 @@ class DsSectionHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: textTheme.headlineSmall),
+                Text(
+                  title,
+                  style: textTheme.headlineSmall?.copyWith(
+                    color: ds.textPrimary,
+                  ),
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     subtitle!,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
-                    ),
+                    style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
                   ),
                 ],
               ],
