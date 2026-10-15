@@ -35,6 +35,16 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   bool _hasFallback = false;
   String? _errorMessage;
 
+  // ---------- UI ----------
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Match Feed')),
+      body: _buildBody(),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -44,52 +54,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       localDataSource: InMemoryMatchingLocalDataSource(),
     );
     _loadMatches();
-  }
-
-  Future<void> _loadMatches() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // TODO: Replace with the real user profile from Saga's profile feature.
-      final profile = UserProfile(
-        uid: 'demo-user',
-        declaredSkills: ['Flutter', 'Dart', 'Firebase'],
-        githubLanguages: {'Dart': 60, 'Python': 20, 'JavaScript': 10},
-        publicRepoCount: 12,
-        totalContributions: 340,
-        bio: 'Mobile developer interested in open source.',
-      );
-
-      final results = await _repository.getRankedMatches(profile);
-
-      if (!mounted) return;
-      setState(() {
-        _matches = results;
-        _hasFallback = results.any((m) => m.isFallback);
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Could not load matches. Please try again.';
-      });
-    }
-  }
-
-  // ---------- UI ----------
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Match Feed'),
-      ),
-      body: _buildBody(),
-    );
   }
 
   Widget _buildBody() {
@@ -155,8 +119,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                       child: Text(
                         'AI matching is temporarily unavailable. Showing skills-based results.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: palette.textMuted,
-                            ),
+                          color: palette.textMuted,
+                        ),
                       ),
                     ),
                   ],
@@ -187,5 +151,39 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _loadMatches() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // TODO: Replace with the real user profile from Saga's profile feature.
+      final profile = UserProfile(
+        uid: 'demo-user',
+        declaredSkills: ['Flutter', 'Dart', 'Firebase'],
+        githubLanguages: {'Dart': 60, 'Python': 20, 'JavaScript': 10},
+        publicRepoCount: 12,
+        totalContributions: 340,
+        bio: 'Mobile developer interested in open source.',
+      );
+
+      final results = await _repository.getRankedMatches(profile);
+
+      if (!mounted) return;
+      setState(() {
+        _matches = results;
+        _hasFallback = results.any((m) => m.isFallback);
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Could not load matches. Please try again.';
+      });
+    }
   }
 }
