@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
@@ -18,9 +20,14 @@ class VerifyCodeScreen extends StatefulWidget {
 }
 
 class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
+  static const _codeTtl = Duration(minutes: 10);
+
   String _code = '';
   bool _loading = false;
   String? _error;
+  late DateTime _expiresAt;
+  Timer? _ticker;
+  Duration _remaining = _codeTtl;
 
   Map<String, dynamic> get _args {
     final args = ModalRoute.of(context)?.settings.arguments;
@@ -28,7 +35,43 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     return const {'email': 'you@devsync.app', 'from': 'code'};
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    _ticker?.cancel();
+    _expiresAt = DateTime.now().add(_codeTtl);
+    _remaining = _codeTtl;
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final left = _expiresAt.difference(DateTime.now());
+      setState(() {
+        _remaining = left.isNegative ? Duration.zero : left;
+      });
+      if (left.isNegative) _ticker?.cancel();
+    });
+  }
+
+  String get _countdownLabel {
+    final m = _remaining.inMinutes.clamp(0, 99);
+    final s = _remaining.inSeconds.remainder(60).clamp(0, 59);
+    return 'Expires in $m:${s.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _verify() async {
+    if (_remaining == Duration.zero) {
+      setState(() => _error = 'Code expired. Tap Resend code.');
+      return;
+    }
     if (_code.length != 6) {
       setState(() => _error = 'Enter the 6-digit code');
       return;
@@ -42,7 +85,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    // Demo OTP from prototype.
+    // Demo OTP until email OTP backend / Cloud Function lands.
     if (_code != '123456') {
       setState(() => _error = 'Invalid code. Demo code is 123456');
       return;
@@ -66,13 +109,28 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     );
   }
 
+  void _resend() {
+    _startCountdown();
+    setState(() {
+      _code = '';
+      _error = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Demo: code resent (use 123456)')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final email = (_args['email'] as String?) ?? 'you@devsync.app';
+    final from = _args['from'];
+    final backTo =
+        from == 'reset' ? AppRoutes.forgotPassword : AppRoutes.codeSignIn;
 
     return AuthScaffold(
       title: 'Verify email',
       onThemeToggle: DevSyncApp.toggleTheme,
+      onBack: () => Navigator.of(context).pushReplacementNamed(backTo),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -107,19 +165,18 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
           Row(
             children: [
               Text(
-                'Expires in 10:00',
-                style: Theme.of(context).textTheme.bodySmall,
+                _countdownLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: _remaining == Duration.zero
+                          ? context.ds.danger
+                          : context.ds.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               const Spacer(),
               AuthTextLink(
                 label: 'Resend code',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Demo: code resent (use 123456)'),
-                    ),
-                  );
-                },
+                onPressed: _resend,
               ),
             ],
           ),
@@ -133,7 +190,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
           const SizedBox(height: AppSpacing.md),
           const AuthNote(
             title: 'Interactive prototype:',
-            message: 'Enter 123456 to verify. No email is sent.',
+            message: 'Enter 123456 to verify. No email is sent yet.',
           ),
         ],
       ),

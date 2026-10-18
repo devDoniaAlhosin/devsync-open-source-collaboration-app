@@ -7,7 +7,9 @@ abstract final class AppRoutes {
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
   static const String codeSignIn = '/code-sign-in';
+  static const String emailLinkSent = '/email-link-sent';
   static const String verifyCode = '/verify-code';
+  static const String verifyEmail = '/verify-email';
   static const String designSystem = '/design-system';
   static const String home = '/home';
   static const String feed = '/feed';

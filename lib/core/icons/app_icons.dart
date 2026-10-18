@@ -21,6 +21,7 @@ abstract final class AppIcons {
   static const IconData mail = LucideIcons.mail;
   static const IconData lock = LucideIcons.lockKeyhole;
   static const IconData shield = LucideIcons.shieldCheck;
+  static const IconData signOut = LucideIcons.logOut;
 
   // Primary nav / features
   static const IconData feed = LucideIcons.sparkles;

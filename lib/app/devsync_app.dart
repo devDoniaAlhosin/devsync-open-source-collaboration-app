@@ -5,12 +5,15 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/ds_splash.dart';
 import '../features/auth/code_sign_in_screen.dart';
+import '../features/auth/data/email_link_listener.dart';
+import '../features/auth/email_link_sent_screen.dart';
 import '../features/auth/forgot_password_screen.dart';
-import '../features/auth/intro_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/verify_code_screen.dart';
+import '../features/auth/verify_email_screen.dart';
 import '../features/auth/welcome_screen.dart';
+import '../features/auth/widgets/auth_gate.dart';
 import '../features/shell/design_system_gallery_screen.dart';
 import '../features/shell/home_shell_screen.dart';
 import '../features/shell/stub_screen.dart';
@@ -93,17 +96,30 @@ class _DevSyncAppState extends State<DevSyncApp> {
             },
           );
         }
-        return child ?? const SizedBox.shrink();
+        // Inside MaterialApp so Navigator / SnackBars work for email links.
+        return EmailLinkListener(
+          child: child ?? const SizedBox.shrink(),
+        );
       },
       initialRoute: AppRoutes.intro,
       routes: {
-        AppRoutes.intro: (_) => const IntroScreen(),
+        AppRoutes.intro: (_) => const AuthGate(),
         AppRoutes.welcome: (_) => const WelcomeScreen(),
         AppRoutes.login: (_) => const LoginScreen(),
         AppRoutes.register: (_) => const RegisterScreen(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
         AppRoutes.codeSignIn: (_) => const CodeSignInScreen(),
+        AppRoutes.emailLinkSent: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final email = args is Map ? args['email'] as String? : null;
+          return EmailLinkSentScreen(email: email);
+        },
         AppRoutes.verifyCode: (_) => const VerifyCodeScreen(),
+        AppRoutes.verifyEmail: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final email = args is Map ? args['email'] as String? : null;
+          return VerifyEmailScreen(email: email);
+        },
         AppRoutes.designSystem: (_) => const DesignSystemGalleryScreen(),
         AppRoutes.home: (_) => const HomeShellScreen(),
         AppRoutes.feed: (_) => const StubScreen(

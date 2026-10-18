@@ -10,8 +10,9 @@ import '../../core/widgets/ds_icon.dart';
 import '../../core/widgets/ds_notification_tile.dart';
 import '../../core/widgets/ds_page_header.dart';
 import '../../core/widgets/ds_text_field.dart';
+import 'data/auth_service.dart';
 import 'widgets/auth_divider.dart';
-import 'widgets/auth_progress_bar.dart';
+import 'widgets/auth_gate.dart';
 import 'widgets/auth_scaffold.dart';
 import 'widgets/auth_social_buttons.dart';
 import 'widgets/password_strength_meter.dart';
@@ -24,6 +25,7 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _auth = AuthService();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
@@ -48,6 +50,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Future<void> _runSocial(Future<void> Function() action) async {
+    setState(() => _loading = true);
+    try {
+      await action();
+      if (!mounted) return;
+      navigateToHome(context);
+    } catch (e) {
+      if (!mounted) return;
+      if (e is! AuthCancelledException) {
+        _toast(AuthService.messageFor(e));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _submit() async {
     final name = _name.text.trim();
     final email = _email.text.trim();
@@ -70,21 +88,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _loading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.home,
-      (route) => false,
-    );
+    try {
+      await _auth.registerWithEmail(
+        email: email,
+        password: password,
+        displayName: name,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.verifyEmail,
+        (route) => false,
+        arguments: {'email': email},
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _toast(AuthService.messageFor(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
       title: 'Create account',
-      stepLabel: '01 / 03',
       onThemeToggle: DevSyncApp.toggleTheme,
       bottom: DsButton(
         label: 'Create account',
@@ -95,8 +122,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const AuthProgressBar(step: 1),
-          const SizedBox(height: AppSpacing.xl),
           const DsPageHeader(
             eyebrow: 'Start building',
             title: 'Create your account.',
@@ -104,8 +129,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           AuthSocialButtons(
-            onGoogle: () => _toast('Google sign-up needs Firebase Auth setup'),
-            onGitHub: () => _toast('GitHub sign-up needs backend setup'),
+            onGoogle:
+                _loading ? null : () => _runSocial(_auth.signInWithGoogle),
+            onGitHub:
+                _loading ? null : () => _runSocial(_auth.signInWithGitHub),
           ),
           const SizedBox(height: AppSpacing.lg),
           const AuthDivider(label: 'or sign up with email'),

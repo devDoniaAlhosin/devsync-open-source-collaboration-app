@@ -9,7 +9,9 @@ import '../../core/widgets/ds_button.dart';
 import '../../core/widgets/ds_icon.dart';
 import '../../core/widgets/ds_page_header.dart';
 import '../../core/widgets/ds_text_field.dart';
+import 'data/auth_service.dart';
 import 'widgets/auth_divider.dart';
+import 'widgets/auth_gate.dart';
 import 'widgets/auth_hero_card.dart';
 import 'widgets/auth_scaffold.dart';
 import 'widgets/auth_social_buttons.dart';
@@ -23,6 +25,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _auth = AuthService();
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
@@ -44,6 +47,29 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _runAuth(Future<void> Function() action) async {
+    setState(() => _loading = true);
+    try {
+      await action();
+      if (!mounted) return;
+      navigateToHome(context);
+    } on EmailNotVerifiedException catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.verifyEmail,
+        (route) => false,
+        arguments: {'email': e.email},
+      );
+    } catch (e) {
+      if (!mounted) return;
+      if (e is! AuthCancelledException) {
+        _toast(AuthService.messageFor(e));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _submit() async {
     final email = _email.text.trim();
     final password = _password.text;
@@ -54,14 +80,8 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     if (_emailError != null || _passwordError != null) return;
 
-    setState(() => _loading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.home,
-      (route) => false,
+    await _runAuth(
+      () => _auth.signInWithEmail(email: email, password: password),
     );
   }
 
@@ -83,8 +103,8 @@ class _LoginScreenState extends State<LoginScreen> {
           const AuthHeroCard(),
           const SizedBox(height: AppSpacing.xl),
           AuthSocialButtons(
-            onGoogle: () => _toast('Google sign-in needs Firebase Auth setup'),
-            onGitHub: () => _toast('GitHub sign-in needs backend setup'),
+            onGoogle: _loading ? null : () => _runAuth(_auth.signInWithGoogle),
+            onGitHub: _loading ? null : () => _runAuth(_auth.signInWithGitHub),
           ),
           const SizedBox(height: AppSpacing.lg),
           const AuthDivider(label: 'or continue with email'),
@@ -163,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           DsButton(
-            label: 'Sign in with email code',
+            label: 'Sign in with email link',
             variant: DsButtonVariant.secondary,
             onPressed: () =>
                 Navigator.of(context).pushNamed(AppRoutes.codeSignIn),

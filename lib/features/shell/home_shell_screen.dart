@@ -9,6 +9,7 @@ import '../../core/widgets/ds_icon.dart';
 import '../../core/widgets/ds_icon_button.dart';
 import '../../core/widgets/ds_logo.dart';
 import '../../core/widgets/ds_section_header.dart';
+import '../auth/data/auth_service.dart';
 
 /// Bottom-nav shell with stub destinations for each feature area.
 class HomeShellScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class HomeShellScreen extends StatefulWidget {
 }
 
 class _HomeShellScreenState extends State<HomeShellScreen> {
+  final _auth = AuthService();
   int _index = 0;
 
   static const _destinations = [
@@ -27,6 +29,15 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     _Dest('Requests', AppIcons.requests, AppRoutes.requests, 'Yousef'),
     _Dest('Profile', AppIcons.profile, AppRoutes.profile, 'Saga'),
   ];
+
+  Future<void> _signOut() async {
+    await _auth.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.intro,
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,13 +48,18 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       appBar: AppBar(
         title: const DsLogo(height: 28),
         actions: [
+          DsIconButton(
+            icon: AppIcons.designSystem,
+            tooltip: 'Design system',
+            onPressed: () =>
+                Navigator.of(context).pushNamed(AppRoutes.designSystem),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: DsIconButton(
-              icon: AppIcons.designSystem,
-              tooltip: 'Design system',
-              onPressed: () =>
-                  Navigator.of(context).pushNamed(AppRoutes.designSystem),
+              icon: AppIcons.signOut,
+              tooltip: 'Sign out',
+              onPressed: _signOut,
             ),
           ),
         ],

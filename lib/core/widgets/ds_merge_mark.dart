@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -5,7 +6,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_animations.dart';
 import '../theme/app_colors.dart';
 
-/// Animated DevSync merge mark — two branches drawing into one node.
+/// Animated DevSync merge mark — matches [assets/brand/svg/devsync-icon.svg].
+///
+/// Two source nodes draw curves into one sink node, then pulse.
 class DsMergeMark extends StatefulWidget {
   const DsMergeMark({
     super.key,
@@ -13,6 +16,7 @@ class DsMergeMark extends StatefulWidget {
     this.autoPlay = true,
     this.loop = false,
     this.onCompleted,
+    this.interactive = false,
   });
 
   final double size;
@@ -20,13 +24,17 @@ class DsMergeMark extends StatefulWidget {
   final bool loop;
   final VoidCallback? onCompleted;
 
+  /// Tap restarts a soft pulse when the draw animation has finished.
+  final bool interactive;
+
   @override
   State<DsMergeMark> createState() => _DsMergeMarkState();
 }
 
 class _DsMergeMarkState extends State<DsMergeMark>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
+  late final AnimationController _idle;
   late final Animation<double> _draw;
   late final Animation<double> _pulse;
 
@@ -35,15 +43,19 @@ class _DsMergeMarkState extends State<DsMergeMark>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 1800),
+    );
+    _idle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
     );
     _draw = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0, 0.72, curve: AppAnimations.emphasized),
+      curve: const Interval(0, 0.7, curve: AppAnimations.emphasized),
     );
     _pulse = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.55, 1, curve: Curves.easeOut),
+      curve: const Interval(0.52, 1, curve: Curves.easeOut),
     );
 
     if (widget.autoPlay) {
@@ -55,165 +67,226 @@ class _DsMergeMarkState extends State<DsMergeMark>
       }
     } else {
       _controller.value = 1;
+      _idle.repeat(reverse: true);
     }
   }
 
   void _onStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
       widget.onCompleted?.call();
+      if (mounted && !widget.loop) {
+        _idle.repeat(reverse: true);
+      }
     }
+  }
+
+  void _onTap() {
+    if (!widget.interactive) return;
+    if (_controller.isAnimating) {
+      _controller.fling(velocity: 1.8);
+      return;
+    }
+    _idle.stop();
+    _controller
+      ..reset()
+      ..forward();
   }
 
   @override
   void dispose() {
     _controller.removeStatusListener(_onStatus);
     _controller.dispose();
+    _idle.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final glow = 0.18 + _pulse.value * 0.22;
-        return Container(
-          width: widget.size,
-          height: widget.size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.forest,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.teal.withValues(alpha: glow),
-                blurRadius: 28 + _pulse.value * 18,
-                spreadRadius: _pulse.value * 2,
+    return GestureDetector(
+      onTap: widget.interactive ? _onTap : null,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_controller, _idle]),
+        builder: (context, _) {
+          final idle = _idle.isAnimating ? _idle.value : 0.0;
+          final glow = 0.2 + _pulse.value * 0.28 + idle * 0.08;
+          return Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.forest,
+                  AppColors.forest.withValues(alpha: 0.92),
+                  const Color(0xFF0A1F1D),
+                ],
+                stops: const [0.0, 0.55, 1.0],
               ),
-              BoxShadow(
-                color: AppColors.forest.withValues(alpha: 0.18),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: CustomPaint(
-            painter: _MergePainter(
-              progress: _draw.value,
-              pulse: _pulse.value,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.teal.withValues(alpha: glow),
+                  blurRadius: 32 + _pulse.value * 22 + idle * 10,
+                  spreadRadius: _pulse.value * 3,
+                ),
+                BoxShadow(
+                  color: AppColors.forest.withValues(alpha: 0.28),
+                  blurRadius: 28,
+                  offset: const Offset(0, 14),
+                ),
+              ],
             ),
-          ),
-        );
-      },
+            child: CustomPaint(
+              painter: _MergePainter(
+                progress: _draw.value,
+                pulse: _pulse.value,
+                idle: idle,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _MergePainter extends CustomPainter {
-  _MergePainter({required this.progress, required this.pulse});
+  _MergePainter({
+    required this.progress,
+    required this.pulse,
+    required this.idle,
+  });
 
   final double progress;
   final double pulse;
+  final double idle;
 
   @override
   void paint(Canvas canvas, Size size) {
+    // SVG viewBox "20 30 168 140" → normalized inside the circle.
     final s = size.shortestSide;
-    final cx = size.width / 2;
-    final cy = size.height / 2;
+    final pad = s * 0.14;
+    final vbW = 168.0;
+    final vbH = 140.0;
+    final scale = (s - pad * 2) / math.max(vbW, vbH);
+    final ox = (size.width - vbW * scale) / 2;
+    final oy = (size.height - vbH * scale) / 2 - s * 0.02;
 
-    // Layout in a 0..1 box inside the circle padding.
-    final left = cx - s * 0.28;
-    final right = cx + s * 0.28;
-    final topY = cy - s * 0.18;
-    final midY = cy;
-    final botY = cy + s * 0.18;
-    final rSmall = s * 0.055;
-    final rLarge = s * 0.078;
+    Offset pt(double x, double y) =>
+        Offset(ox + (x - 20) * scale, oy + (y - 30) * scale);
+
+    final leftTop = pt(48, 58);
+    final leftBot = pt(48, 142);
+    final sink = pt(154, 100);
+    final rSmall = 16 * scale;
+    final rLarge = 22 * scale * (1 + pulse * 0.05 + idle * 0.03);
+    final strokeW = 11 * scale;
 
     final paint = Paint()
       ..color = AppColors.teal
       ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.055
+      ..strokeWidth = strokeW
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     final fill = Paint()..color = AppColors.teal;
 
-    // Branch paths (cubic curves into the sink).
+    // Paths from SVG:
+    // M64 58 C110 58 100 100 132 100
+    // M64 142 C110 142 100 100 132 100
     final topPath = Path()
-      ..moveTo(left, topY)
+      ..moveTo(pt(64, 58).dx, pt(64, 58).dy)
       ..cubicTo(
-        left + s * 0.18,
-        topY,
-        right - s * 0.16,
-        midY - s * 0.02,
-        right,
-        midY,
+        pt(110, 58).dx,
+        pt(110, 58).dy,
+        pt(100, 100).dx,
+        pt(100, 100).dy,
+        pt(132, 100).dx,
+        pt(132, 100).dy,
       );
     final botPath = Path()
-      ..moveTo(left, botY)
+      ..moveTo(pt(64, 142).dx, pt(64, 142).dy)
       ..cubicTo(
-        left + s * 0.18,
-        botY,
-        right - s * 0.16,
-        midY + s * 0.02,
-        right,
-        midY,
+        pt(110, 142).dx,
+        pt(110, 142).dy,
+        pt(100, 100).dx,
+        pt(100, 100).dy,
+        pt(132, 100).dx,
+        pt(132, 100).dy,
       );
 
-    // Draw curves with reveal.
     final topMetric = topPath.computeMetrics().first;
     final botMetric = botPath.computeMetrics().first;
-    final topLen = topMetric.length * progress.clamp(0.0, 1.0);
-    final botLen = botMetric.length * progress.clamp(0.0, 1.0);
+    final t = progress.clamp(0.0, 1.0);
 
-    if (topLen > 0) {
-      canvas.drawPath(topMetric.extractPath(0, topLen), paint);
+    if (t > 0) {
+      canvas.drawPath(topMetric.extractPath(0, topMetric.length * t), paint);
+      canvas.drawPath(botMetric.extractPath(0, botMetric.length * t), paint);
     }
-    if (botLen > 0) {
-      canvas.drawPath(botMetric.extractPath(0, botLen), paint);
+
+    // Energy dots traveling along each branch.
+    if (t > 0.08 && t < 0.98) {
+      final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.85);
+      final glowPaint = Paint()
+        ..color = AppColors.teal.withValues(alpha: 0.45)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      for (final metric in [topMetric, botMetric]) {
+        final pos = metric.getTangentForOffset(metric.length * t)?.position;
+        if (pos == null) continue;
+        canvas.drawCircle(pos, strokeW * 0.55, glowPaint);
+        canvas.drawCircle(pos, strokeW * 0.28, dotPaint);
+      }
     }
 
     // Source nodes appear early.
-    final nodeT = ((progress - 0.05) / 0.25).clamp(0.0, 1.0);
+    final nodeT = ((progress - 0.02) / 0.22).clamp(0.0, 1.0);
     if (nodeT > 0) {
-      canvas.drawCircle(Offset(left, topY), rSmall * nodeT, fill);
-      canvas.drawCircle(Offset(left, botY), rSmall * nodeT, fill);
+      canvas.drawCircle(leftTop, rSmall * nodeT, fill);
+      canvas.drawCircle(leftBot, rSmall * nodeT, fill);
     }
 
     // Sink node grows as branches arrive.
-    final sinkT = ((progress - 0.45) / 0.4).clamp(0.0, 1.0);
+    final sinkT = ((progress - 0.42) / 0.4).clamp(0.0, 1.0);
     if (sinkT > 0) {
-      final sinkR = rLarge * (0.55 + 0.45 * sinkT) * (1 + pulse * 0.06);
-      canvas.drawCircle(Offset(right, midY), sinkR, fill);
+      final sinkR = rLarge * (0.5 + 0.5 * sinkT);
+      canvas.drawCircle(sink, sinkR, fill);
 
-      // Soft inner highlight.
       final hi = Paint()
         ..shader = ui.Gradient.radial(
-          Offset(right - sinkR * 0.25, midY - sinkR * 0.25),
+          sink.translate(-sinkR * 0.28, -sinkR * 0.28),
           sinkR,
           [
-            Colors.white.withValues(alpha: 0.28 * sinkT),
+            Colors.white.withValues(alpha: 0.32 * sinkT),
             Colors.transparent,
           ],
         );
-      canvas.drawCircle(Offset(right, midY), sinkR, hi);
+      canvas.drawCircle(sink, sinkR, hi);
     }
 
-    // Subtle orbit ring as merge completes.
+    // Soft completion rings.
     if (pulse > 0) {
       final ring = Paint()
-        ..color = AppColors.teal.withValues(alpha: 0.22 * (1 - pulse))
+        ..color = AppColors.teal.withValues(alpha: 0.28 * (1 - pulse * 0.55))
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
+        ..strokeWidth = 1.6;
+      final cx = size.width / 2;
+      final cy = size.height / 2;
       canvas.drawCircle(
         Offset(cx, cy),
-        s * 0.42 * (0.9 + pulse * 0.15),
+        s * 0.44 * (0.88 + pulse * 0.18),
         ring,
+      );
+      canvas.drawCircle(
+        Offset(cx, cy),
+        s * 0.44 * (0.95 + pulse * 0.28),
+        ring..color = AppColors.teal.withValues(alpha: 0.12 * (1 - pulse)),
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant _MergePainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.pulse != pulse;
+      oldDelegate.progress != progress ||
+      oldDelegate.pulse != pulse ||
+      oldDelegate.idle != idle;
 }
