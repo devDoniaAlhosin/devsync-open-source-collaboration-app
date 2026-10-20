@@ -39,10 +39,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Match Feed')),
-      body: _buildBody(),
-    );
+    return _buildBody();
   }
 
   @override
