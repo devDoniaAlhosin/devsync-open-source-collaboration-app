@@ -52,7 +52,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
         index: _index,
         children: [
           // Feed tab — real MatchFeedScreen (no AppBar; shell owns it)
-          const MatchFeedScreen(),
+          const MatchFeedScreen(embedded: true),
           // Remaining tabs — stub cards until their screens are ready
           for (final d in _destinations.skip(1))
             Padding(

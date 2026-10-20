@@ -35,6 +35,8 @@ abstract final class AppIcons {
   // Match / AI
   static const IconData sparkle = LucideIcons.sparkles;
   static const IconData code = LucideIcons.code;
+  static const IconData heart = LucideIcons.heart;
+  static const IconData undo = LucideIcons.undo2;
 
   // Feedback / status
   static const IconData info = LucideIcons.info;
