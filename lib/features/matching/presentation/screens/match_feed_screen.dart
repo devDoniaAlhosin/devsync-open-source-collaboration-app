@@ -14,6 +14,7 @@ import '../../data/repositories/matching_repository_impl.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/user_profile.dart';
 import 'project_details_screen.dart';
+import '../widgets/match_card_deck.dart';
 import '../widgets/draggable_match_card.dart';
 import '../widgets/match_card_skeleton.dart';
 
@@ -253,9 +254,13 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 460),
-                    child: DraggableMatchCard(
-                      key: _cardKey,
+                    child: MatchCardDeck(
+                      cardKey: _cardKey,
                       match: match,
+                      nextMatches: _matches
+                          .skip(_currentMatchIndex + 1)
+                          .take(2)
+                          .toList(),
                       onTap: () => Navigator.of(context).pushNamed(
                         AppRoutes.projectDetail,
                         arguments: ProjectDetailsArguments(

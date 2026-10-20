@@ -1,4 +1,5 @@
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/match_card_deck.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_item.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +69,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
+    expect(find.text('pocketbase/pocketbase'), findsOneWidget);
+  });
+
+  testWidgets('the feed stacks upcoming matches behind the draggable card', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: MatchFeedScreen()));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(MatchCardDeck), findsOneWidget);
+    expect(find.text('flutter/packages'), findsOneWidget);
+    expect(find.text('appwrite/appwrite'), findsOneWidget);
     expect(find.text('pocketbase/pocketbase'), findsOneWidget);
   });
 }
