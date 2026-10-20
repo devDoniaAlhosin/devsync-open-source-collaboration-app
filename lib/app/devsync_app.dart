@@ -11,6 +11,7 @@ import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/verify_code_screen.dart';
 import '../features/auth/welcome_screen.dart';
+import '../features/matching/presentation/screens/project_details_screen.dart';
 import '../features/shell/design_system_gallery_screen.dart';
 import '../features/shell/home_shell_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
@@ -19,10 +20,7 @@ import 'app_routes.dart';
 
 /// Root app — **light theme is the default**.
 class DevSyncApp extends StatefulWidget {
-  const DevSyncApp({
-    super.key,
-    this.showSplash = true,
-  });
+  const DevSyncApp({super.key, this.showSplash = true});
 
   /// Set `false` in widget tests to skip the open animation.
   final bool showSplash;
@@ -56,8 +54,9 @@ class _DevSyncAppState extends State<DevSyncApp> {
 
   void _toggleTheme() {
     setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+      _themeMode = _themeMode == ThemeMode.light
+          ? ThemeMode.dark
+          : ThemeMode.light;
       _syncSystemUi(_themeMode);
     });
   }
@@ -69,10 +68,12 @@ class _DevSyncAppState extends State<DevSyncApp> {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
         statusBarBrightness: dark ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor:
-            dark ? AppColors.darkBackground : AppColors.lightBackground,
-        systemNavigationBarIconBrightness:
-            dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: dark
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        systemNavigationBarIconBrightness: dark
+            ? Brightness.light
+            : Brightness.dark,
       ),
     );
   }
@@ -108,23 +109,25 @@ class _DevSyncAppState extends State<DevSyncApp> {
         AppRoutes.designSystem: (_) => const DesignSystemGalleryScreen(),
         AppRoutes.home: (_) => const HomeShellScreen(),
         AppRoutes.feed: (_) => const MatchFeedScreen(),
-        AppRoutes.projects: (_) => const StubScreen(
-              title: 'Projects',
-              owner: 'Bishay',
-            ),
-        AppRoutes.projectDetail: (_) => const StubScreen(
-              title: 'Project detail',
-              owner: 'Bishay',
-            ),
+        AppRoutes.projects: (_) =>
+            const StubScreen(title: 'Projects', owner: 'Bishay'),
         AppRoutes.profile: (_) => const StubScreen(
-              title: 'Profile',
-              owner: 'Saga',
-              description: 'Skills, bio, and GitHub activity.',
-            ),
-        AppRoutes.requests: (_) => const StubScreen(
-              title: 'Collaboration requests',
-              owner: 'Yousef',
-            ),
+          title: 'Profile',
+          owner: 'Saga',
+          description: 'Skills, bio, and GitHub activity.',
+        ),
+        AppRoutes.requests: (_) =>
+            const StubScreen(title: 'Collaboration requests', owner: 'Yousef'),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name != AppRoutes.projectDetail) return null;
+        final arguments = settings.arguments;
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => ProjectDetailsScreen(
+            arguments: arguments is ProjectDetailsArguments ? arguments : null,
+          ),
+        );
       },
     );
   }

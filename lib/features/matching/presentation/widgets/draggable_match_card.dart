@@ -11,20 +11,17 @@ import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
 import '../../domain/entities/match_item.dart';
 
-/// A Tinder-style, horizontally draggable project match card.
-///
-/// The card deliberately has button-free content so a drag cannot conflict
-/// with controls inside the card. The screen provides labelled action buttons
-/// as an accessible alternative to swiping.
 class DraggableMatchCard extends StatefulWidget {
-  final MatchItem match;
-
-  final ValueChanged<MatchSwipeAction> onAction;
   const DraggableMatchCard({
     super.key,
     required this.match,
     required this.onAction,
+    this.onTap,
   });
+
+  final MatchItem match;
+  final ValueChanged<MatchSwipeAction> onAction;
+  final VoidCallback? onTap;
 
   @override
   DraggableMatchCardState createState() => DraggableMatchCardState();
@@ -45,10 +42,12 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
     final rotation = _dragOffset.dx / 1700;
 
     return Semantics(
+      button: widget.onTap != null,
       label:
           '${widget.match.projectName}. Swipe right to request collaboration, or left to skip.',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
         onPanUpdate: _onPanUpdate,
         onPanEnd: _onPanEnd,
         onPanCancel: _restore,
@@ -88,8 +87,6 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
     );
   }
 
-  /// Runs the same exit animation used for a swipe. This is used by the
-  /// labelled action controls beneath the card.
   Future<void> complete(MatchSwipeAction action) async {
     if (_isCompleting) return;
 
@@ -160,11 +157,6 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
   }
 }
 
-/// The two feedback actions available on a match card.
-///
-/// A request maps to a right swipe and a skip maps to a left swipe. Keeping
-/// this type in the presentation layer lets the feedback owner connect the
-/// same actions to Firestore without changing the drag interaction.
 enum MatchSwipeAction { skip, request }
 
 class _MatchCardContent extends StatelessWidget {
@@ -221,7 +213,7 @@ class _MatchCardContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.darkCanvas,
+            color: context.ds.surfaceAlt,
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
           child: Column(

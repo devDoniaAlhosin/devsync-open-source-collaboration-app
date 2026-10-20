@@ -13,18 +13,11 @@ import '../../data/datasources/matching_remote_data_source.dart';
 import '../../data/repositories/matching_repository_impl.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/user_profile.dart';
+import 'project_details_screen.dart';
 import '../widgets/draggable_match_card.dart';
 import '../widgets/match_card_skeleton.dart';
 
-/// Ranked AI-match feed screen (FR-11 to FR-14, NFR-01).
-///
-/// The highest ranked match appears as a draggable card: swipe it right to
-/// request collaboration or left to skip it. Labelled controls provide the
-/// same actions without requiring a gesture.
-///
-/// **Owner:** Emad · **Route:** [AppRoutes.feed]
 class MatchFeedScreen extends StatefulWidget {
-  /// When shown in [HomeShellScreen], the shell supplies the outer scaffold.
   final bool embedded;
 
   const MatchFeedScreen({super.key, this.embedded = false});
@@ -100,7 +93,7 @@ class _FeedHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
-              color: AppColors.darkSurface,
+              color: context.ds.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
               border: Border.all(color: context.ds.border),
             ),
@@ -178,6 +171,15 @@ class _MatchActionBar extends StatelessWidget {
 }
 
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
+  static const _profile = UserProfile(
+    uid: 'demo-user',
+    declaredSkills: ['Flutter', 'Dart', 'Firebase'],
+    githubLanguages: {'Dart': 60, 'Python': 20, 'JavaScript': 10},
+    publicRepoCount: 12,
+    totalContributions: 340,
+    bio: 'Mobile developer interested in open source.',
+  );
+
   late final MatchingRepositoryImpl _repository;
   final GlobalKey<DraggableMatchCardState> _cardKey =
       GlobalKey<DraggableMatchCardState>();
@@ -200,7 +202,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   @override
   void initState() {
     super.initState();
-    // Wire data sources — swap mocks for real ones once Firebase lands.
     _repository = MatchingRepositoryImpl(
       remoteDataSource: MockMatchingRemoteDataSource(),
       localDataSource: InMemoryMatchingLocalDataSource(),
@@ -255,6 +256,13 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                     child: DraggableMatchCard(
                       key: _cardKey,
                       match: match,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.projectDetail,
+                        arguments: ProjectDetailsArguments(
+                          match: match,
+                          currentUserSkills: _profile.declaredSkills,
+                        ),
+                      ),
                       onAction: (action) => _handleAction(match, action),
                     ),
                   ),
@@ -312,7 +320,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       return;
     }
 
-    // TODO(Yousef): persist like / skip feedback in Firestore here.
     setState(() {
       _history.add(_MatchAction(index: _currentMatchIndex, action: action));
       _currentMatchIndex++;
@@ -331,16 +338,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     });
 
     try {
-      // TODO: Replace with the real user profile from Saga's profile feature.
-      const profile = UserProfile(
-        uid: 'demo-user',
-        declaredSkills: ['Flutter', 'Dart', 'Firebase'],
-        githubLanguages: {'Dart': 60, 'Python': 20, 'JavaScript': 10},
-        publicRepoCount: 12,
-        totalContributions: 340,
-        bio: 'Mobile developer interested in open source.',
-      );
-      final results = await _repository.getRankedMatches(profile);
+      final results = await _repository.getRankedMatches(_profile);
 
       if (!mounted) return;
       setState(() {
@@ -362,7 +360,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   void _showMatchInfo(MatchItem match) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.darkSurface,
+      backgroundColor: context.ds.surface,
       showDragHandle: true,
       builder: (sheetContext) => Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -424,7 +422,7 @@ class _RoundActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
-    final color = isPrimary ? AppColors.teal : AppColors.darkSurface;
+    final color = isPrimary ? AppColors.teal : context.ds.surface;
     final iconColor =
         foreground ?? (isPrimary ? AppColors.onTeal : context.ds.textPrimary);
 
