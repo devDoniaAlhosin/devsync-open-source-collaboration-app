@@ -12,6 +12,7 @@ abstract final class AppIcons {
   static const IconData chevronRight = LucideIcons.chevronRight;
   static const IconData close = LucideIcons.x;
   static const IconData home = LucideIcons.house;
+  static const IconData menu = LucideIcons.menu;
 
   // Auth
   static const IconData eye = LucideIcons.eye;
