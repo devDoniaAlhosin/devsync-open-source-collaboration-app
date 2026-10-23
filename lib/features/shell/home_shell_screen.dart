@@ -10,6 +10,7 @@ import '../../core/widgets/ds_icon_button.dart';
 import '../../core/widgets/ds_logo.dart';
 import '../../core/widgets/ds_section_header.dart';
 import '../auth/data/auth_service.dart';
+import '../matching/presentation/screens/match_feed_screen.dart';
 
 /// Bottom-nav shell with stub destinations for each feature area.
 class HomeShellScreen extends StatefulWidget {
@@ -41,7 +42,6 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dest = _destinations[_index];
     final ds = context.ds;
 
     return Scaffold(
@@ -64,34 +64,43 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DsSectionHeader(
-              title: dest.label,
-              subtitle: 'Stub — owned by ${dest.owner}',
-            ),
-            const SizedBox(height: AppSpacing.md),
-            DsCard(
-              onTap: () => Navigator.of(context).pushNamed(dest.route),
-              child: Row(
+      body: IndexedStack(
+        index: _index,
+        children: [
+          // Feed tab — real MatchFeedScreen (no AppBar; shell owns it)
+          const MatchFeedScreen(embedded: true),
+          // Remaining tabs — stub cards until their screens are ready
+          for (final d in _destinations.skip(1))
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.screenPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  DsIcon(dest.icon, color: AppColors.teal),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      'Open ${dest.label} screen stub',
-                      style: Theme.of(context).textTheme.titleMedium,
+                  DsSectionHeader(
+                    title: d.label,
+                    subtitle: 'Stub — owned by ${d.owner}',
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  DsCard(
+                    onTap: () => Navigator.of(context).pushNamed(d.route),
+                    child: Row(
+                      children: [
+                        DsIcon(d.icon, color: AppColors.teal),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            'Open ${d.label} screen stub',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        DsIcon(AppIcons.chevronRight, color: ds.textMuted),
+                      ],
                     ),
                   ),
-                  DsIcon(AppIcons.chevronRight, color: ds.textMuted),
                 ],
               ),
             ),
-          ],
-        ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,

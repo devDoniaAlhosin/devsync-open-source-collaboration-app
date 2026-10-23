@@ -1,4 +1,3 @@
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -15,14 +14,18 @@ import '../features/auth/verify_code_screen.dart';
 import '../features/auth/verify_email_screen.dart';
 import '../features/auth/welcome_screen.dart';
 import '../features/auth/widgets/auth_gate.dart';
+import '../features/matching/presentation/screens/match_feed_screen.dart';
+import '../features/matching/presentation/screens/project_details_screen.dart'
+    as matching_feature;
 import '../features/profile/profile_screen.dart';
 import '../features/projects/data/project_repository.dart';
 import '../features/projects/models/project_model.dart';
-import '../features/projects/screens/project_details_screen.dart';
+import '../features/projects/screens/project_details_screen.dart'
+    as projects_feature;
 import '../features/projects/screens/projects_shell.dart';
+import '../features/requests/presentation/requests_screen.dart';
 import '../features/shell/design_system_gallery_screen.dart';
 import '../features/shell/home_shell_screen.dart';
-import '../features/shell/stub_screen.dart';
 import 'app_routes.dart';
 
 /// Root app — **light theme is the default**.
@@ -128,29 +131,37 @@ class _DevSyncAppState extends State<DevSyncApp> {
         },
         AppRoutes.designSystem: (_) => const DesignSystemGalleryScreen(),
         AppRoutes.home: (_) => const HomeShellScreen(),
-        AppRoutes.feed: (_) => const StubScreen(
-          title: 'Match feed',
-          owner: 'Emad',
-          description: 'Ranked AI match feed with score meter and reason.',
-        ),
+        AppRoutes.feed: (_) => const MatchFeedScreen(),
         AppRoutes.projects: (_) => const ProjectsShell(),
-        AppRoutes.projectDetail: (context) {
-          final project = ModalRoute.of(context)?.settings.arguments;
-          if (project is! ProjectModel) {
-            return const StubScreen(
-              title: 'Project detail',
-              owner: 'Bishay',
-              description:
-                  'Open a project from Discover or My projects to view its details.',
-            );
-          }
-          return ProjectDetailsScreen(
-            project: project,
-            stats: ProjectRepository.statsFor(project.id),
-          );
-        },
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.requests: (_) => const RequestsScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name != AppRoutes.projectDetail) return null;
+        final arguments = settings.arguments;
+        if (arguments is matching_feature.ProjectDetailsArguments) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => matching_feature.ProjectDetailsScreen(
+              arguments: arguments,
+            ),
+          );
+        }
+        if (arguments is ProjectModel) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => projects_feature.ProjectDetailsScreen(
+              project: arguments,
+              stats: ProjectRepository.statsFor(arguments.id),
+            ),
+          );
+        }
+        return MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => const matching_feature.ProjectDetailsScreen(
+            arguments: null,
+          ),
+        );
       },
     );
   }
