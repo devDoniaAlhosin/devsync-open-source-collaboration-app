@@ -17,29 +17,17 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -52,11 +40,49 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBJissMN2F2q4ClKbjvqpoMnfzGAPOXxNg',
+    appId: '1:276979676513:web:1259aedd9cfcc12d800120',
+    messagingSenderId: '276979676513',
+    projectId: 'devsync-36ef3',
+    authDomain: 'devsync-36ef3.firebaseapp.com',
+    storageBucket: 'devsync-36ef3.firebasestorage.app',
+    measurementId: 'G-4YH3XHXE14',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyARha95BweOGHaoUbATE5QzsDz4JrPEVqQ',
     appId: '1:276979676513:android:0ca694066327475f800120',
     messagingSenderId: '276979676513',
     projectId: 'devsync-36ef3',
     storageBucket: 'devsync-36ef3.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyA8IkJdbAeLIslgzqy-2WeSBe6SmRjj5QE',
+    appId: '1:276979676513:ios:c977501a72268437800120',
+    messagingSenderId: '276979676513',
+    projectId: 'devsync-36ef3',
+    storageBucket: 'devsync-36ef3.firebasestorage.app',
+    iosBundleId: 'com.example.devsyncOpenSourceCollaborationApp',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyA8IkJdbAeLIslgzqy-2WeSBe6SmRjj5QE',
+    appId: '1:276979676513:ios:c977501a72268437800120',
+    messagingSenderId: '276979676513',
+    projectId: 'devsync-36ef3',
+    storageBucket: 'devsync-36ef3.firebasestorage.app',
+    iosBundleId: 'com.example.devsyncOpenSourceCollaborationApp',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBJissMN2F2q4ClKbjvqpoMnfzGAPOXxNg',
+    appId: '1:276979676513:web:189b77a19fa0bf47800120',
+    messagingSenderId: '276979676513',
+    projectId: 'devsync-36ef3',
+    authDomain: 'devsync-36ef3.firebaseapp.com',
+    storageBucket: 'devsync-36ef3.firebasestorage.app',
+    measurementId: 'G-SVQDKG8060',
   );
 }

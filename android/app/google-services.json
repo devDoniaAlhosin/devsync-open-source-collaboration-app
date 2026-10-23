@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "276979676513",
+    "project_id": "devsync-36ef3",
+    "storage_bucket": "devsync-36ef3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:276979676513:android:0ca694066327475f800120",
+        "android_client_info": {
+          "package_name": "com.example.devsync_open_source_collaboration_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARha95BweOGHaoUbATE5QzsDz4JrPEVqQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

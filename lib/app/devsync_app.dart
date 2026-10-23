@@ -1,3 +1,4 @@
+import 'package:devsync_open_source_collaboration_app/features/requests/presentation/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -21,10 +22,7 @@ import 'app_routes.dart';
 
 /// Root app — **light theme is the default**.
 class DevSyncApp extends StatefulWidget {
-  const DevSyncApp({
-    super.key,
-    this.showSplash = true,
-  });
+  const DevSyncApp({super.key, this.showSplash = true});
 
   /// Set `false` in widget tests to skip the open animation.
   final bool showSplash;
@@ -58,8 +56,9 @@ class _DevSyncAppState extends State<DevSyncApp> {
 
   void _toggleTheme() {
     setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+      _themeMode = _themeMode == ThemeMode.light
+          ? ThemeMode.dark
+          : ThemeMode.light;
       _syncSystemUi(_themeMode);
     });
   }
@@ -71,10 +70,12 @@ class _DevSyncAppState extends State<DevSyncApp> {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
         statusBarBrightness: dark ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor:
-            dark ? AppColors.darkBackground : AppColors.lightBackground,
-        systemNavigationBarIconBrightness:
-            dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: dark
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        systemNavigationBarIconBrightness: dark
+            ? Brightness.light
+            : Brightness.dark,
       ),
     );
   }
@@ -123,27 +124,21 @@ class _DevSyncAppState extends State<DevSyncApp> {
         AppRoutes.designSystem: (_) => const DesignSystemGalleryScreen(),
         AppRoutes.home: (_) => const HomeShellScreen(),
         AppRoutes.feed: (_) => const StubScreen(
-              title: 'Match feed',
-              owner: 'Emad',
-              description: 'Ranked AI match feed with score meter and reason.',
-            ),
-        AppRoutes.projects: (_) => const StubScreen(
-              title: 'Projects',
-              owner: 'Bishay',
-            ),
-        AppRoutes.projectDetail: (_) => const StubScreen(
-              title: 'Project detail',
-              owner: 'Bishay',
-            ),
+          title: 'Match feed',
+          owner: 'Emad',
+          description: 'Ranked AI match feed with score meter and reason.',
+        ),
+        AppRoutes.projects: (_) =>
+            const StubScreen(title: 'Projects', owner: 'Bishay'),
+        AppRoutes.projectDetail: (_) =>
+            const StubScreen(title: 'Project detail', owner: 'Bishay'),
         AppRoutes.profile: (_) => const StubScreen(
-              title: 'Profile',
-              owner: 'Saga',
-              description: 'Skills, bio, and GitHub activity.',
-            ),
-        AppRoutes.requests: (_) => const StubScreen(
-              title: 'Collaboration requests',
-              owner: 'Yousef',
-            ),
+          title: 'Profile',
+          owner: 'Saga',
+          description: 'Skills, bio, and GitHub activity.',
+        ),
+        AppRoutes.requests: (_) => const RequestsScreen(),
+        // const StubScreen(title: 'Collaboration requests', owner: 'Yousef'),
       },
     );
   }

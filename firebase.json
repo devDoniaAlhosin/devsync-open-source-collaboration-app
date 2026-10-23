@@ -1,4 +1,4 @@
-﻿{
+{
   "firestore": {
     "rules": "firestore.rules"
   },
@@ -15,7 +15,11 @@
         "lib/firebase_options.dart": {
           "projectId": "devsync-36ef3",
           "configurations": {
-            "android": "1:276979676513:android:0ca694066327475f800120"
+            "android": "1:276979676513:android:0ca694066327475f800120",
+            "ios": "1:276979676513:ios:c977501a72268437800120",
+            "macos": "1:276979676513:ios:c977501a72268437800120",
+            "web": "1:276979676513:web:1259aedd9cfcc12d800120",
+            "windows": "1:276979676513:web:189b77a19fa0bf47800120"
           }
         }
       }
