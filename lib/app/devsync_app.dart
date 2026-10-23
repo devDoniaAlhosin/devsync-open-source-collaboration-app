@@ -15,6 +15,7 @@ import '../features/auth/verify_code_screen.dart';
 import '../features/auth/verify_email_screen.dart';
 import '../features/auth/welcome_screen.dart';
 import '../features/auth/widgets/auth_gate.dart';
+import '../features/profile/profile_screen.dart';
 import '../features/projects/data/project_repository.dart';
 import '../features/projects/models/project_model.dart';
 import '../features/projects/screens/project_details_screen.dart';
@@ -148,13 +149,8 @@ class _DevSyncAppState extends State<DevSyncApp> {
             stats: ProjectRepository.statsFor(project.id),
           );
         },
-        AppRoutes.profile: (_) => const StubScreen(
-          title: 'Profile',
-          owner: 'Saga',
-          description: 'Skills, bio, and GitHub activity.',
-        ),
+        AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.requests: (_) => const RequestsScreen(),
-        // const StubScreen(title: 'Collaboration requests', owner: 'Yousef'),
       },
     );
   }
