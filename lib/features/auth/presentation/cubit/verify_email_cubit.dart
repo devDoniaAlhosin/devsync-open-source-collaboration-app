@@ -37,13 +37,19 @@ class VerifyEmailCubit extends Cubit<VerifyEmailState> {
     }
   }
 
-  Future<void> checkVerified() async {
+  Future<void> checkVerified({bool silent = false}) async {
     if (state is VerifyEmailChecking || state is VerifyEmailResending) return;
     emit(const VerifyEmailChecking());
     final result = await _reloadEmailVerification(const NoParams());
     switch (result) {
       case Success(:final data):
-        emit(data ? const VerifyEmailVerified() : const VerifyEmailNotYet());
+        if (data) {
+          emit(const VerifyEmailVerified());
+        } else if (silent) {
+          emit(const VerifyEmailInitial());
+        } else {
+          emit(const VerifyEmailNotYet());
+        }
       case FailureResult(:final failure):
         emit(VerifyEmailFailure(failure.message));
     }

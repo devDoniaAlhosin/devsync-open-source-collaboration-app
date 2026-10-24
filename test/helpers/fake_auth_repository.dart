@@ -6,13 +6,20 @@ class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({
     this.signInResult = const Success(null),
     this.registerResult = const Success(null),
+    this.deleteResult = const Success(null),
+    this.resetResult = const Success(null),
     Stream<AppUser?>? authState,
   }) : authState = authState ?? Stream<AppUser?>.value(null);
 
   Result<void> signInResult;
   Result<void> registerResult;
+  Result<void> deleteResult;
+  Result<void> resetResult;
   final Stream<AppUser?> authState;
   AppUser? user;
+  int signOutCalls = 0;
+  int deleteCalls = 0;
+  int resetCalls = 0;
 
   @override
   Stream<AppUser?> watchAuthState() => authState;
@@ -40,7 +47,22 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<void>> signInWithGitHub() async => signInResult;
 
   @override
-  Future<Result<void>> signOut() async => const Success(null);
+  Future<Result<void>> signOut() async {
+    signOutCalls++;
+    return const Success(null);
+  }
+
+  @override
+  Future<Result<void>> deleteAccount() async {
+    deleteCalls++;
+    return deleteResult;
+  }
+
+  @override
+  Future<Result<void>> sendPasswordResetEmail(String email) async {
+    resetCalls++;
+    return resetResult;
+  }
 
   @override
   Future<Result<void>> sendSignInLinkToEmail(String email) async =>

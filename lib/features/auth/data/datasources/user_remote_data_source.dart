@@ -30,4 +30,8 @@ class UserRemoteDataSource {
 
     await ref.set(model.toFirestore(isNew: false), SetOptions(merge: true));
   }
+
+  Future<void> deleteUserDoc(String uid) async {
+    await _users.doc(uid).delete();
+  }
 }

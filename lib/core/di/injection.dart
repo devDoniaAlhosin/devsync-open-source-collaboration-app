@@ -8,9 +8,11 @@ import '../../features/auth/data/datasources/user_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/complete_email_link_sign_in.dart';
+import '../../features/auth/domain/usecases/delete_account.dart';
 import '../../features/auth/domain/usecases/register_with_email.dart';
 import '../../features/auth/domain/usecases/reload_email_verification.dart';
 import '../../features/auth/domain/usecases/send_email_verification.dart';
+import '../../features/auth/domain/usecases/send_password_reset_email.dart';
 import '../../features/auth/domain/usecases/send_sign_in_link.dart';
 import '../../features/auth/domain/usecases/sign_in_with_email.dart';
 import '../../features/auth/domain/usecases/sign_in_with_github.dart';
@@ -19,6 +21,7 @@ import '../../features/auth/domain/usecases/sign_out.dart';
 import '../../features/auth/domain/usecases/watch_auth_state.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/auth/presentation/cubit/email_link_cubit.dart';
+import '../../features/auth/presentation/cubit/forgot_password_cubit.dart';
 import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/auth/presentation/cubit/register_cubit.dart';
 import '../../features/auth/presentation/cubit/verify_email_cubit.dart';
@@ -50,12 +53,18 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton(() => SignInWithGoogle(getIt()))
     ..registerLazySingleton(() => SignInWithGitHub(getIt()))
     ..registerLazySingleton(() => SignOut(getIt()))
+    ..registerLazySingleton(() => DeleteAccount(getIt()))
+    ..registerLazySingleton(() => SendPasswordResetEmail(getIt()))
     ..registerLazySingleton(() => SendSignInLink(getIt()))
     ..registerLazySingleton(() => CompleteEmailLinkSignIn(getIt()))
     ..registerLazySingleton(() => SendEmailVerification(getIt()))
     ..registerLazySingleton(() => ReloadEmailVerification(getIt()))
     ..registerLazySingleton(
-      () => AuthCubit(watchAuthState: getIt(), signOut: getIt()),
+      () => AuthCubit(
+        watchAuthState: getIt(),
+        signOut: getIt(),
+        deleteAccount: getIt(),
+      ),
     )
     ..registerFactory(
       () => LoginCubit(
@@ -70,6 +79,9 @@ Future<void> configureDependencies() async {
         signInWithGoogle: getIt(),
         signInWithGitHub: getIt(),
       ),
+    )
+    ..registerFactory(
+      () => ForgotPasswordCubit(sendPasswordResetEmail: getIt()),
     )
     ..registerFactory(
       () => EmailLinkCubit(
@@ -98,6 +110,8 @@ void registerAuthUseCasesAndCubits() {
       ..registerLazySingleton(() => SignInWithGoogle(getIt()))
       ..registerLazySingleton(() => SignInWithGitHub(getIt()))
       ..registerLazySingleton(() => SignOut(getIt()))
+      ..registerLazySingleton(() => DeleteAccount(getIt()))
+      ..registerLazySingleton(() => SendPasswordResetEmail(getIt()))
       ..registerLazySingleton(() => SendSignInLink(getIt()))
       ..registerLazySingleton(() => CompleteEmailLinkSignIn(getIt()))
       ..registerLazySingleton(() => SendEmailVerification(getIt()))
@@ -106,7 +120,11 @@ void registerAuthUseCasesAndCubits() {
 
   if (!getIt.isRegistered<AuthCubit>()) {
     getIt.registerLazySingleton(
-      () => AuthCubit(watchAuthState: getIt(), signOut: getIt()),
+      () => AuthCubit(
+        watchAuthState: getIt(),
+        signOut: getIt(),
+        deleteAccount: getIt(),
+      ),
     );
   }
   if (!getIt.isRegistered<LoginCubit>()) {
@@ -124,6 +142,9 @@ void registerAuthUseCasesAndCubits() {
           signInWithGoogle: getIt(),
           signInWithGitHub: getIt(),
         ),
+      )
+      ..registerFactory(
+        () => ForgotPasswordCubit(sendPasswordResetEmail: getIt()),
       )
       ..registerFactory(
         () => EmailLinkCubit(

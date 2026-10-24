@@ -77,8 +77,8 @@ class _DevSyncAppState extends State<DevSyncApp> {
     final platformDark =
         WidgetsBinding.instance.platformDispatcher.platformBrightness ==
         Brightness.dark;
-    final dark = mode == ThemeMode.dark ||
-        (mode == ThemeMode.system && platformDark);
+    final dark =
+        mode == ThemeMode.dark || (mode == ThemeMode.system && platformDark);
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,

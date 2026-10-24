@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,6 +34,15 @@ class EmailNotVerifiedException implements Exception {
   String toString() => 'Please verify your email before continuing';
 }
 
+/// Account only has Google (no password) — reset link will not help.
+class GoogleOnlyAccountException implements Exception {
+  const GoogleOnlyAccountException();
+
+  @override
+  String toString() =>
+      'This account uses Google. Continue with Google instead.';
+}
+
 /// Firebase Authentication + Firestore user bootstrap.
 class AuthRemoteDataSource {
   AuthRemoteDataSource({
@@ -51,7 +64,7 @@ class AuthRemoteDataSource {
 
   bool _googleReady = false;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> get authStateChanges => _auth.userChanges();
 
   User? get currentUser => _auth.currentUser;
 
@@ -150,6 +163,62 @@ class AuthRemoteDataSource {
     androidMinimumVersion: '21',
   );
 
+  /// Sends Firebase's hosted password-reset email.
+  ///
+  /// Looks up sign-in methods first via Identity Toolkit. Google-only accounts
+  /// get [GoogleOnlyAccountException] (needs Email enumeration protection off
+  /// in Firebase Console). Empty methods fall through to send (user missing
+  /// or protection still on).
+  ///
+  /// [user-not-found] is ignored so the UI never reveals whether the address
+  /// has an account.
+  Future<void> sendPasswordResetEmail(String email) async {
+    final trimmed = email.trim();
+    final methods = await _fetchSignInMethods(trimmed);
+    final hasPassword = methods.contains('password');
+    final hasGoogle = methods.contains('google.com');
+    if (hasGoogle && !hasPassword) {
+      throw const GoogleOnlyAccountException();
+    }
+    try {
+      await _auth.sendPasswordResetEmail(email: trimmed);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'user-not-found') return;
+      rethrow;
+    }
+  }
+
+  /// Uses Identity Toolkit `createAuthUri` (replaces removed
+  /// `fetchSignInMethodsForEmail` in firebase_auth 7).
+  Future<List<String>> _fetchSignInMethods(String email) async {
+    final apiKey = Firebase.app().options.apiKey;
+    if (apiKey.isEmpty) return const [];
+
+    final uri = Uri.https(
+      'identitytoolkit.googleapis.com',
+      '/v1/accounts:createAuthUri',
+      {'key': apiKey},
+    );
+    final client = HttpClient();
+    try {
+      final request = await client.postUrl(uri);
+      request.headers.contentType = ContentType.json;
+      request.write(
+        jsonEncode({'identifier': email, 'continueUri': 'https://localhost/'}),
+      );
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+      if (response.statusCode != 200) return const [];
+      final map = jsonDecode(body) as Map<String, dynamic>;
+      final methods = map['signinMethods'] as List<dynamic>?;
+      return methods?.map((e) => e.toString()).toList() ?? const [];
+    } catch (_) {
+      return const [];
+    } finally {
+      client.close(force: true);
+    }
+  }
+
   /// Sends a passwordless email-link sign-in message and remembers [email].
   Future<void> sendSignInLinkToEmail(String email) async {
     await _auth.sendSignInLinkToEmail(
@@ -245,6 +314,31 @@ class AuthRemoteDataSource {
     } catch (_) {
       // Ignore Google sign-out failures when Google was never used.
     }
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+    } catch (_) {
+      // User may already be gone after delete().
+    }
+  }
+
+  /// Removes `users/{uid}` and the Firebase Auth user, then clears the session.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'No signed-in user to delete',
+      );
+    }
+    try {
+      await _users.deleteUserDoc(user.uid);
+    } catch (_) {
+      // Still delete Auth so the session cannot stay open.
+    }
+    try {
+      await user.delete();
+    } finally {
+      await signOut();
+    }
   }
 }

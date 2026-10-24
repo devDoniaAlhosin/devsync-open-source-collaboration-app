@@ -35,26 +35,32 @@ class _DsIconButtonState extends State<DsIconButton> {
     final bg = widget.active ? AppColors.teal : palette.surface;
     final fg = widget.active ? AppColors.onTeal : palette.textPrimary;
     const radius = AppSpacing.radiusIcon;
+    final borderColor = widget.active
+        ? AppColors.teal
+        : _pressed
+            ? palette.accentText
+            : palette.border;
 
     final button = AnimatedScale(
       scale: _pressed ? AppAnimations.iconPressScale : 1,
       duration: AppAnimations.fast,
-      child: Material(
-        color: bg,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
+      curve: AppAnimations.emphasized,
+      child: AnimatedContainer(
+        duration: AppAnimations.fast,
+        curve: AppAnimations.emphasized,
+        width: AppSpacing.iconButton,
+        height: AppSpacing.iconButton,
+        decoration: BoxDecoration(
+          color: bg,
           borderRadius: BorderRadius.circular(radius),
-          side: widget.active
-              ? BorderSide.none
-              : BorderSide(color: palette.border),
+          border: Border.all(color: borderColor),
         ),
-        child: InkWell(
-          onTap: widget.onPressed,
-          onHighlightChanged: (v) => setState(() => _pressed = v),
-          borderRadius: BorderRadius.circular(radius),
-          child: SizedBox(
-            width: AppSpacing.iconButton,
-            height: AppSpacing.iconButton,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: widget.onPressed,
+            onHighlightChanged: (v) => setState(() => _pressed = v),
+            borderRadius: BorderRadius.circular(radius),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -69,7 +75,7 @@ class _DsIconButtonState extends State<DsIconButton> {
                       decoration: BoxDecoration(
                         color: AppColors.teal,
                         shape: BoxShape.circle,
-                        border: Border.all(color: palette.surface, width: 1.5),
+                        border: Border.all(color: bg, width: 1.5),
                       ),
                     ),
                   ),

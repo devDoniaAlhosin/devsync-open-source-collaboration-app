@@ -9,4 +9,6 @@ class WatchAuthState implements StreamUseCase<AppUser?, NoParams> {
 
   @override
   Stream<AppUser?> call(NoParams params) => _repository.watchAuthState();
+
+  AppUser? currentUser() => _repository.currentUser;
 }

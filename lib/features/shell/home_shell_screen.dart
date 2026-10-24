@@ -24,36 +24,47 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
   int _index = 0;
 
   static const _destinations = [
-    _Dest('Matches', 'For you', AppIcons.feed, AppRoutes.feed, 'Emad'),
     _Dest(
-      'Discover',
-      'Discover',
-      AppIcons.sparkle,
-      AppRoutes.discover,
-      'Bishay',
+      label: 'Matches',
+      title: 'Matches',
+      eyebrow: 'FOR YOU',
+      icon: AppIcons.feed,
+      route: AppRoutes.feed,
+      owner: 'Emad',
+    ),
+    _Dest(
+      label: 'Discover',
+      title: 'Discover',
+      eyebrow: 'EXPLORE',
+      icon: AppIcons.sparkle,
+      route: AppRoutes.discover,
+      owner: 'Bishay',
       prominent: true,
     ),
     _Dest(
-      'Projects',
-      'Projects',
-      AppIcons.projects,
-      AppRoutes.projects,
-      'Bishay',
+      label: 'Projects',
+      title: 'Projects',
+      eyebrow: 'YOURS',
+      icon: AppIcons.projects,
+      route: AppRoutes.projects,
+      owner: 'Bishay',
     ),
     _Dest(
-      'Requests',
-      'Requests',
-      AppIcons.inbox,
-      AppRoutes.requests,
-      'Yousef',
+      label: 'Requests',
+      title: 'Requests',
+      eyebrow: 'INBOX',
+      icon: AppIcons.inbox,
+      route: AppRoutes.requests,
+      owner: 'Yousef',
       showBadge: true,
     ),
     _Dest(
-      'Profile',
-      'Your profile',
-      AppIcons.profile,
-      AppRoutes.profile,
-      'Saga',
+      label: 'Profile',
+      title: 'Profile',
+      eyebrow: 'ACCOUNT',
+      icon: AppIcons.profile,
+      route: AppRoutes.profile,
+      owner: 'Saga',
     ),
   ];
 
@@ -70,6 +81,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       ),
       appBar: DsAppBar(
         title: dest.title,
+        eyebrow: dest.eyebrow,
         showMenu: true,
         onMenu: () => _scaffoldKey.currentState?.openDrawer(),
         onNotifications: () {
@@ -127,18 +139,20 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
 }
 
 class _Dest {
-  const _Dest(
-    this.label,
-    this.title,
-    this.icon,
-    this.route,
-    this.owner, {
+  const _Dest({
+    required this.label,
+    required this.title,
+    required this.eyebrow,
+    required this.icon,
+    required this.route,
+    required this.owner,
     this.prominent = false,
     this.showBadge = false,
   });
 
   final String label;
   final String title;
+  final String eyebrow;
   final IconData icon;
   final String route;
   final String owner;

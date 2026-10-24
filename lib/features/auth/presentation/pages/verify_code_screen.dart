@@ -91,17 +91,6 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       return;
     }
 
-    final from = _args['from'];
-    if (from == 'reset') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset verified (demo)')),
-      );
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
-      return;
-    }
-
     Navigator.of(
       context,
     ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
@@ -121,15 +110,12 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   @override
   Widget build(BuildContext context) {
     final email = (_args['email'] as String?) ?? 'you@devsync.app';
-    final from = _args['from'];
-    final backTo = from == 'reset'
-        ? AppRoutes.forgotPassword
-        : AppRoutes.codeSignIn;
 
     return AuthScaffold(
       title: 'Verify email',
       onThemeToggle: DevSyncApp.toggleTheme,
-      onBack: () => Navigator.of(context).pushReplacementNamed(backTo),
+      onBack: () =>
+          Navigator.of(context).pushReplacementNamed(AppRoutes.codeSignIn),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

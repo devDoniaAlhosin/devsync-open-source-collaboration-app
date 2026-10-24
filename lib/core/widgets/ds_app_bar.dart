@@ -10,7 +10,7 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
   const DsAppBar({
     super.key,
     required this.title,
-    this.eyebrow = 'DEVSYNC',
+    this.eyebrow,
     this.showBack,
     this.showMenu = false,
     this.onBack,
@@ -51,6 +51,9 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
     final canPop = Navigator.of(context).canPop();
     final leadBack = !showMenu && (showBack ?? canPop);
 
+    final hasEyebrow = eyebrow != null && eyebrow!.isNotEmpty;
+    final hasTitle = title.isNotEmpty;
+
     return Material(
       color: palette.background,
       child: SafeArea(
@@ -58,7 +61,11 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Container(
           height: _height,
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: palette.border)),
+            border: Border(
+              bottom: BorderSide(
+                color: palette.border.withValues(alpha: 0.85),
+              ),
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Row(
@@ -83,7 +90,7 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (eyebrow != null && eyebrow!.isNotEmpty)
+                    if (hasEyebrow)
                       Text(
                         eyebrow!.toUpperCase(),
                         maxLines: 1,
@@ -96,18 +103,20 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
                           letterSpacing: 1.3,
                         ),
                       ),
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.headlineMedium?.copyWith(
-                        color: palette.textPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                        height: 1.25,
-                        letterSpacing: -0.6,
+                    if (hasEyebrow && hasTitle) const SizedBox(height: 2),
+                    if (hasTitle)
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: palette.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                          height: 1.25,
+                          letterSpacing: -0.6,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

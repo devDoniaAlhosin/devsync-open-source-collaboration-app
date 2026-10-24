@@ -12,6 +12,11 @@ Failure mapAuthError(Object error) {
   if (error is EmailNotVerifiedException) {
     return EmailNotVerifiedFailure(email: error.email);
   }
+  if (error is GoogleOnlyAccountException) {
+    return const AuthFailure(
+      'This account uses Google. Continue with Google instead.',
+    );
+  }
   if (error is FirebaseAuthException) {
     switch (error.code) {
       case 'user-not-found':
@@ -30,6 +35,8 @@ Failure mapAuthError(Object error) {
           'Enter a valid email address',
           field: 'email',
         );
+      case 'requires-recent-login':
+        return const AuthFailure('Sign in again, then delete your account');
       case 'network-request-failed':
         return const NetworkFailure();
       case 'account-exists-with-different-credential':

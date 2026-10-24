@@ -7,6 +7,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
+import '../cubit/auth_cubit.dart';
 import '../cubit/verify_email_cubit.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/auth_scaffold.dart';
@@ -27,10 +28,40 @@ class VerifyEmailScreen extends StatelessWidget {
   }
 }
 
-class _VerifyEmailView extends StatelessWidget {
+class _VerifyEmailView extends StatefulWidget {
   const _VerifyEmailView({this.email});
 
   final String? email;
+
+  @override
+  State<_VerifyEmailView> createState() => _VerifyEmailViewState();
+}
+
+class _VerifyEmailViewState extends State<_VerifyEmailView>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<VerifyEmailCubit>().checkVerified(silent: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<VerifyEmailCubit>().checkVerified(silent: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +73,7 @@ class _VerifyEmailView extends StatelessWidget {
               const SnackBar(content: Text('Verification email sent')),
             );
           case VerifyEmailVerified():
+            getIt<AuthCubit>().refresh();
             navigateToHome(context);
           case VerifyEmailNotYet():
             ScaffoldMessenger.of(context).showSnackBar(
@@ -65,7 +97,7 @@ class _VerifyEmailView extends StatelessWidget {
       },
       builder: (context, state) {
         final cubit = context.read<VerifyEmailCubit>();
-        final displayEmail = email ?? cubit.currentEmail ?? 'your email';
+        final displayEmail = widget.email ?? cubit.currentEmail ?? 'your email';
         final loading = state is VerifyEmailChecking;
         final resending = state is VerifyEmailResending;
 

@@ -1105,6 +1105,7 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <p>All request and alert screens. On Match Feed he owns only like/skip, after Emad’s card is merged.</p>
 <div class="handoff-screens">
 <button class="ownership-link" data-go="feed" type="button">6. Match feed (drag cards) — like/skip only <i data-i="arrow"></i></button>
+<button class="ownership-link" data-go="liked" type="button">6b. Liked matches <i data-i="arrow"></i></button>
 <button class="ownership-link" data-go="requestSheet" type="button">11. Send request (sheet) <i data-i="arrow"></i></button>
 <button class="ownership-link" data-go="notifAsk" type="button">12. Notification permission <i data-i="arrow"></i></button>
 <button class="ownership-link" data-go="requests" type="button">13. Requests <i data-i="arrow"></i></button>
@@ -1121,7 +1122,7 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <li><strong>Saga:</strong> 5. Connect GitHub (step 2 of 3), 19. Profile, 20. Edit profile and skills (step 3 of 3), 29. Contribution insights</li>
 <li><strong>Bishay:</strong> 26. Discover projects, 17. My projects, 18. Add or edit project (live preview), 10. Project detail (seed data)</li>
 <li><strong>Emad:</strong> 6. Match feed (drag cards) card merged, plus 7–9 loading / fallback / empty</li>
-<li><strong>Yousef:</strong> like/skip on 6. Match feed after Emad; 11. Send request (sheet) and 13. Requests shape agreed</li>
+<li><strong>Yousef:</strong> like/skip on 6. Match feed after Emad; 6b. Liked matches; 11. Send request (sheet) and 13. Requests shape agreed</li>
 </ol>
 </article>
 </div>
@@ -1551,7 +1552,7 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <!-- 6 FEED -->
 <section class="screen" data-title="6. Match feed (drag cards)" id="feed"><figure><figcaption></figcaption><div class="phone has-nav" data-nav="feed" id="feedPhone">
 <div class="sb"></div>
-<header class="appbar"><span class="mk" data-mark=""></span><span class="at fade">Matches</span><span class="sp"></span><button aria-label="Alerts" class="ab" data-go="alerts"><i data-i="bell"></i><b class="bd"></b></button><button aria-label="Profile" class="av sm" data-go="profile">N</button></header>
+<header class="appbar"><span class="mk" data-mark=""></span><span class="at fade">Matches</span><span class="sp"></span><button aria-label="Liked matches" class="ab" data-go="liked"><i data-i="bookmark"></i></button><button aria-label="Alerts" class="ab" data-go="alerts"><i data-i="bell"></i><b class="bd"></b></button><button aria-label="Profile" class="av sm" data-go="profile">N</button></header>
 <div class="scroll">
 <div class="hello"><span class="muted small">Tuesday</span><h1 class="t2">Good morning, Nour</h1></div>
 <div class="fchips seg-chips" data-chips="one"><button aria-pressed="true" class="chip">For you</button><button aria-pressed="false" class="chip">Dart</button><button aria-pressed="false" class="chip">Firebase</button><button aria-pressed="false" class="chip">Beginner friendly</button><button aria-pressed="false" class="chip">Testing</button></div>
@@ -1590,10 +1591,20 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <header class="appbar"><span class="mk" data-mark=""></span><span class="sp"></span><button aria-label="Alerts" class="ab"><i data-i="bell"></i></button></header>
 <div class="scroll" style="justify-content:center"><div class="empty"><div class="art" data-mark="teal-svg"></div><h2 class="t2">No matches yet</h2><p class="muted">Add a few skills or connect GitHub and we'll find projects worth your time.</p><button class="btn p" data-go="profileEdit">Add skills</button><button class="btn g" data-go="connect"><i data-i="github"></i>Connect GitHub</button></div></div>
 </div></figure></section>
+<!-- 6b LIKED MATCHES · Yousef (like/skip destination) -->
+<section class="screen" data-title="6b. Liked matches" id="liked"><figure><figcaption></figcaption><div class="phone has-nav" data-nav="feed">
+<div class="sb"></div>
+<header class="appbar"><button aria-label="Back" class="ab" data-go="feed"><i data-i="back"></i></button><span class="at fade">Liked</span><span class="sp"></span><button aria-label="Alerts" class="ab" data-go="alerts"><i data-i="bell"></i></button></header>
+<div class="scroll">
+<div class="hello"><span class="muted small">Yousef · like/skip</span><h1 class="t2">Liked matches</h1><p class="muted">Heart on the feed saves here. Same feedback Emad uses to tune ranking — not a second Favorites product.</p></div>
+<div id="likedList" style="display:flex;flex-direction:column;gap:12px"></div>
+<div class="empty" hidden="" id="likedEmpty"><div class="art" data-mark="teal-svg"></div><h3 class="t3">No liked matches yet</h3><p class="muted">Like a card on Matches and it will show up here.</p><button class="btn p" data-go="feed">Back to Matches</button></div>
+</div>
+</div></figure></section>
 <!-- 10 DETAIL -->
 <section class="screen" data-title="10. Project detail" id="detail"><figure><figcaption></figcaption><div class="phone has-cta">
 <div class="sb"></div>
-<header class="appbar"><button aria-label="Back" class="ab" data-go="feed"><i data-i="back"></i></button><span class="at fade">flutter-oss/charts</span><span class="sp"></span><button aria-label="Save" class="ab" data-toggle=""><i data-i="bookmark"></i></button><button aria-label="Share" class="ab" data-toast="Link copied"><i data-i="share"></i></button></header>
+<header class="appbar"><button aria-label="Back" class="ab" data-go="feed"><i data-i="back"></i></button><span class="at fade">flutter-oss/charts</span><span class="sp"></span><button aria-label="Save" aria-pressed="true" class="ab on" data-like="flutter-oss/charts"><i data-i="bookmark"></i></button><button aria-label="Share" class="ab" data-toast="Link copied"><i data-i="share"></i></button></header>
 <div class="scroll">
 <div class="who"><div class="pa lg">FC</div><div><h1 class="t2" style="font-size:24px">flutter-oss/charts</h1><span class="muted small">by Karim A. · Updated 2 days ago</span></div></div>
 <div class="card"><div class="row" style="align-items:center"><div class="rg lg" style="flex:none"><svg class="ring" viewbox="0 0 112 112"><circle class="t" cx="56" cy="56" r="48"></circle><circle class="v" cx="56" cy="56" r="48" style="--p:.92"></circle></svg><b data-count="92" data-suf="%">92%</b></div><div><div class="t3">Strong fit</div><p class="muted small" style="margin-top:4px">You wrote 14 Dart repos and shipped Firebase auth in two projects.</p></div></div>
@@ -1897,7 +1908,7 @@ $$('.screen').forEach(function(s){
   {
     var ab=$('.appbar',s);
     if(ab){
-      var titles={intro:'Welcome',welcome:'Get started',login:'Sign in',register:'Create account',reset:'Recover account',codeRequest:'Sign in with code',verifyCode:'Verify email',newPassword:'New password',connect:'Connect GitHub',feed:'For you',feedLoad:'Finding matches',feedFallback:'Your matches',feedEmpty:'Your matches',detail:'Project details',requests:'Requests',projects:'Projects',profile:'Your profile',tasks:'Task board',taskCreate:'New task',aiStudio:'AI Studio',aiInsights:'AI analytics',insights:'Insights',community:'Community',discover:'Discover',settings:'Settings',alerts:'Notifications',conversation:'Team chat',hub:'Workspace'};
+      var titles={intro:'Welcome',welcome:'Get started',login:'Sign in',register:'Create account',reset:'Recover account',codeRequest:'Sign in with code',verifyCode:'Verify email',newPassword:'New password',connect:'Connect GitHub',feed:'For you',feedLoad:'Finding matches',feedFallback:'Your matches',feedEmpty:'Your matches',liked:'Liked',detail:'Project details',requests:'Requests',projects:'Projects',profile:'Your profile',tasks:'Task board',taskCreate:'New task',aiStudio:'AI Studio',aiInsights:'AI analytics',insights:'Insights',community:'Community',discover:'Discover',settings:'Settings',alerts:'Notifications',conversation:'Team chat',hub:'Workspace'};
       var label=titles[s.id] || (s.dataset.title||'DevSync').replace(/^\d+[a-z]?\.\s*/, '').replace(/\s*\([^)]*\)/g,'');
       var root=!!n && ['feed','feedLoad','feedFallback','feedEmpty','requests','projects','profile','discover','tasks','aiStudio','aiInsights','insights','community'].includes(s.id);
       var isAuth=['login','register','reset','codeRequest','verifyCode','newPassword','connect'].includes(s.id);
@@ -1915,6 +1926,8 @@ $$('.screen').forEach(function(s){
       name.innerHTML='<span class="topbar-eyebrow">'+eyebrow+'</span><strong class="topbar-heading">'+label+'</strong>';
       ab.appendChild(name);
       var actions=document.createElement('div');actions.className='topbar-actions';
+      if(s.id==='feed'){var likedBtn=document.createElement('button');likedBtn.className='topbar-action';likedBtn.setAttribute('data-go','liked');likedBtn.setAttribute('aria-label','Liked matches');likedBtn.innerHTML=ico('bookmark');actions.appendChild(likedBtn)}
+      if(s.id==='detail'){var save=document.createElement('button');save.className='topbar-action on';save.setAttribute('data-like','flutter-oss/charts');save.setAttribute('aria-label','Save');save.setAttribute('aria-pressed','true');save.innerHTML=ico('bookmark');actions.appendChild(save)}
       if(root && hasAlert){var bell=document.createElement('button');bell.className='topbar-action';bell.setAttribute('data-go','alerts');bell.setAttribute('aria-label','Notifications');bell.innerHTML=ico('bell')+'<i class="topbar-notification"></i>';actions.appendChild(bell)}
       if(s.id==='tasks'){var add=document.createElement('button');add.className='topbar-action topbar-action-primary';add.setAttribute('data-go','taskCreate');add.setAttribute('aria-label','Create task');add.innerHTML=ico('arrow');actions.appendChild(add)}
       if(s.id==='projects'){var add=document.createElement('button');add.className='topbar-action topbar-action-primary';add.setAttribute('data-go','addProject');add.setAttribute('aria-label','Add project');add.innerHTML=ico('arrow');actions.appendChild(add)}
@@ -1930,7 +1943,7 @@ $$('.screen').forEach(function(s){
     }
   }
   if(n){
-    ph.insertAdjacentHTML('beforeend','<div class="menu-scrim" data-menu-close></div><aside class="menu-panel" aria-label="App menu"><div class="menu-head"><span class="mk" data-mark></span><div><strong>DevSync</strong><small>Developer workspace</small></div><button class="menu-close" data-menu-close aria-label="Close menu">'+ico('x')+'</button></div><div class="menu-group">WORKSPACE</div>'+[['feed','heart','My matches'],['discover','sparkle','Discover projects'],['projects','folder','My projects'],['requests','inbox','Collaboration requests'],['tasks','check','Task board']].map(function(x){return '<button class="menu-link" data-go="'+x[0]+'">'+ico(x[1])+'<span>'+x[2]+'</span></button>'}).join('')+'<div class="menu-group">INTELLIGENCE & COMMUNITY</div>'+[['aiStudio','sparkle','AI Prompt Studio'],['aiInsights','chart','AI analytics'],['insights','chart','Contribution insights'],['community','user','Community'],['alerts','bell','Notifications']].map(function(x){return '<button class="menu-link" data-go="'+x[0]+'">'+ico(x[1])+'<span>'+x[2]+'</span></button>'}).join('')+'<div class="menu-group">ACCOUNT</div>'+[['profile','user','My profile'],['settings','shield','Settings']].map(function(x){return '<button class="menu-link" data-go="'+x[0]+'">'+ico(x[1])+'<span>'+x[2]+'</span></button>'}).join('')+'<div class="menu-foot"><b>Build with the right people</b><p>Explore matches, join a team and make your next contribution count.</p><button class="btn p sm" data-go="aiStudio">Try AI matching →</button></div></aside>');
+    ph.insertAdjacentHTML('beforeend','<div class="menu-scrim" data-menu-close></div><aside class="menu-panel" aria-label="App menu"><div class="menu-head"><span class="mk" data-mark></span><div><strong>DevSync</strong><small>Developer workspace</small></div><button class="menu-close" data-menu-close aria-label="Close menu">'+ico('x')+'</button></div><div class="menu-group">WORKSPACE</div>'+[['liked','heart','My matches'],['discover','sparkle','Discover projects'],['projects','folder','My projects'],['requests','inbox','Collaboration requests'],['tasks','check','Task board']].map(function(x){return '<button class="menu-link" data-go="'+x[0]+'">'+ico(x[1])+'<span>'+x[2]+'</span></button>'}).join('')+'<div class="menu-group">INTELLIGENCE & COMMUNITY</div>'+[['aiStudio','sparkle','AI Prompt Studio'],['aiInsights','chart','AI analytics'],['insights','chart','Contribution insights'],['community','user','Community'],['alerts','bell','Notifications']].map(function(x){return '<button class="menu-link" data-go="'+x[0]+'">'+ico(x[1])+'<span>'+x[2]+'</span></button>'}).join('')+'<div class="menu-group">ACCOUNT</div>'+[['profile','user','My profile'],['settings','shield','Settings']].map(function(x){return '<button class="menu-link" data-go="'+x[0]+'">'+ico(x[1])+'<span>'+x[2]+'</span></button>'}).join('')+'<div class="menu-foot"><b>Build with the right people</b><p>Explore matches, join a team and make your next contribution count.</p><button class="btn p sm" data-go="aiStudio">Try AI matching →</button></div></aside>');
   }
   $$('.scroll>*',s).forEach(function(e,i){if(!e.classList.contains('fab')){e.setAttribute('data-r','');e.style.setProperty('--i',i)}});
   var sc=$('.scroll',s);if(sc)sc.addEventListener('scroll',function(){ph.classList.toggle('scrolled',sc.scrollTop>10)});
@@ -2003,6 +2016,7 @@ document.addEventListener('click',function(e){
   var ey=t.closest('[data-eye]');if(ey){var i=$('input',ey.parentNode);i.type=i.type==='password'?'text':'password';return}
   var tg=t.closest('.tog');if(tg){tg.setAttribute('aria-pressed',tg.getAttribute('aria-pressed')!=='true');return}
   var dm=t.closest('[data-dismiss]');if(dm){var b=$(dm.dataset.dismiss);b.style.transition='all .3s';b.style.opacity=0;b.style.transform='translateX(40px)';setTimeout(function(){b.remove()},300);return}
+  var lk=t.closest('[data-like]');if(lk){var name=lk.dataset.like;var m=DATA.filter(function(x){return x.n===name})[0];if(!m)return;var on=toggleLike(m);lk.classList.toggle('on',on);lk.setAttribute('aria-pressed',on?'true':'false');toast(on?'Saved '+m.n:'Removed from liked',lk);return}
   var tb=t.closest('[data-toggle]');if(tb){tb.classList.toggle('on');return}
   var sg=t.closest('.seg2 button');if(sg){var g=sg.parentNode;$$('button',g).forEach(function(b){b.setAttribute('aria-pressed',b===sg)});segPos(g);
     if(g.id==='rqSeg'){$$('#rqList .rq').forEach(function(r){r.style.display=(sg.dataset.f==='all'||r.dataset.k===sg.dataset.f)?'':'none'})}
@@ -2053,13 +2067,17 @@ var DATA=[
 {n:'flutter-oss/charts',ini:'FC',w:'Needs a Dart contributor',s:92,why:'You wrote 14 Dart repos and shipped Firebase auth in two projects. They need animation and tests.',sig:[['Dart',94],['Firebase',88],['Activity',76]],tags:['Dart','Firebase','Animation']},
 {n:'nova-tools/cli',ini:'NT',w:'Looking for testers',s:81,why:'Your test coverage habits match their open tasks, and you already use their stack.',sig:[['Testing',90],['Python',74],['Activity',70]],tags:['Testing','Python','CLI']},
 {n:'pixel-kit/ui',ini:'PK',w:'Needs a design-minded dev',s:74,why:'Your Flutter animation work fits their component library, but they use React Native.',sig:[['Animation',86],['Design',72],['Activity',62]],tags:['Design','Animation','Mobile']}];
-var stack=$('#stack'),cards=[],done=[];
+var stack=$('#stack'),cards=[],done=[],liked=DATA.slice(0,1);
 function ring(s){return '<div class="rg"><svg class="ring" viewBox="0 0 60 60"><circle class="t" cx="30" cy="30" r="26"/><circle class="v" cx="30" cy="30" r="26" style="--p:'+s/100+'"/></svg><b data-count="'+s+'" data-suf="%">'+s+'%</b></div>'}
 function cardHTML(m){return '<div class="stamp k">MATCH</div><div class="stamp l">SKIP</div><div class="mc-h"><div class="pa">'+m.ini+'</div><div class="mc-t"><b>'+m.n+'</b><span>'+m.w+'</span></div>'+ring(m.s)+'</div><div class="why"><b>'+ico('sparkle')+'Why it fits</b>'+m.why+'</div><div class="sig">'+m.sig.map(function(x){return '<div class="sg"><span>'+x[0]+'</span><div class="fb"><i style="--w:'+x[1]+'%"></i></div><em>'+x[1]+'</em></div>'}).join('')+'</div><div class="chips">'+m.tags.map(function(t){return '<span class="chip">'+t+'</span>'}).join('')+'</div>'}
+function isLiked(m){return liked.some(function(x){return x.n===m.n})}
+function addLike(m){if(!m||isLiked(m))return false;liked.unshift(m);renderLiked();return true}
+function toggleLike(m){if(isLiked(m)){liked=liked.filter(function(x){return x.n!==m.n});renderLiked();return false}addLike(m);return true}
+function renderLiked(){var list=$('#likedList'),empty=$('#likedEmpty');if(!list)return;list.innerHTML=liked.map(function(m){return '<div class="card"><button type="button" class="mc-h" data-go="detail" style="width:100%;text-align:left;background:transparent;border:0;padding:0;color:inherit"><div class="pa">'+m.ini+'</div><div class="mc-t"><b>'+m.n+'</b><span>'+m.w+'</span></div>'+ring(m.s)+'</button><div class="chips">'+m.tags.map(function(t){return '<span class="chip">'+t+'</span>'}).join('')+'</div><div class="row"><button type="button" class="btn s sm" data-go="detail">View</button><button type="button" class="btn p sm" data-go="requestSheet">Request</button></div></div>'}).join('');if(empty)empty.hidden=liked.length>0}
 function layout(){cards.forEach(function(c,i){c.style.zIndex=10-i;c.style.transform=i>2?'translateY(36px) scale(.86)':'translateY('+(i*16)+'px) scale('+(1-i*.05)+')';c.style.opacity=i>2?0:(i?1-i*.12:1);c.style.pointerEvents=i?'none':'auto'});$('#feedPhone').classList.toggle('none',!cards.length)}
 function build(){stack.innerHTML='';cards=[];done=[];DATA.forEach(function(m){var d=document.createElement('div');d.className='mc';d.innerHTML=cardHTML(m);d._m=m;stack.appendChild(d);cards.push(d)});layout()}
 function stamps(c,dx){var p=Math.min(1,Math.abs(dx)/90);$('.stamp.k',c).style.opacity=dx>0?p:0;$('.stamp.l',c).style.opacity=dx<0?p:0}
-function fly(dir){var c=cards.shift();if(!c)return;c.classList.remove('drag');$('.stamp.'+(dir>0?'k':'l'),c).style.opacity=1;c.style.transform='translateX('+dir*520+'px) translateY(30px) rotate('+dir*24+'deg)';c.style.opacity=0;done.push(c);layout();toast(dir>0?'Saved '+c._m.n:'Skipped '+c._m.n,stack);setTimeout(function(){if(done.indexOf(c)>-1&&c.parentNode)c.remove()},450)}
+function fly(dir){var c=cards.shift();if(!c)return;c.classList.remove('drag');$('.stamp.'+(dir>0?'k':'l'),c).style.opacity=1;c.style.transform='translateX('+dir*520+'px) translateY(30px) rotate('+dir*24+'deg)';c.style.opacity=0;done.push(c);layout();if(dir>0)addLike(c._m);toast(dir>0?'Saved '+c._m.n:'Skipped '+c._m.n,stack);setTimeout(function(){if(done.indexOf(c)>-1&&c.parentNode)c.remove()},450)}
 $('#likeB').onclick=function(){fly(1)};$('#skipB').onclick=function(){fly(-1)};
 $('#undo').onclick=function(){var c=done.pop();if(!c)return toast('Nothing to undo',stack);stamps(c,0);stack.appendChild(c);void c.offsetWidth;cards.unshift(c);layout()};
 $('#reload').onclick=function(){stack.innerHTML='';build()};
@@ -2069,6 +2087,7 @@ stack.addEventListener('pointermove',function(e){if(!drag)return;drag.dx=e.clien
 function endDrag(){if(!drag)return;var d=drag;drag=null;d.c.classList.remove('drag');if(d.dx>110)fly(1);else if(d.dx<-110)fly(-1);else{stamps(d.c,0);layout();if(Math.abs(d.dx)<6)show('detail')}}
 stack.addEventListener('pointerup',endDrag);stack.addEventListener('pointercancel',endDrag);
 build();
+renderLiked();
 
 /* ---------- discover: searchable project directory ---------- */
 function renderDiscover(){

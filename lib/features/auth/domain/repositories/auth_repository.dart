@@ -23,6 +23,10 @@ abstract class AuthRepository {
 
   Future<Result<void>> signOut();
 
+  Future<Result<void>> deleteAccount();
+
+  Future<Result<void>> sendPasswordResetEmail(String email);
+
   Future<Result<void>> sendSignInLinkToEmail(String email);
 
   Future<Result<void>> completeSignInWithEmailLink(String link);
