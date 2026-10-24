@@ -6,6 +6,7 @@ abstract final class AppAnimations {
   static const Duration normal = Duration(milliseconds: 250);
   static const Duration slow = Duration(milliseconds: 400);
   static const Duration rise = Duration(milliseconds: 650);
+  static const Duration handoff = Duration(milliseconds: 780);
   static const Duration score = Duration(milliseconds: 1100);
   static const Duration page = Duration(milliseconds: 300);
 

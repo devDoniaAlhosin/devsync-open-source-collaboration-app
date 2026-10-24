@@ -11,6 +11,7 @@ abstract final class AppSpacing {
   static const double xxl = 24;
   static const double xxxl = 32;
 
+  static const double radiusIcon = 11;
   static const double radiusSm = 12;
   static const double radiusMd = 15;
   static const double radiusLg = 18;
@@ -24,7 +25,7 @@ abstract final class AppSpacing {
   static const double buttonHeight = 56;
   static const double buttonHeightSm = 48;
   static const double fieldHeight = 60;
-  static const double iconButton = 44;
+  static const double iconButton = 40;
   static const double avatar = 44;
   static const double avatarLg = 84;
   static const double navHeight = 68;

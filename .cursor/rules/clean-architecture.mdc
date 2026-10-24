@@ -1,0 +1,50 @@
+---
+description: DevSync Clean Architecture — shared by the whole team
+alwaysApply: true
+---
+
+# DevSync Clean Architecture
+
+This repo is a team project. Every feature (auth, profile, projects, matching, requests) must use the same architecture. Do not invent a second style.
+
+## Layers
+
+```text
+Presentation (pages, widgets, Cubit) → Domain (entities, use cases, contracts) → Data (impl, models, sources) → Firebase
+```
+
+Domain must not import Flutter UI, Cubit, GetIt, Firebase, or Data.
+
+## Shared vs feature-owned
+
+Promote to `lib/core/` when **another feature will use it**. Do not hide shared contracts inside auth.
+
+| Shared in `core/` | Stays in the feature |
+|---|---|
+| `Result<T>`, `Failure` and the standard failure types | Firebase / API mapping (`mapAuthError`) |
+| GetIt composition root, `UseCase`, `FirestoreCollections` | Entities, use cases, Cubits, pages |
+| `Ds*` widgets, theme, icons | Feature widgets (`AuthScaffold`) |
+
+## Errors (normalized)
+
+All repositories return `Result<T>` from `lib/core/result/result.dart`.
+
+Map errors at the repository boundary to types in `lib/core/error/failures.dart`:
+
+- `NetworkFailure`
+- `NotFoundFailure`
+- `PermissionFailure`
+- `ValidationFailure`
+- `AuthFailure` (session / credentials — any feature)
+- `CancelledFailure` (user dismissed Google/GitHub)
+- `UnexpectedFailure` (never pass raw exception text to the UI)
+
+Add a **feature-only** `Failure` subclass (example: `EmailNotVerifiedFailure`) only when no other feature will need that type.
+
+Do not add dartz. Do not throw `FirebaseAuthException` into Cubits or widgets.
+
+## State
+
+Cubit first (`flutter_bloc`). GetIt for DI. Pages render states; they do not call Firebase.
+
+Copy `lib/features/auth/` when a feature talks to Firestore. Skip Domain/Data for tiny local-only UI.

@@ -59,18 +59,23 @@ class DsSegmentedControl extends StatelessWidget {
                         child: Container(
                           alignment: Alignment.center,
                           constraints: const BoxConstraints(minHeight: 44),
-                          child: Text(
-                            labels[i],
+                          child: AnimatedDefaultTextStyle(
+                            duration: AppAnimations.slow,
+                            curve: AppAnimations.emphasized,
                             style: Theme.of(context)
                                 .textTheme
-                                .labelLarge
-                                ?.copyWith(
+                                .labelLarge!
+                                .copyWith(
                                   color: i == index
                                       ? AppColors.onTeal
                                       : ds.textMuted,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
+                            child: Text(
+                              labels[i],
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
                       ),

@@ -2,5 +2,5 @@
 <resources>
     <color name="ic_launcher_background">#0E2624</color>
     <!-- Mid-tone of splash gradient (Android 12+ windowSplashScreenBackground) -->
-    <color name="splash_background">#C5E6DE</color>
+    <color name="splash_background">#0E2624</color>
 </resources>

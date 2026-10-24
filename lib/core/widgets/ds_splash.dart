@@ -8,20 +8,25 @@ import '../theme/app_colors.dart';
 import 'ds_merge_mark.dart';
 import 'ds_wordmark.dart';
 
-/// Launch splash: merge mark draws until connected, then hands off to Welcome.
+/// Launch splash: merge mark draws, then hands off into the first page.
 class DsSplash extends StatefulWidget {
   const DsSplash({
     super.key,
     this.message,
     this.showWordmark = true,
+    this.onReveal,
     this.onFinished,
-    /// Extra beat after the merge finishes before fading out.
-    this.holdAfterMerge = const Duration(milliseconds: 550),
+    this.holdAfterMerge = const Duration(milliseconds: 420),
   });
 
   final String? message;
   final bool showWordmark;
+
+  /// App content can mount underneath before this layer fades.
+  final VoidCallback? onReveal;
   final VoidCallback? onFinished;
+
+  /// Extra beat after the merge finishes before the handoff.
   final Duration holdAfterMerge;
 
   @override
@@ -29,9 +34,9 @@ class DsSplash extends StatefulWidget {
 }
 
 class _DsSplashState extends State<DsSplash> with TickerProviderStateMixin {
-  late final AnimationController _fade;
   late final AnimationController _ambient;
   late final AnimationController _copy;
+  late final AnimationController _handoff;
   bool _finished = false;
 
   @override
@@ -47,11 +52,6 @@ class _DsSplashState extends State<DsSplash> with TickerProviderStateMixin {
       ),
     );
 
-    _fade = AnimationController(
-      vsync: this,
-      duration: AppAnimations.slow,
-      value: 1,
-    );
     _ambient = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -59,6 +59,10 @@ class _DsSplashState extends State<DsSplash> with TickerProviderStateMixin {
     _copy = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
+    );
+    _handoff = AnimationController(
+      vsync: this,
+      duration: AppAnimations.handoff,
     );
 
     Future<void>.delayed(const Duration(milliseconds: 420), () {
@@ -68,19 +72,19 @@ class _DsSplashState extends State<DsSplash> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _fade.dispose();
     _ambient.dispose();
     _copy.dispose();
+    _handoff.dispose();
     super.dispose();
   }
 
-  /// Called when the two branches finish connecting into one node.
   Future<void> _onMergeConnected() async {
     if (_finished || !mounted) return;
     await Future<void>.delayed(widget.holdAfterMerge);
     if (!mounted || _finished) return;
     _finished = true;
-    await _fade.reverse();
+    widget.onReveal?.call();
+    await _handoff.forward();
     if (!mounted) return;
     widget.onFinished?.call();
   }
@@ -88,50 +92,62 @@ class _DsSplashState extends State<DsSplash> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final veil = CurvedAnimation(
+      parent: _handoff,
+      curve: const Interval(0, 0.75, curve: AppAnimations.emphasized),
+    );
+    final markFade = CurvedAnimation(
+      parent: _handoff,
+      curve: const Interval(0.45, 1, curve: AppAnimations.emphasized),
+    );
+    final markScale = Tween<double>(begin: 1, end: 0.84).animate(
+      CurvedAnimation(parent: _handoff, curve: AppAnimations.emphasized),
+    );
 
-    return FadeTransition(
-      opacity: _fade,
-      child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: AppColors.forest,
-          systemNavigationBarIconBrightness: Brightness.light,
-        ),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0A1F1D),
-                AppColors.forest,
-                Color(0xFF123F3A),
-                Color(0xFF0E2624),
-              ],
-              stops: [0.0, 0.35, 0.72, 1.0],
-            ),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              AnimatedBuilder(
-                animation: _ambient,
-                builder: (context, _) => CustomPaint(
-                  painter: _SplashAmbientPainter(t: _ambient.value),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: AppColors.forest,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: IgnorePointer(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            FadeTransition(
+              opacity: Tween<double>(begin: 1, end: 0).animate(veil),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: AppColors.launchGradient,
+                ),
+                child: AnimatedBuilder(
+                  animation: _ambient,
+                  builder: (context, _) => CustomPaint(
+                    painter: _SplashAmbientPainter(t: _ambient.value),
+                  ),
                 ),
               ),
-              SafeArea(
-                child: Column(
-                  children: [
-                    const Spacer(flex: 3),
-                    DsMergeMark(
-                      size: 148,
-                      onCompleted: _onMergeConnected,
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  const Spacer(flex: 3),
+                  FadeTransition(
+                    opacity: Tween<double>(begin: 1, end: 0).animate(markFade),
+                    child: ScaleTransition(
+                      scale: markScale,
+                      child: DsMergeMark(
+                        size: 148,
+                        onCompleted: _onMergeConnected,
+                      ),
                     ),
-                    if (widget.showWordmark) ...[
-                      const SizedBox(height: 32),
-                      FadeTransition(
+                  ),
+                  if (widget.showWordmark) ...[
+                    const SizedBox(height: 32),
+                    FadeTransition(
+                      opacity: Tween<double>(begin: 1, end: 0).animate(veil),
+                      child: FadeTransition(
                         opacity: CurvedAnimation(
                           parent: _copy,
                           curve: const Interval(
@@ -161,9 +177,12 @@ class _DsSplashState extends State<DsSplash> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 14),
-                    FadeTransition(
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  FadeTransition(
+                    opacity: Tween<double>(begin: 1, end: 0).animate(veil),
+                    child: FadeTransition(
                       opacity: CurvedAnimation(
                         parent: _copy,
                         curve: const Interval(
@@ -182,19 +201,18 @@ class _DsSplashState extends State<DsSplash> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const Spacer(flex: 3),
-                  ],
-                ),
+                  ),
+                  const Spacer(flex: 3),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Soft drifting orbs + subtle haze behind the mark.
 class _SplashAmbientPainter extends CustomPainter {
   _SplashAmbientPainter({required this.t});
 

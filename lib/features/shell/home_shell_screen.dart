@@ -4,12 +4,12 @@ import '../../app/app_routes.dart';
 import '../../core/icons/app_icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/ds_app_bar.dart';
+import '../../core/widgets/ds_bottom_nav.dart';
 import '../../core/widgets/ds_card.dart';
 import '../../core/widgets/ds_icon.dart';
-import '../../core/widgets/ds_icon_button.dart';
-import '../../core/widgets/ds_logo.dart';
 import '../../core/widgets/ds_section_header.dart';
-import '../auth/data/auth_service.dart';
+import 'app_drawer.dart';
 
 /// Bottom-nav shell with stub destinations for each feature area.
 class HomeShellScreen extends StatefulWidget {
@@ -20,49 +20,65 @@ class HomeShellScreen extends StatefulWidget {
 }
 
 class _HomeShellScreenState extends State<HomeShellScreen> {
-  final _auth = AuthService();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _index = 0;
 
   static const _destinations = [
-    _Dest('Feed', AppIcons.feed, AppRoutes.feed, 'Emad'),
-    _Dest('Projects', AppIcons.projects, AppRoutes.projects, 'Bishay'),
-    _Dest('Requests', AppIcons.requests, AppRoutes.requests, 'Yousef'),
-    _Dest('Profile', AppIcons.profile, AppRoutes.profile, 'Saga'),
+    _Dest('Matches', 'For you', AppIcons.feed, AppRoutes.feed, 'Emad'),
+    _Dest(
+      'Discover',
+      'Discover',
+      AppIcons.sparkle,
+      AppRoutes.discover,
+      'Bishay',
+      prominent: true,
+    ),
+    _Dest(
+      'Projects',
+      'Projects',
+      AppIcons.projects,
+      AppRoutes.projects,
+      'Bishay',
+    ),
+    _Dest(
+      'Requests',
+      'Requests',
+      AppIcons.inbox,
+      AppRoutes.requests,
+      'Yousef',
+      showBadge: true,
+    ),
+    _Dest(
+      'Profile',
+      'Your profile',
+      AppIcons.profile,
+      AppRoutes.profile,
+      'Saga',
+    ),
   ];
-
-  Future<void> _signOut() async {
-    await _auth.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.intro,
-      (route) => false,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     final dest = _destinations[_index];
     final ds = context.ds;
+    final isProfile = _index == 4;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const DsLogo(height: 28),
-        actions: [
-          DsIconButton(
-            icon: AppIcons.designSystem,
-            tooltip: 'Design system',
-            onPressed: () =>
-                Navigator.of(context).pushNamed(AppRoutes.designSystem),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: DsIconButton(
-              icon: AppIcons.signOut,
-              tooltip: 'Sign out',
-              onPressed: _signOut,
-            ),
-          ),
-        ],
+      key: _scaffoldKey,
+      drawer: AppDrawer(
+        onSelectTab: (i) => setState(() => _index = i),
+      ),
+      appBar: DsAppBar(
+        title: dest.title,
+        showMenu: true,
+        onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+        onNotifications: () {
+          Navigator.of(context).pushNamed(AppRoutes.notifications);
+        },
+        notificationBadge: true,
+        onSettings: isProfile
+            ? () => Navigator.of(context).pushNamed(AppRoutes.settings)
+            : null,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -82,7 +98,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
-                      'Open ${dest.label} screen stub',
+                      'Open ${dest.title} screen stub',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
@@ -93,17 +109,16 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        backgroundColor: ds.background,
-        indicatorColor: AppColors.teal,
-        destinations: [
+      bottomNavigationBar: DsBottomNav(
+        index: _index,
+        onChanged: (i) => setState(() => _index = i),
+        items: [
           for (final d in _destinations)
-            NavigationDestination(
-              icon: DsIcon(d.icon, color: ds.textMuted),
-              selectedIcon: DsIcon(d.icon, color: AppColors.onTeal),
+            DsBottomNavItem(
+              icon: d.icon,
               label: d.label,
+              prominent: d.prominent,
+              showBadge: d.showBadge,
             ),
         ],
       ),
@@ -112,10 +127,21 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
 }
 
 class _Dest {
-  const _Dest(this.label, this.icon, this.route, this.owner);
+  const _Dest(
+    this.label,
+    this.title,
+    this.icon,
+    this.route,
+    this.owner, {
+    this.prominent = false,
+    this.showBadge = false,
+  });
 
   final String label;
+  final String title;
   final IconData icon;
   final String route;
   final String owner;
+  final bool prominent;
+  final bool showBadge;
 }

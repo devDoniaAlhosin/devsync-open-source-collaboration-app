@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 abstract final class AppIcons {
   // Navigation
   static const IconData back = LucideIcons.chevronLeft;
+  static const IconData menu = LucideIcons.menu;
   static const IconData forward = LucideIcons.arrowRight;
   static const IconData chevronRight = LucideIcons.chevronRight;
   static const IconData close = LucideIcons.x;
@@ -25,13 +26,16 @@ abstract final class AppIcons {
 
   // Primary nav / features
   static const IconData feed = LucideIcons.sparkles;
+  static const IconData heart = LucideIcons.heart;
   static const IconData projects = LucideIcons.folder;
   static const IconData requests = LucideIcons.handshake;
   static const IconData profile = LucideIcons.user;
   static const IconData tasks = LucideIcons.squareKanban;
   static const IconData notifications = LucideIcons.bell;
-  static const IconData settings = LucideIcons.settings2;
-  static const IconData designSystem = LucideIcons.palette;
+  static const IconData settings = LucideIcons.settings;
+  static const IconData users = LucideIcons.users;
+  static const IconData zap = LucideIcons.zap;
+  static const IconData chart = LucideIcons.chartNoAxesColumnIncreasing;
 
   // Match / AI
   static const IconData sparkle = LucideIcons.sparkles;

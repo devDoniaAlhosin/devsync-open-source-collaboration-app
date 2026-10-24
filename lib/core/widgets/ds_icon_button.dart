@@ -5,7 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'ds_icon.dart';
 
-/// App-bar icon control (prototype `.ab`).
+/// App-bar icon control: [DevSyncPalette.surface] + [DevSyncPalette.border].
 class DsIconButton extends StatefulWidget {
   const DsIconButton({
     super.key,
@@ -34,14 +34,16 @@ class _DsIconButtonState extends State<DsIconButton> {
     final palette = DevSyncPalette.of(context);
     final bg = widget.active ? AppColors.teal : palette.surface;
     final fg = widget.active ? AppColors.onTeal : palette.textPrimary;
+    const radius = AppSpacing.radiusIcon;
 
     final button = AnimatedScale(
       scale: _pressed ? AppAnimations.iconPressScale : 1,
       duration: AppAnimations.fast,
       child: Material(
         color: bg,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderRadius: BorderRadius.circular(radius),
           side: widget.active
               ? BorderSide.none
               : BorderSide(color: palette.border),
@@ -49,25 +51,25 @@ class _DsIconButtonState extends State<DsIconButton> {
         child: InkWell(
           onTap: widget.onPressed,
           onHighlightChanged: (v) => setState(() => _pressed = v),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderRadius: BorderRadius.circular(radius),
           child: SizedBox(
             width: AppSpacing.iconButton,
             height: AppSpacing.iconButton,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                DsIcon(widget.icon, color: fg, size: 22),
+                DsIcon(widget.icon, color: fg, size: 19),
                 if (widget.showBadge)
                   Positioned(
-                    top: 9,
-                    right: 10,
+                    top: 8,
+                    right: 9,
                     child: Container(
-                      width: 10,
-                      height: 10,
+                      width: 7,
+                      height: 7,
                       decoration: BoxDecoration(
                         color: AppColors.teal,
                         shape: BoxShape.circle,
-                        border: Border.all(color: palette.surface, width: 2.5),
+                        border: Border.all(color: palette.surface, width: 1.5),
                       ),
                     ),
                   ),

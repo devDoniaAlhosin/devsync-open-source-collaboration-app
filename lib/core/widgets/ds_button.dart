@@ -15,6 +15,7 @@ class DsButton extends StatefulWidget {
     this.onPressed,
     this.variant = DsButtonVariant.primary,
     this.icon,
+    this.leading,
     this.expanded = true,
     this.isLoading = false,
     this.compact = false,
@@ -24,6 +25,7 @@ class DsButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final DsButtonVariant variant;
   final IconData? icon;
+  final Widget? leading;
   final bool expanded;
   final bool isLoading;
   final bool compact;
@@ -84,7 +86,10 @@ class _DsButtonState extends State<DsButton> {
                       ),
                     )
                   else ...[
-                    if (widget.icon != null) ...[
+                    if (widget.leading != null) ...[
+                      widget.leading!,
+                      const SizedBox(width: AppSpacing.sm),
+                    ] else if (widget.icon != null) ...[
                       DsIcon(widget.icon!, size: 20, color: colors.foreground),
                       const SizedBox(width: AppSpacing.sm),
                     ],

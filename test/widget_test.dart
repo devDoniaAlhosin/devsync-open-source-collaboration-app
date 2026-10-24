@@ -1,8 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:devsync_open_source_collaboration_app/app/devsync_app.dart';
+import 'package:devsync_open_source_collaboration_app/core/di/injection.dart';
+
+import 'helpers/test_dependencies.dart';
 
 void main() {
+  setUp(() async {
+    await configureTestDependencies();
+  });
+
+  tearDown(() async {
+    await getIt.reset();
+  });
+
   testWidgets('Welcome opens after splash gate', (tester) async {
     await tester.pumpWidget(const DevSyncApp(showSplash: false));
     await tester.pump();

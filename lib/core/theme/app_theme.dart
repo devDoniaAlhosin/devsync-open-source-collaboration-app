@@ -8,7 +8,7 @@ import 'app_typography.dart';
 /// Shared [ThemeData]. **Light is the default** app theme.
 abstract final class AppTheme {
   /// Splash / loading window colors (native + Flutter first frame).
-  static const Color splashBackground = Color(0xFFC5E6DE);
+  static const Color splashBackground = AppColors.forest;
   static const Color splashIconBackground = AppColors.forest;
 
   static ThemeData light() {

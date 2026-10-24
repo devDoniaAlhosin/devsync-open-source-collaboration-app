@@ -11,6 +11,7 @@ class DsInfoRow extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
+    this.trailing,
     this.onTap,
     this.showDivider = false,
   });
@@ -18,6 +19,7 @@ class DsInfoRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
+  final Widget? trailing;
   final VoidCallback? onTap;
   final bool showDivider;
 
@@ -38,12 +40,11 @@ class DsInfoRow extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: ds.surfaceAlt,
+                    color: ds.background,
                     borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: ds.border),
                   ),
                   alignment: Alignment.center,
-                  child: DsIcon(icon, color: AppColors.teal, size: 20),
+                  child: DsIcon(icon, color: ds.accentText, size: 20),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -68,6 +69,10 @@ class DsInfoRow extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (trailing != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  trailing!,
+                ],
               ],
             ),
           ),

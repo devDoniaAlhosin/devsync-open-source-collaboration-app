@@ -40,6 +40,19 @@ abstract final class AppColors {
   static const Color onMint = Color(0xFF2C5C56);
   static const Color onProTeal = Color(0xFF14423D);
   static const Color success = teal;
+
+  /// Launch / Welcome open screen (matches [DsSplash]).
+  static const LinearGradient launchGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0A1F1D),
+      forest,
+      Color(0xFF123F3A),
+      Color(0xFF0E2624),
+    ],
+    stops: [0.0, 0.35, 0.72, 1.0],
+  );
 }
 
 /// Brightness-aware UI colors. Prefer `context.ds` / [DevSyncPalette.of].
@@ -136,7 +149,18 @@ class DevSyncPalette extends ThemeExtension<DevSyncPalette> {
   @override
   DevSyncPalette lerp(ThemeExtension<DevSyncPalette>? other, double t) {
     if (other is! DevSyncPalette) return this;
-    return t < 0.5 ? this : other;
+    return DevSyncPalette(
+      background: Color.lerp(background, other.background, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceAlt: Color.lerp(surfaceAlt, other.surfaceAlt, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
+      accentText: Color.lerp(accentText, other.accentText, t)!,
+      danger: Color.lerp(danger, other.danger, t)!,
+      canvas: Color.lerp(canvas, other.canvas, t)!,
+      isDark: t < 0.5 ? isDark : other.isDark,
+    );
   }
 }
 

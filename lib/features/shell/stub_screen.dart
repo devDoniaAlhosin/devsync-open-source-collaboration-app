@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_routes.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/widgets/ds_app_bar.dart';
 import '../../core/widgets/ds_empty_state.dart';
 
 /// Temporary screen until the feature owner lands real UI.
@@ -19,11 +21,19 @@ class StubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: DsAppBar(
+        title: title,
+        eyebrow: 'WORKSPACE',
+        onNotifications: () {
+          Navigator.of(context).pushNamed(AppRoutes.notifications);
+        },
+        notificationBadge: true,
+      ),
       body: DsEmptyState(
         icon: AppIcons.construction,
         title: '$title (stub)',
-        message: description ??
+        message:
+            description ??
             'Owned by $owner. Replace this stub with the real screen.',
         actionLabel: 'Back',
         onAction: () {

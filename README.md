@@ -20,23 +20,24 @@
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Android"/>
 </p>
 
-DevSync is a Flutter graduation project that helps developers discover open-source projects matching their skills, interests, and GitHub activity — and helps maintainers find relevant collaborators.
+DevSync helps a developer find an open-source project that actually fits them, and helps a maintainer find a contributor who can help — then they connect inside the app. The story below is the overall scenario.
 
 | | |
 |---|---|
 | **Project** | DevSync: Secure AI Project Collaborator |
-| **Type** | Flutter graduation project |
+| **Type** | Flutter graduation project · team of 5 |
 | **Timeline** | 16 October 2026 – 30 November 2026 |
-| **Primary platform** | Android (Free and Pro flavors) |
+| **Primary platform** | Android (Free and Pro flavors planned) |
+| **Backend** | Firebase Auth + Firestore (FCM, Cloud Functions, Gemini matching planned) |
 | **Methodology** | Agile Scrum (Jira + GitHub pull requests) |
 
-> **Current repository status:** Design system, global Lucide icons, brand assets, and auth layouts (Welcome / Login / Register) are in the app. Firebase and product backends are still planned. See [§14 Built so far](#14-built-so-far-for-the-team).
+> **Built now:** design system, Lucide icons, brand assets, auth screens, Firebase Auth, and `users/{uid}` identity. **Not built:** Profile, Projects, Match Feed, like/skip, Requests, FCM, Cloud Functions, live Gemini. See [§14 Built so far](#14-built-so-far-for-the-team). Screen-by-screen flow: [docs/APP_FLOW.md](docs/APP_FLOW.md).
 
 ---
 
 ## Table of contents
 
-1. [Overview and problem statement](#1-overview-and-problem-statement)
+1. [Overview and overall scenario](#1-overview-and-overall-scenario)
 2. [Project objectives](#2-project-objectives)
 3. [Core features](#3-core-features)
 4. [Technology stack](#4-technology-stack)
@@ -53,23 +54,31 @@ DevSync is a Flutter graduation project that helps developers discover open-sour
 
 ---
 
-## 1. Overview and problem statement
+## 1. Overview and overall scenario
+
+Nour wants to contribute to open source. She does not know which repo actually needs Dart and Flutter animation. Karim maintains `flutter-oss/charts` and needs those skills. They never meet on GitHub search. DevSync is the story of how they find each other.
+
+**Karim (maintainer)** opens DevSync, signs in, and adds his project: title, short description, GitHub link, and skills needed (Dart, Firebase, Animation). The project is now something the app can match on. DevSync does not host the code; it only links to GitHub.
+
+**Nour (contributor)** opens the same app, creates an account, connects GitHub (sample data is enough at first), and taps her skills. The feed then compares **her skills and public GitHub activity** with **Karim’s needed skills**. She sees a card: project name, a fit score, a one-line reason (*“You shipped Dart and Firebase.”*), and the overlapping skills. If scoring is slow or she is offline, the app still ranks by skill overlap. If she has no skills yet, the feed is empty until she adds them.
+
+She can **skip** a card that is a poor fit, **like** one that looks right, or open **project detail**. On Karim’s project she writes a short note and **requests to collaborate** (one request per project). Karim sees it, reads her profile and message, and **accepts** or **declines**. If he accepts, they are **connected**. They then work on GitHub — not in an in-app chat (chat is out of scope).
+
+The same signed-in person can be both contributor and maintainer.
+
+```text
+Sign in → Profile (skills + GitHub) → Projects exist
+       → Match feed (score + reason) → Like / skip or open detail
+       → Request to join → Maintainer accepts → Connected
+```
 
 ### Problem
 
-Developers who want to contribute to open source often struggle to find projects that fit their skills and experience. Maintainers face the opposite challenge: finding contributors who are a genuine match. Existing discovery tools mostly filter by topic, language, or labels — not by a person’s real GitHub activity — and rarely provide a scored fit explanation or a built-in collaboration request flow.
+Open-source discovery is mostly tags and stars. Contributors waste time on repos that do not fit. Maintainers cannot see who has actually shipped the skills they need.
 
 ### Solution
 
-DevSync is a Flutter mobile app that:
-
-- Builds a developer profile from **GitHub activity** and declared **skills**
-- Uses an **LLM** (via a secure Cloud Function) to score user-to-project fit and explain why
-- Lets users **like or skip** matches so prompts can be evaluated and improved
-- Supports **collaboration requests** with accept/decline workflows and **real-time FCM alerts**
-- Ships as **Free** and **Pro** Android flavors (flavor configuration only for this course delivery; not a paid store product)
-
-Distribution for the course is an **install link** (GitHub Releases or Firebase App Distribution) for a signed, obfuscated build — not app-store publishing.
+A mobile matching path with a scored, explained feed and a built-in request — not another project search page. Course delivery is an Android install link, not an app-store product. Full screen list: [docs/APP_FLOW.md](docs/APP_FLOW.md). Prototype: [docs/index.html](docs/index.html).
 
 ---
 
@@ -133,17 +142,20 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | Mobile app | Flutter & Dart | Cross-platform UI (Android focus for this delivery) |
 | Icons | [lucide_icons_flutter](https://pub.dev/packages/lucide_icons_flutter) | Global Lucide icon set via `AppIcons` / `DsIcon` (matches prototype) |
 | Fonts | google_fonts | Bricolage Grotesque (headings) + Figtree (body / UI) |
-| Auth | Firebase Authentication | Google and email/password sign-in (planned wiring) |
+| Auth | Firebase Authentication | Email/password implemented; Google and GitHub buttons coded (Console / SHA-1 still needed) |
 | Database | Cloud Firestore | Users, projects, matches cache, requests, feedback |
 | Notifications | Firebase Cloud Messaging (FCM) | Push alerts for collaboration and updates |
 | Backend logic | Firebase Cloud Functions | FCM triggers; secure LLM API calls (keys never in the app) |
 | Developer data | GitHub API | Public profiles, repositories, and activity |
 | AI matching | Gemini Flash-Lite (via Cloud Function) | Fit scores and short explanations; prompt versioning; evaluate one hosted open-source model (Llama / Qwen / gpt-oss) on the eval set |
+| State | flutter_bloc (Cubit first) | Presentation state; pages render Cubit states |
+| DI | get_it | Composition root in `lib/core/di/injection.dart` |
+| Errors | `Result<T>` + typed `Failure` | Mapped at the repository boundary |
 | Version control | Git & GitHub | Branches, pull requests, optional Releases for install builds |
 | Project management | Jira | Scrum board, sprints, task tracking |
 | Design | DevSync brand system | Teal / forest palette; shared `Ds*` widgets in `lib/core/` |
 
-**Firestore collections (planned):** `users`, `projects`, `matches`, `feedback`, `requests`, `tasks`. Field names and the full collection map land with Foundation (Donia) and are documented in this README when merged.
+**Firestore:** `users/{uid}` identity is implemented. Planned: `projects`, `matches`, `feedback`, `requests`. If-time: `tasks`.
 
 <p align="center">
   <img src="docs/devsync-logos/devsync-logos/png/devsync-icon.png" alt="DevSync icon" height="48"/>
@@ -159,44 +171,53 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 
 ## 5. System architecture
 
-High-level view of the planned system. Implementation will grow into this shape as features land.
+The app uses **feature-first Clean Architecture** (BLoC/Cubit + GetIt + Firebase). Domain does not import Flutter, Firebase, or GetIt. Auth is the template; copy `lib/features/auth/` for features that talk to Firestore. Full rules: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ```mermaid
 flowchart TB
-  subgraph Client["Flutter Android app (Free / Pro flavors)"]
-    UI["UI / Animations"]
-    AuthClient["Firebase Auth client"]
-    FCMClient["FCM client"]
-    FirestoreClient["Firestore client"]
+  subgraph Presentation["Presentation"]
+    Pages["Pages / Widgets"]
+    Cubits["Cubit / BLoC"]
   end
 
-  subgraph Firebase["Firebase"]
-    Auth["Authentication"]
+  subgraph Domain["Domain"]
+    UseCases["Use cases"]
+    Entities["Entities"]
+    Contracts["Repository contracts"]
+  end
+
+  subgraph Data["Data"]
+    Repos["Repository implementations"]
+    Models["Models / DTOs"]
+    Sources["Data sources"]
+  end
+
+  subgraph External["External systems"]
+    Auth["Firebase Auth"]
     FS["Cloud Firestore"]
     Functions["Cloud Functions"]
     FCM["Cloud Messaging"]
-  end
-
-  subgraph External["External services"]
     GitHub["GitHub API"]
-    LLM["Gemini Flash-Lite (+ eval OSS model)"]
+    LLM["Gemini Flash-Lite"]
   end
 
-  UI --> AuthClient
-  UI --> FirestoreClient
-  UI --> FCMClient
-
-  AuthClient --> Auth
-  FirestoreClient --> FS
-  FCMClient --> FCM
-
-  Auth --> FS
+  Pages --> Cubits
+  Cubits --> UseCases
+  UseCases --> Contracts
+  Repos --> Contracts
+  Repos --> Sources
+  Sources --> Auth
+  Sources --> FS
+  Sources --> Functions
   Functions --> FS
   Functions --> FCM
   Functions --> LLM
-  Client --> GitHub
-  Client --> Functions
+  Sources --> GitHub
 ```
+
+**Sign-in (implemented):** Login form → `LoginCubit` → `SignInWithEmail` → `AuthRepository` → Firebase Auth + `users/{uid}` → `Result` → Cubit emits success / verify-email / failure → UI navigates or shows a snackbar.
+
+Dio is **not** in the stack. If a Cloud Function later needs a shared HTTP client, add one Dio instance in `core/` and keep it behind a data source.
 
 ### Matching flow (planned)
 
@@ -270,22 +291,21 @@ devsync_open_source_collaboration_app/
 ├── android/ ios/ web/ …     # Platform hosts (app name DevSync + brand launcher icon)
 ├── lib/
 │   ├── main.dart
+│   ├── bootstrap.dart       # Firebase + GetIt + runApp
 │   ├── app/                 # DevSyncApp + named routes
 │   ├── core/
-│   │   ├── icons/           # AppIcons (global Lucide map)
-│   │   ├── theme/           # colors, spacing, typography, animations, ThemeData
-│   │   ├── constants/       # AppAssets paths
-│   │   └── widgets/         # Shared Ds* components + DsIcon
+│   │   ├── di/              # GetIt composition root
+│   │   ├── error/ result/ usecase/
+│   │   ├── icons/ theme/ widgets/ constants/
 │   └── features/
-│       ├── auth/            # Welcome, Login, Register (+ auth widgets)
-│       ├── shell/           # Home nav shell, design-system gallery, stubs
+│       ├── auth/            # data / domain / presentation (template)
+│       ├── shell/           # Home nav shell, Settings, stubs
 │       ├── matching/ profile/ projects/ requests/ tasks/
 ├── test/
 ├── docs/
+│   ├── ARCHITECTURE.md      # Clean Architecture standard
+│   ├── APP_FLOW.md
 │   ├── index.html           # Interactive prototype (v27)
-│   ├── DevSync Brand Guide.html
-│   ├── DevSync-Feature-Summaries-All-Members.pdf
-│   ├── favicon.png
 │   └── …planning PDFs & brand logos
 ├── pubspec.yaml
 └── README.md
@@ -332,11 +352,12 @@ flutter devices
 flutter run -d <device_id>
 ```
 
-App opens on **Welcome** → Sign in / Get started. Design system gallery: Home → palette button, or Login → “Preview design system”.
+App opens on **Welcome** → Sign in / Get started. Settings, theme, and log out: Home → **Settings**.
 
 ### Analyze and test
 
 ```bash
+dart format --output=none --set-exit-if-changed .
 flutter analyze
 flutter test
 ```
@@ -393,7 +414,9 @@ Course and project documents live under [`docs/`](docs/). Use these as the sourc
 | Literature Review | [DevSync-2-Literature-Review.pdf](docs/DevSync-2-Literature-Review.pdf) |
 | Requirements Gathering | [DevSync-3-Requirements-Gathering.pdf](docs/DevSync-3-Requirements-Gathering.pdf) |
 | Feature Summaries (all members) | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
-| Interactive prototype (v27) | [docs/index.html](docs/index.html) |
+| Clean Architecture standard | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Full app flow (screens + owners) | [docs/APP_FLOW.md](docs/APP_FLOW.md) |
+| Interactive prototype + team hub | [docs/index.html](docs/index.html) |
 | Brand Guidelines | [DevSync_Brand_Guidelines.pdf](docs/DevSync_Brand_Guidelines.pdf) |
 | Brand Guide (HTML) | [DevSync Brand Guide.html](docs/DevSync%20Brand%20Guide.html) |
 
@@ -434,8 +457,11 @@ Do **not** commit `google-services.json` variants that embed private keys beyond
 | Design system (tokens + `Ds*` widgets) | Implemented in `lib/core/` |
 | Global Lucide icons (`AppIcons`) | Implemented — use instead of Material `Icons` |
 | App name + launcher / favicon | DevSync branding on Android / iOS / web / desktop |
-| Auth flow (Intro → Welcome → Login/Register/OTP) | UI implemented; Firebase Auth not wired yet (demo → Home) |
-| Firebase / GitHub / LLM integration | Planned — not implemented in-repo yet |
+| Auth flow (Intro → Welcome → Login/Register/OTP) | UI + Firebase Auth + `users/{uid}` identity implemented |
+| Settings (prototype screen 21) | Implemented — appearance, notification toggles, Free/Pro preview, sign out, delete dialog |
+| Google / GitHub sign-in | Coded; enable providers in Firebase Console (SHA-1 for Google) |
+| Profile, Projects, Feed, Requests | Planned — owners and due dates in §3 |
+| GitHub API / FCM / Cloud Functions / Gemini | Planned — not implemented in-repo yet |
 | Remaining product features | Planned (owners and due dates in §3) |
 | Install-link release / App Bundle | First obfuscated build by 12 Nov; final 30 Nov 2026 |
 | App store deployment | Out of scope for this course delivery |
@@ -515,12 +541,13 @@ Import barrel: `core/widgets/widgets.dart` — **use these everywhere**.
 | `DsNotificationTile` / `DsBanner` | Alerts / notices |
 | `DsLogo` / `DsWordmark` | Brand mark |
 | `DsEmptyState` / `DsSegmentedControl` | Empty lists / tabs |
+| `DsToggle` | Prototype notification switch |
 
-Auth layout helpers (also for reuse): `AuthScaffold`, `AuthInlineHeading`, `AuthNote`, `AuthSocialButtons`, `AuthDivider`, `AuthProgressBar` in `lib/features/auth/widgets/`.
+Auth layout helpers (also for reuse): `AuthScaffold`, `AuthInlineHeading`, `AuthNote`, `AuthSocialButtons`, `AuthDivider`, `AuthProgressBar` in `lib/features/auth/presentation/widgets/`.
 
-Preview: run the app → Home → palette → **Design system** gallery.
+Preview: run the app → Home → **Settings**.
 
-### Auth screens (`lib/features/auth/`) — matches `docs/index.html`
+### Auth screens (`lib/features/auth/presentation/pages/`) — matches `docs/index.html`
 
 | Screen | Route | Notes |
 |---|---|---|
@@ -532,7 +559,7 @@ Preview: run the app → Home → palette → **Design system** gallery.
 | Sign in with code | `/code-sign-in` | Passwordless email → OTP |
 | Verify code | `/verify-code` | 6 boxes; demo OTP `123456` |
 
-Demo submit navigates to Home until Firebase Auth is connected (Donia · W2).
+Email/password sign-in is wired through Cubit → use case → Firebase Auth. Google and GitHub buttons are coded (Console / SHA-1 still needed).
 
 ### Branding
 
@@ -544,7 +571,7 @@ Demo submit navigates to Home until Firebase Auth is connected (Donia · W2).
 
 1. UI → `AppColors` / `AppSpacing` / `Ds*` widgets  
 2. Icons → `AppIcons` + `DsIcon` (Lucide)  
-3. Features → `lib/features/<area>/` and replace stubs behind `AppRoutes`
+3. Features → `lib/features/<area>/{data,domain,presentation}/` (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)) and replace stubs behind `AppRoutes`
 
 ---
 
