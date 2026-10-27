@@ -33,7 +33,6 @@ class _SkillsEditorState extends State<SkillsEditor> {
   void initState() {
     super.initState();
     _focus.addListener(() {
-      // Tapped away: keep what was typed, then fold back to "+ Add".
       if (!_focus.hasFocus && _adding) _submit();
     });
   }

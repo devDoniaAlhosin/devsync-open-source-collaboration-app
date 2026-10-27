@@ -7,7 +7,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/ds_chip.dart';
 
-/// Avatar with completion ring + name, GitHub handle and completion chip.
 class ProfileIdentity extends StatelessWidget {
   const ProfileIdentity({
     super.key,

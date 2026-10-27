@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'dart:ui';
 
-/// Share of one language in the user's repos.
 class LanguageShare {
   const LanguageShare({
     required this.name,
@@ -14,10 +13,6 @@ class LanguageShare {
   final Color color;
 }
 
-/// View-model for the profile screen.
-///
-/// Mock for now — swap [ProfileData.sample] with the GitHub / Firebase source
-/// once the data layer lands.
 class ProfileData {
   const ProfileData({
     required this.name,
@@ -36,14 +31,12 @@ class ProfileData {
   final String name;
   final String githubUrl;
 
-  /// Profile completion, `0..100`.
   final int completion;
   final String bio;
   final int repos;
   final int commits;
   final int languageCount;
 
-  /// Contribution levels `0..4`, **week-major**: `activity[week][weekday]`.
   final List<List<int>> activity;
   final List<LanguageShare> languages;
   final List<String> skills;

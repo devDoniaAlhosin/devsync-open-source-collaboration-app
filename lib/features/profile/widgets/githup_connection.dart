@@ -6,7 +6,6 @@ import '../../../core/widgets/ds_card.dart';
 import '../../../core/widgets/ds_chip.dart';
 import '../../../core/widgets/ds_github_icon.dart';
 
-/// "nour-dev is connected · Last scanned today · Verified".
 class GithubConnectionCard extends StatelessWidget {
   const GithubConnectionCard({
     super.key,

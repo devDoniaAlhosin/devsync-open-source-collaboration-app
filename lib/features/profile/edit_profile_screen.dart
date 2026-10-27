@@ -19,7 +19,6 @@ class EditProfileResult {
   final List<String> skills;
 }
 
-/// Edit bio + toggle / add skills. Pops with an [EditProfileResult] on save.
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key, required this.data});
 
@@ -66,7 +65,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     setState(() {
       if (existing >= 0) {
-        _selected.add(_available[existing]); // already there → just select it
+        _selected.add(_available[existing]);
       } else {
         _available.add(name);
         _selected.add(name);
@@ -85,8 +84,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ],
       ),
     );
-    // TODO: once the matches feed is built, route to AppRoutes.feed instead
-    // ("Save and see matches").
   }
 
   @override
@@ -98,7 +95,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.screenPadding,
@@ -144,7 +140,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             Divider(height: 1, color: ds.border),
 
-            // ── Content ───────────────────────────────────────────
+            //  Content
             Expanded(
               child: ListView(
                 keyboardDismissBehavior:
@@ -198,7 +194,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
 
-            // ── Pinned action ─────────────────────────────────────
+            // Pinned action
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.screenPadding,

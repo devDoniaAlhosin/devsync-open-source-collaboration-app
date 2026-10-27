@@ -6,7 +6,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/ds_card.dart';
 import '../models/profile_data.dart';
 
-/// Segmented language bar + legend.
 class LanguageBreakdown extends StatelessWidget {
   const LanguageBreakdown({super.key, required this.languages});
 

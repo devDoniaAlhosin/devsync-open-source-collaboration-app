@@ -4,7 +4,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/ds_card.dart';
 
-/// GitHub-style contribution grid (weeks × weekdays) inside a card.
 class ContributionHeatmap extends StatelessWidget {
   const ContributionHeatmap({
     super.key,
@@ -13,7 +12,6 @@ class ContributionHeatmap extends StatelessWidget {
     this.caption = 'Last 20 weeks',
   });
 
-  /// `activity[week][weekday]`, levels `0..4`.
   final List<List<int>> activity;
   final String title;
   final String caption;

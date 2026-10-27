@@ -1,5 +1,6 @@
 import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/edit_profile_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/insights_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/icons/app_icons.dart';
@@ -13,7 +14,6 @@ import 'widgets/language_breakdown.dart';
 import 'widgets/profile_identity.dart';
 import 'widgets/profile_stat_card.dart';
 
-/// Profile — bio, GitHub stats, activity heatmap, languages, skills.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, this.data});
 
@@ -36,13 +36,13 @@ class ProfileScreen extends StatelessWidget {
             AppSpacing.xxxl,
           ),
           children: [
-            // ── Header ──────────────────────────────────────────────
+            // Header
             Row(
               children: [
                 DsIconButton(
                   icon: AppIcons.menu,
                   tooltip: 'Menu',
-                  onPressed: () {}, // TODO: open drawer / menu
+                  onPressed: () {},
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -71,13 +71,13 @@ class ProfileScreen extends StatelessWidget {
                   icon: AppIcons.notifications,
                   tooltip: 'Notifications',
                   showBadge: true,
-                  onPressed: () {}, // TODO: notifications screen
+                  onPressed: () {},
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 DsIconButton(
                   icon: AppIcons.settings,
                   tooltip: 'Settings',
-                  onPressed: () {}, // TODO: settings screen
+                  onPressed: () {},
                 ),
               ],
             ),
@@ -85,7 +85,7 @@ class ProfileScreen extends StatelessWidget {
             Divider(height: 1, color: ds.border),
             const SizedBox(height: AppSpacing.lg),
 
-            // ── Identity ────────────────────────────────────────────
+            //Identity
             ProfileIdentity(
               name: profile.name,
               githubUrl: profile.githubUrl,
@@ -93,14 +93,14 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // ── Bio ─────────────────────────────────────────────────
+            // Bio
             Text(
               profile.bio,
               style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // ── Stats ───────────────────────────────────────────────
+            //  Stats
             Row(
               children: [
                 Expanded(
@@ -124,13 +124,13 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // ── Activity + languages ────────────────────────────────
+            // Activity + languages
             ContributionHeatmap(activity: profile.activity),
             const SizedBox(height: AppSpacing.lg),
             LanguageBreakdown(languages: profile.languages),
             const SizedBox(height: AppSpacing.lg),
 
-            // ── Skills ──────────────────────────────────────────────
+            // Skill
             Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
@@ -138,7 +138,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // ── Actions ─────────────────────────────────────────────
+            //Actions
             DsButton(
               label: 'Edit profile',
               variant: DsButtonVariant.quiet,
@@ -152,7 +152,9 @@ class ProfileScreen extends StatelessWidget {
             DsButton(
               label: 'View contribution insights →',
               variant: DsButtonVariant.quiet,
-              onPressed: () {}, // TODO: insights screen
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => InsightsScreen())),
             ),
           ],
         ),

@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/ds_card.dart';
 
-/// Big teal number + muted label, with a count-up on first build.
 class ProfileStatCard extends StatelessWidget {
   const ProfileStatCard({super.key, required this.value, required this.label});
 
