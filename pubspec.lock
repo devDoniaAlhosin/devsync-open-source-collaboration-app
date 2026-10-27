@@ -198,6 +198,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_color:
+    dependency: "direct main"
+    description:
+      name: flutter_color
+      sha256: d1ac0b50e0149691104fed07ae49508ea2d5121ae4a9c7aa1e479d6d1dd9c2ed
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:

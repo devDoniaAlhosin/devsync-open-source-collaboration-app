@@ -1,4 +1,4 @@
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/requests_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/requests/presentation/pages/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

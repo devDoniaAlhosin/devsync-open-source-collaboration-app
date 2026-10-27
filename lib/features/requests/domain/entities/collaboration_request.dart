@@ -1,37 +1,37 @@
-class CollaborationRequest {
-  const CollaborationRequest({
-    required this.id,
-    required this.projectId,
-    required this.senderId,
-    required this.recipientId,
-    required this.message,
+enum RequestStatus { isNew, pending, accepted, declined }
+
+enum RequestType { sent, received }
+
+class RequestItem {
+  const RequestItem({
+    required this.initials,
+    required this.title,
+    required this.subtitle,
     required this.status,
-    required this.direction,
-    this.projectName,
-    this.senderName,
-    this.recipientName,
-    this.createdAt,
+    required this.type,
+    this.message,
+    this.displayName = 'Contributor',
+    this.targetName = '',
+    this.matchPercent = 0,
+    this.matchSummary = '',
+    this.repositoryCount = 0,
+    this.commitCount = 0,
+    this.languageCount = 0,
+    this.skills = const [],
   });
 
-  final String id;
-  final String projectId;
-  final String senderId;
-  final String recipientId;
-  final String message;
-
-  final CollaborationRequestStatus status;
-  final CollaborationRequestDirection direction;
-
-  final String? projectName;
-  final String? senderName;
-  final String? recipientName;
-  final DateTime? createdAt;
-
-  bool get isPending => status == CollaborationRequestStatus.pending;
-
-  bool get isIncoming => direction == CollaborationRequestDirection.incoming;
+  final String initials;
+  final String title;
+  final String subtitle;
+  final RequestStatus status;
+  final RequestType type;
+  final String? message;
+  final String displayName;
+  final String targetName;
+  final int matchPercent;
+  final String matchSummary;
+  final int repositoryCount;
+  final int commitCount;
+  final int languageCount;
+  final List<String> skills;
 }
-
-enum CollaborationRequestStatus { pending, accepted, declined }
-
-enum CollaborationRequestDirection { incoming, outgoing }
