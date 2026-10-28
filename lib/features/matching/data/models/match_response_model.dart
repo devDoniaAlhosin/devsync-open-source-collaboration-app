@@ -1,14 +1,5 @@
 import 'match_item_model.dart';
 
-/// Cloud Function response wrapper.
-///
-/// The function returns:
-/// ```json
-/// {
-///   "matches": [ { "projectId": "...", "score": 92, "reason": "..." } ],
-///   "promptVersion": "v2"
-/// }
-/// ```
 class MatchResponseModel {
   const MatchResponseModel({
     required this.matches,

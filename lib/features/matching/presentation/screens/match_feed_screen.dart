@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/icons/app_icons.dart';
@@ -13,10 +13,10 @@ import '../../data/datasources/matching_remote_data_source.dart';
 import '../../data/repositories/matching_repository_impl.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/user_profile.dart';
-import 'project_details_screen.dart';
-import '../widgets/match_card_deck.dart';
 import '../widgets/draggable_match_card.dart';
+import '../widgets/match_card_deck.dart';
 import '../widgets/match_card_skeleton.dart';
+import 'project_details_screen.dart';
 
 class MatchFeedScreen extends StatefulWidget {
   final bool embedded;

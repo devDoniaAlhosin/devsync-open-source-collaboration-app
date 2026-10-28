@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -8,7 +9,7 @@ import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
 import '../../domain/entities/match_item.dart';
-import '../utils/project_details_utils.dart';
+import '../../../../core/utils/project_details_utils.dart';
 import 'project_details_information.dart';
 
 class ProjectDetailsContent extends StatelessWidget {

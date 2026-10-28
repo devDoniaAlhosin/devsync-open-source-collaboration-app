@@ -14,12 +14,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    packaging {
-        jniLibs {
-            keepDebugSymbols.add("**/*.so")
-        }
-    }
-
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.devsync_open_source_collaboration_app"
@@ -29,6 +23,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        ndk {
+            // Match exactly the platforms Flutter builds for debug
+            abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86_64")
+        }
     }
 
     buildTypes {
@@ -38,6 +36,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+// Workaround: disable stripDebugDebugSymbols — AGP 9.x tries to strip .so files
+// before mergeDebugNativeLibs has written them, causing "No such file" errors.
+afterEvaluate {
+    project.tasks.findByName("stripDebugDebugSymbols")?.enabled = false
 }
 
 kotlin {

@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_chip.dart';
 import '../../domain/entities/match_item.dart';
-import '../utils/project_details_utils.dart';
+import '../../../../core/utils/project_details_utils.dart';
 
 class DetailsSectionTitle extends StatelessWidget {
   const DetailsSectionTitle(this.text, {super.key});

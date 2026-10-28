@@ -1,4 +1,4 @@
-import 'package:devsync_open_source_collaboration_app/features/matching/presentation/utils/project_details_utils.dart';
+import 'package:devsync_open_source_collaboration_app/core/utils/project_details_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
