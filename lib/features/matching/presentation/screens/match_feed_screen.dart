@@ -1,3 +1,4 @@
+import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/matching_progress_screen.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_routes.dart';
@@ -20,6 +21,7 @@ import '../widgets/match_info_sheet.dart';
 import 'ai_analytics_screen.dart';
 import 'ai_matching_studio_screen.dart';
 import 'project_details_screen.dart';
+import 'prompt_quality_screen.dart';
 
 /// Screen hosting the AI recommendations and interactive match feed.
 ///
@@ -77,6 +79,24 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     _controller.setViewMode(initialMode);
   }
 
+  Widget _buildContent() {
+    if (_controller.isLoading) return const Center(child: MatchCardSkeleton());
+    final error = _controller.errorMessage;
+    if (error != null) {
+      return DsEmptyState(
+        icon: AppIcons.error,
+        title: 'Something went wrong',
+        message: error,
+        actionLabel: 'Retry',
+        onAction: _controller.loadInitialData,
+      );
+    }
+    return switch (_controller.viewMode) {
+      MatchingViewMode.studio => _buildStudioView(),
+      MatchingViewMode.deck => _buildDeckView(),
+    };
+  }
+
   Widget _buildDeckView() {
     final match = _controller.currentDeckMatch;
     if (match == null) {
@@ -113,7 +133,9 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ExploreDevSyncItem(
         title: 'Task board',
         subtitle: 'Plan your next\nsprint',
-        onTap: () => Navigator.of(context).pushNamed(AppRoutes.requests),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<bool>(builder: (_) => MatchingProgressScreen()),
+        ),
       ),
       ExploreDevSyncItem(
         title: 'Insights',
@@ -123,7 +145,9 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ExploreDevSyncItem(
         title: 'Collaboration',
         subtitle: 'Work with your\nteam',
-        onTap: () => Navigator.of(context).pushNamed(AppRoutes.requests),
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute<bool>(builder: (_) => PromptQualityScreen())),
       ),
     ];
   }
@@ -147,37 +171,19 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               onBookmarkPressed: () => _notify('Saved matches'),
               onNotificationsPressed: () => _notify('No new notifications'),
             ),
-            if (isEmptyFeed)
-              Divider(height: 1, color: context.ds.border)
-            else ...[
-              const MatchFeedGreeting(userName: 'Nour'),
-              const SizedBox(height: AppSpacing.sm),
-              ExploreDevSyncSection(items: _buildExploreItems()),
-              const SizedBox(height: AppSpacing.xs),
-            ],
+
+            Divider(height: 1, color: context.ds.border),
+            SizedBox(height: AppSpacing.lg),
+            const MatchFeedGreeting(userName: 'Nour'),
+            const SizedBox(height: AppSpacing.sm),
+            ExploreDevSyncSection(items: _buildExploreItems()),
+            const SizedBox(height: AppSpacing.xs),
+
             Expanded(child: _buildContent()),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildContent() {
-    if (_controller.isLoading) return const Center(child: MatchCardSkeleton());
-    final error = _controller.errorMessage;
-    if (error != null) {
-      return DsEmptyState(
-        icon: AppIcons.error,
-        title: 'Something went wrong',
-        message: error,
-        actionLabel: 'Retry',
-        onAction: _controller.loadInitialData,
-      );
-    }
-    return switch (_controller.viewMode) {
-      MatchingViewMode.studio => _buildStudioView(),
-      MatchingViewMode.deck => _buildDeckView(),
-    };
   }
 
   Widget _buildStudioView() {
