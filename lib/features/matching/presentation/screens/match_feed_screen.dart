@@ -21,6 +21,7 @@ import '../widgets/match_card_skeleton.dart';
 import '../widgets/match_feed_app_bar.dart';
 import '../widgets/match_feed_greeting.dart';
 import 'ai_analytics_screen.dart';
+import 'matching_screen.dart';
 import 'project_details_screen.dart';
 
 /// Screen hosting the AI recommendations and interactive match feed.
@@ -179,21 +180,13 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   List<ExploreDevSyncItem> _buildExploreItems() {
     return [
       ExploreDevSyncItem(
-        title: _controller.viewMode == MatchingViewMode.studio
-            ? 'Swipe Deck'
-            : 'AI Studio',
-        subtitle: _controller.viewMode == MatchingViewMode.studio
-            ? 'Return to match cards'
-            : 'Tune your match\nprompts',
-        onTap: () {
-          final next = _controller.viewMode == MatchingViewMode.studio
-              ? MatchingViewMode.deck
-              : MatchingViewMode.studio;
-          _controller.setViewMode(next);
-          _notify(next == MatchingViewMode.studio
-              ? 'Switched to AI Studio'
-              : 'Switched to Swipe Deck');
-        },
+        title: 'AI Studio',
+        subtitle: 'Tune your match\nprompts',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => AiMatchingStudioScreen(controller: _controller),
+          ),
+        ),
       ),
       ExploreDevSyncItem(
         title: 'Task board',

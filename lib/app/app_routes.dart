@@ -16,4 +16,5 @@ abstract final class AppRoutes {
   static const String projectDetail = '/projects/detail';
   static const String profile = '/profile';
   static const String requests = '/requests';
+  static const String aiStudio = '/ai-studio';
 }

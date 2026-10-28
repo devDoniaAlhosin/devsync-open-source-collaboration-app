@@ -13,6 +13,7 @@ import '../features/auth/verify_code_screen.dart';
 import '../features/auth/welcome_screen.dart';
 import '../features/matching/presentation/screens/ai_analytics_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
+import '../features/matching/presentation/screens/matching_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart';
 import '../features/shell/design_system_gallery_screen.dart';
 import '../features/shell/home_shell_screen.dart';
@@ -111,6 +112,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
         AppRoutes.home: (_) => const HomeShellScreen(),
         AppRoutes.feed: (_) => const MatchFeedScreen(),
         AppRoutes.analytics: (_) => const AiAnalyticsScreen(),
+        AppRoutes.aiStudio: (_) => const AiMatchingStudioScreen(),
         AppRoutes.projects: (_) =>
             const StubScreen(title: 'Projects', owner: 'Bishay'),
         AppRoutes.profile: (_) => const StubScreen(
