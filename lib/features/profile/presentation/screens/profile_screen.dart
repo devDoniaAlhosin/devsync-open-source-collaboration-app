@@ -1,23 +1,21 @@
+import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
 import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
-import 'package:devsync_open_source_collaboration_app/features/profile/edit_profile_screen.dart';
-import 'package:devsync_open_source_collaboration_app/features/profile/insights_screen.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_button.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_chip.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon_button.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/data/models/profile_data.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/contribution_heatmap.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/language_breakdown.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/profile_identity.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/profile_stat_card.dart';
 import 'package:flutter/material.dart';
-
-import '../../core/icons/app_icons.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/ds_button.dart';
-import '../../core/widgets/ds_chip.dart';
-import '../../core/widgets/ds_icon_button.dart';
-import 'models/profile_data.dart';
-import 'widgets/contribution_heatmap.dart';
-import 'widgets/language_breakdown.dart';
-import 'widgets/profile_identity.dart';
-import 'widgets/profile_stat_card.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, this.data});
 
-  /// Inject real data later; falls back to mock.
   final ProfileData? data;
 
   @override

@@ -1,3 +1,4 @@
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,7 +12,6 @@ import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/verify_code_screen.dart';
 import '../features/auth/welcome_screen.dart';
-import '../features/profile/profile_screen.dart';
 import '../features/shell/design_system_gallery_screen.dart';
 import '../features/shell/home_shell_screen.dart';
 import '../features/shell/stub_screen.dart';

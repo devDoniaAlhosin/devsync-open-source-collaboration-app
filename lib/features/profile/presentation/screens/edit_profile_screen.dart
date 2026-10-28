@@ -1,16 +1,15 @@
-import 'package:devsync_open_source_collaboration_app/features/profile/widgets/githup_connection.dart';
-import 'package:devsync_open_source_collaboration_app/features/profile/widgets/skill_editor.dart';
+import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_button.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_card.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon_button.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_text_field.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/data/models/profile_data.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/github_connection_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/skills_editor.dart';
 import 'package:flutter/material.dart';
-
-import '../../core/icons/app_icons.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/ds_button.dart';
-import '../../core/widgets/ds_card.dart';
-import '../../core/widgets/ds_icon.dart';
-import '../../core/widgets/ds_icon_button.dart';
-import '../../core/widgets/ds_text_field.dart';
-import 'models/profile_data.dart';
 
 class EditProfileResult {
   const EditProfileResult({required this.bio, required this.skills});
@@ -32,7 +31,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   static const int _bioLimit = 140;
 
   late final TextEditingController _bio;
-  late final List<String> _available; // keeps display order
+  late final List<String> _available;
   late final Set<String> _selected;
 
   @override

@@ -1,11 +1,9 @@
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-
-import '../../../core/theme/app_animations.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/ds_chip.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_animations.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_chip.dart';
 
 class ProfileIdentity extends StatelessWidget {
   const ProfileIdentity({
@@ -18,11 +16,8 @@ class ProfileIdentity extends StatelessWidget {
 
   final String name;
   final String githubUrl;
-
-  /// `0..100`
   final int completion;
   final String? imageUrl;
-
   static const double _ringSize = 84;
   static const double _stroke = 5;
 

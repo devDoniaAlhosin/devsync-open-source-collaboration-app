@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-
-import '../../../core/theme/app_animations.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/ds_card.dart';
-import '../models/insights_data.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_animations.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/data/models/insights_data.dart';
 
 class ActivityBarChart extends StatelessWidget {
   const ActivityBarChart({
@@ -148,7 +147,7 @@ class _Bar extends StatelessWidget {
       tween: Tween(begin: 0, end: fraction.clamp(0.04, 1.0)),
       duration: AppAnimations.rise,
       curve: AppAnimations.emphasized,
-      builder: (_, f, __) => Align(
+      builder: (_, f, _) => Align(
         alignment: Alignment.bottomCenter,
         child: FractionallySizedBox(
           heightFactor: f,

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../core/icons/app_icons.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/ds_icon_button.dart';
-import '../profile/widgets/profile_stat_card.dart';
-import 'models/insights_data.dart';
-import 'widgets/activity_bar_chart.dart';
-import 'widgets/analytics_explorer_card.dart';
-import 'widgets/milestones_card.dart';
+import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon_button.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/profile_stat_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/data/models/insights_data.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/insights/activity_bar_chart.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/insights/analytics_explorer_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/insights/milestones_card.dart';
 
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key, this.data});

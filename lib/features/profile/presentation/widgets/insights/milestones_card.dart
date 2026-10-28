@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-
-import '../../../core/icons/app_icons.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/ds_card.dart';
-import '../../../core/widgets/ds_icon.dart';
-import '../models/insights_data.dart';
+import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_card.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/data/models/insights_data.dart';
 
 class MilestonesCard extends StatelessWidget {
   const MilestonesCard({super.key, required this.milestones});

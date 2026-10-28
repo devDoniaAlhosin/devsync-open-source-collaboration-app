@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/ds_card.dart';
-import '../../../core/widgets/ds_chip.dart';
-import '../../../core/widgets/ds_github_icon.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_card.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_chip.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_github_icon.dart';
 
 class GithubConnectionCard extends StatelessWidget {
   const GithubConnectionCard({

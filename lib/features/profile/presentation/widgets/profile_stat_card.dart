@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
-import '../../../core/theme/app_animations.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/ds_card.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_animations.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_card.dart';
 
 class ProfileStatCard extends StatelessWidget {
   const ProfileStatCard({super.key, required this.value, required this.label});
@@ -29,7 +28,7 @@ class ProfileStatCard extends StatelessWidget {
             tween: IntTween(begin: 0, end: value),
             duration: AppAnimations.score,
             curve: AppAnimations.emphasized,
-            builder: (_, v, __) => Text(
+            builder: (_, v, _) => Text(
               '$v',
               style: textTheme.headlineMedium?.copyWith(
                 color: AppColors.teal,
