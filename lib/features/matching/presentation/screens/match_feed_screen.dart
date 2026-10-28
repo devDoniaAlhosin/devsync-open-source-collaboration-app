@@ -5,126 +5,449 @@ import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
-import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
 import '../../../../core/widgets/ds_icon.dart';
+import '../../../../core/widgets/ds_icon_button.dart';
+import '../../../../core/widgets/ds_segmented_control.dart';
 import '../../data/datasources/matching_local_data_source.dart';
 import '../../data/datasources/matching_remote_data_source.dart';
 import '../../data/repositories/matching_repository_impl.dart';
 import '../../domain/entities/match_item.dart';
-import '../../domain/entities/user_profile.dart';
+import '../controllers/matching_controller.dart';
+import '../widgets/ai_studio_preferences_card.dart';
+import '../widgets/ai_studio_scoring_card.dart';
+import '../widgets/ai_studio_suggested_matches_card.dart';
 import '../widgets/draggable_match_card.dart';
 import '../widgets/match_card_deck.dart';
 import '../widgets/match_card_skeleton.dart';
+import 'ai_analytics_screen.dart';
 import 'project_details_screen.dart';
 
+/// Screen hosting the AI Studio recommendation experience and Card Deck swiping.
+///
+/// Follows Clean Architecture by delegating state and business logic to
+/// [MatchingController].
 class MatchFeedScreen extends StatefulWidget {
   final bool embedded;
+  final MatchingController? controller;
+  final MatchingViewMode? initialViewMode;
 
-  const MatchFeedScreen({super.key, this.embedded = false});
+  const MatchFeedScreen({
+    super.key,
+    this.embedded = false,
+    this.controller,
+    this.initialViewMode,
+  });
 
   @override
   State<MatchFeedScreen> createState() => _MatchFeedScreenState();
 }
 
-class _FallbackNotice extends StatelessWidget {
-  const _FallbackNotice();
+class _MatchFeedScreenState extends State<MatchFeedScreen> {
+  late final MatchingController _controller;
+  late final bool _ownsController;
+  late final TextEditingController _promptTextController;
+  final GlobalKey<DraggableMatchCardState> _cardKey =
+      GlobalKey<DraggableMatchCardState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+      _ownsController = false;
+    } else {
+      final repository = MatchingRepositoryImpl(
+        remoteDataSource: MockMatchingRemoteDataSource(),
+        localDataSource: InMemoryMatchingLocalDataSource(),
+      );
+      _controller = MatchingController(repository: repository);
+      _ownsController = true;
+      _controller.loadInitialData();
+    }
+
+    final initialMode = widget.initialViewMode ??
+        (widget.embedded ? MatchingViewMode.studio : MatchingViewMode.deck);
+    _controller.setViewMode(initialMode);
+
+    _promptTextController = TextEditingController(
+      text: _controller.preferences.prompt,
+    );
+    _promptTextController.addListener(() {
+      _controller.updatePrompt(_promptTextController.text);
+    });
+
+    _controller.addListener(_syncPromptController);
+  }
+
+  void _syncPromptController() {
+    if (_promptTextController.text != _controller.preferences.prompt) {
+      _promptTextController.text = _controller.preferences.prompt;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_syncPromptController);
+    _promptTextController.dispose();
+    if (_ownsController) {
+      _controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _navigateToProjectDetails(MatchItem match) {
+    Navigator.of(context).pushNamed(
+      AppRoutes.projectDetail,
+      arguments: ProjectDetailsArguments(
+        match: match,
+        currentUserSkills: _controller.profile.declaredSkills,
+      ),
+    );
+  }
+
+  void _openAnalytics() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AiAnalyticsScreen(controller: _controller),
+      ),
+    );
+  }
+
+  void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
+    _controller.performDeckAction(match, action);
+    final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
+    final messenger =
+        _scaffoldMessengerKey.currentState ?? ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      SnackBar(content: Text('${match.projectName} $verb')),
+    );
+  }
+
+  void _showMatchInfo(MatchItem match) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.ds.surface,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.sm,
+          AppSpacing.xl,
+          AppSpacing.xxxl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${match.score.round()}% match',
+              style: Theme.of(sheetContext).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              match.reason,
+              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                    color: sheetContext.ds.textMuted,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Swipe right to request collaboration or left to skip.',
+              style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                    color: sheetContext.ds.textMuted,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DsCard(
-      tone: DsCardTone.inset,
-      borderRadius: AppSpacing.radiusLg,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: const Row(
+    final page = SafeArea(
+      top: !widget.embedded,
+      child: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => _buildPageContent(),
+      ),
+    );
+
+    if (widget.embedded) return page;
+    return Scaffold(body: page);
+  }
+
+  Widget _buildPageContent() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540),
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: _controller.isLoading
+                  ? const Center(child: MatchCardSkeleton())
+                  : _controller.errorMessage != null
+                      ? DsEmptyState(
+                          icon: AppIcons.error,
+                          title: 'Something went wrong',
+                          message: _controller.errorMessage!,
+                          actionLabel: 'Retry',
+                          onAction: _controller.loadInitialData,
+                        )
+                      : _controller.viewMode == MatchingViewMode.studio
+                          ? _buildStudioView()
+                          : _buildDeckView(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    final ds = context.ds;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DsIcon(AppIcons.info, size: 18, color: AppColors.teal),
-          SizedBox(width: AppSpacing.sm),
-          Expanded(child: _FallbackText()),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'D E V S Y N C',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: ds.textMuted,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                    ),
+                    Text(
+                      _controller.viewMode == MatchingViewMode.studio
+                          ? 'AI Studio'
+                          : 'Match Deck',
+                      style:
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                    ),
+                  ],
+                ),
+              ),
+              DsIconButton(
+                icon: AppIcons.tasks,
+                tooltip: 'AI quality analytics',
+                onPressed: _openAnalytics,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          DsSegmentedControl(
+            labels: const ['AI Studio', 'Swipe Deck'],
+            index: _controller.viewMode == MatchingViewMode.studio ? 0 : 1,
+            onChanged: (i) {
+              _controller.setViewMode(
+                i == 0 ? MatchingViewMode.studio : MatchingViewMode.deck,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudioView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xxl,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Beta Badge
+          Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              color: context.ds.surface,
+              border: Border.all(color: context.ds.border),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            ),
+            child: const Row(
+              children: [
+                DsIcon(AppIcons.sparkle, color: AppColors.teal, size: 16),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  'DEVSYNC INTELLIGENCE / BETA',
+                  style: TextStyle(
+                    color: AppColors.teal,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Preferences Card
+          AiStudioPreferencesCard(
+            promptController: _promptTextController,
+            selectedTags: _controller.preferences.selectedTags,
+            onTagToggled: _controller.toggleTag,
+            isGenerating: _controller.isGenerating,
+            onGenerateMatches: () async {
+              await _controller.generateMatches();
+              if (mounted) {
+                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${_controller.matches.length} matches generated',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Suggested Matches Card
+          AiStudioSuggestedMatchesCard(
+            matches: _controller.matches,
+            onViewProjectDetails: _navigateToProjectDetails,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Scoring Breakdown Card
+          AiStudioScoringCard(
+            breakdown: _controller.analytics.scoringBreakdown,
+            onExploreAnalytics: _openAnalytics,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeckView() {
+    final match = _controller.currentDeckMatch;
+    final total = _controller.matches.length;
+    final currentPos = _controller.currentDeckIndex;
+
+    if (match == null) {
+      return DsEmptyState(
+        icon: AppIcons.feed,
+        title: total == 0 ? 'No matches yet' : 'You are all caught up',
+        message: total == 0
+            ? 'Complete your profile and add skills so we can find projects for you.'
+            : 'New project matches will appear here when they are ready.',
+        actionLabel: 'Refresh matches',
+        onAction: _controller.loadInitialData,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Your next match',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: context.ds.surface,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                  border: Border.all(color: context.ds.border),
+                ),
+                child: Text(
+                  '${currentPos + 1} / $total',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.teal,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: MatchCardDeck(
+                        cardKey: _cardKey,
+                        match: match,
+                        nextMatches: _controller.nextDeckMatches,
+                        onTap: () => _navigateToProjectDetails(match),
+                        onAction: (action) => _handleDeckAction(match, action),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _MatchActionBar(
+            canUndo: _controller.canUndo,
+            onUndo: _controller.undoLastDeckAction,
+            onSkip: () => _cardKey.currentState?.complete(MatchSwipeAction.skip),
+            onRequest: () =>
+                _cardKey.currentState?.complete(MatchSwipeAction.request),
+            onInfo: () => _showMatchInfo(match),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DsButton(
+            label: 'Open collaboration workspace',
+            icon: AppIcons.forward,
+            compact: true,
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.requests),
+          ),
+          const SizedBox(height: AppSpacing.md),
         ],
       ),
     );
   }
 }
 
-class _FallbackText extends StatelessWidget {
-  const _FallbackText();
-
-  @override
-  Widget build(BuildContext context) => Text(
-    'AI matching is temporarily unavailable. Showing skills-based results.',
-    style: Theme.of(
-      context,
-    ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
-  );
-}
-
-class _FeedHeader extends StatelessWidget {
-  final int current;
-
-  final int total;
-  const _FeedHeader({required this.current, required this.total});
-
-  @override
-  Widget build(BuildContext context) {
-    final visiblePosition = total == 0 ? 0 : (current + 1).clamp(1, total);
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your next match',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'AI-ranked for your skills and GitHub activity',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
-              ),
-            ],
-          ),
-        ),
-        if (total > 0)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: context.ds.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-              border: Border.all(color: context.ds.border),
-            ),
-            child: Text(
-              '$visiblePosition / $total',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.teal,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _MatchAction {
-  final int index;
-
-  final MatchSwipeAction action;
-  const _MatchAction({required this.index, required this.action});
-}
-
 class _MatchActionBar extends StatelessWidget {
   final bool canUndo;
-
   final VoidCallback onUndo;
   final VoidCallback onSkip;
   final VoidCallback onRequest;
   final VoidCallback onInfo;
+
   const _MatchActionBar({
     required this.canUndo,
     required this.onUndo,
@@ -171,251 +494,13 @@ class _MatchActionBar extends StatelessWidget {
   }
 }
 
-class _MatchFeedScreenState extends State<MatchFeedScreen> {
-  static const _profile = UserProfile(
-    uid: 'demo-user',
-    declaredSkills: ['Flutter', 'Dart', 'Firebase'],
-    githubLanguages: {'Dart': 60, 'Python': 20, 'JavaScript': 10},
-    publicRepoCount: 12,
-    totalContributions: 340,
-    bio: 'Mobile developer interested in open source.',
-  );
-
-  late final MatchingRepositoryImpl _repository;
-  final GlobalKey<DraggableMatchCardState> _cardKey =
-      GlobalKey<DraggableMatchCardState>();
-  final List<_MatchAction> _history = [];
-
-  List<MatchItem> _matches = [];
-  int _currentMatchIndex = 0;
-  bool _isLoading = true;
-  bool _hasFallback = false;
-  String? _errorMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final page = SafeArea(top: !widget.embedded, child: _buildPage());
-
-    if (widget.embedded) return page;
-    return Scaffold(body: page);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _repository = MatchingRepositoryImpl(
-      remoteDataSource: MockMatchingRemoteDataSource(),
-      localDataSource: InMemoryMatchingLocalDataSource(),
-    );
-    _loadMatches();
-  }
-
-  Widget _buildContent() {
-    if (_isLoading) {
-      return Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 460),
-          child: MatchCardSkeleton(),
-        ),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return DsEmptyState(
-        icon: AppIcons.error,
-        title: 'Something went wrong',
-        message: _errorMessage!,
-        actionLabel: 'Retry',
-        onAction: _loadMatches,
-      );
-    }
-
-    if (_matches.isEmpty || _currentMatchIndex >= _matches.length) {
-      return DsEmptyState(
-        icon: AppIcons.feed,
-        title: _matches.isEmpty ? 'No matches yet' : 'You are all caught up',
-        message: _matches.isEmpty
-            ? 'Complete your profile and add skills so we can find projects for you.'
-            : 'New project matches will appear here when they are ready.',
-        actionLabel: 'Refresh matches',
-        onAction: _loadMatches,
-      );
-    }
-
-    final match = _matches[_currentMatchIndex];
-    return Column(
-      children: [
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460),
-                    child: MatchCardDeck(
-                      cardKey: _cardKey,
-                      match: match,
-                      nextMatches: _matches
-                          .skip(_currentMatchIndex + 1)
-                          .take(2)
-                          .toList(),
-                      onTap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.projectDetail,
-                        arguments: ProjectDetailsArguments(
-                          match: match,
-                          currentUserSkills: _profile.declaredSkills,
-                        ),
-                      ),
-                      onAction: (action) => _handleAction(match, action),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _MatchActionBar(
-          canUndo: _history.isNotEmpty,
-          onUndo: _undoLastAction,
-          onSkip: () => _cardKey.currentState?.complete(MatchSwipeAction.skip),
-          onRequest: () =>
-              _cardKey.currentState?.complete(MatchSwipeAction.request),
-          onInfo: () => _showMatchInfo(match),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        DsButton(
-          label: 'Open collaboration workspace',
-          icon: AppIcons.forward,
-          compact: true,
-          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.requests),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPage() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.lg,
-        AppSpacing.xl,
-        AppSpacing.xl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _FeedHeader(current: _currentMatchIndex, total: _matches.length),
-          if (_hasFallback) ...[
-            const SizedBox(height: AppSpacing.md),
-            const _FallbackNotice(),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          Expanded(child: _buildContent()),
-        ],
-      ),
-    );
-  }
-
-  void _handleAction(MatchItem match, MatchSwipeAction action) {
-    if (_currentMatchIndex >= _matches.length ||
-        _matches[_currentMatchIndex].projectId != match.projectId) {
-      return;
-    }
-
-    setState(() {
-      _history.add(_MatchAction(index: _currentMatchIndex, action: action));
-      _currentMatchIndex++;
-    });
-
-    final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${match.projectName} $verb')));
-  }
-
-  Future<void> _loadMatches() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final results = await _repository.getRankedMatches(_profile);
-
-      if (!mounted) return;
-      setState(() {
-        _matches = results;
-        _currentMatchIndex = 0;
-        _history.clear();
-        _hasFallback = results.any((match) => match.isFallback);
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Could not load matches. Please try again.';
-      });
-    }
-  }
-
-  void _showMatchInfo(MatchItem match) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: context.ds.surface,
-      showDragHandle: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.sm,
-          AppSpacing.xl,
-          AppSpacing.xxxl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${match.score.round()}% match',
-              style: Theme.of(sheetContext).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              match.reason,
-              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                color: sheetContext.ds.textMuted,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Swipe right to request collaboration or left to skip.',
-              style: Theme.of(
-                sheetContext,
-              ).textTheme.bodySmall?.copyWith(color: sheetContext.ds.textMuted),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _undoLastAction() {
-    if (_history.isEmpty) return;
-    final lastAction = _history.removeLast();
-    setState(() => _currentMatchIndex = lastAction.index);
-  }
-}
-
 class _RoundActionButton extends StatelessWidget {
   final String tooltip;
-
   final IconData icon;
   final VoidCallback? onPressed;
   final Color? foreground;
   final bool isPrimary;
+
   const _RoundActionButton({
     required this.tooltip,
     required this.icon,
@@ -432,7 +517,7 @@ class _RoundActionButton extends StatelessWidget {
         foreground ?? (isPrimary ? AppColors.onTeal : context.ds.textPrimary);
 
     return Opacity(
-      opacity: enabled ? 1 : .4,
+      opacity: enabled ? 1 : 0.4,
       child: Tooltip(
         message: tooltip,
         child: Material(

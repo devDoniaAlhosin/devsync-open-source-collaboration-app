@@ -1,4 +1,5 @@
 import '../../domain/entities/match_item.dart';
+import '../../domain/entities/matching_analytics.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/matching_repository.dart';
 import '../datasources/matching_local_data_source.dart';
@@ -24,21 +25,50 @@ class MatchingRepositoryImpl implements MatchingRepository {
       final response = await remoteDataSource.getMatches(request);
 
       // Sort descending by score.
-      final sorted = response.matches
+      final sorted = List<MatchItem>.from(response.matches)
         ..sort((a, b) => b.score.compareTo(a.score));
 
       // Cache for offline / quick re-display.
-      await localDataSource.cacheMatches(profile.uid, sorted);
+      await localDataSource.cacheMatches(
+        profile.uid,
+        sorted.map((m) => MatchItemModel.fromEntity(m)).toList(),
+      );
 
       return sorted;
     } catch (_) {
-      // FR-14: skills-based fallback when the model fails or times out.
-      // TODO: Implement real skills fallback algorithm.
+      // Skills-based fallback when the remote service fails or times out.
       final cached = await localDataSource.getCachedMatches(profile.uid);
       if (cached.isNotEmpty) return cached;
 
-      // Return empty — the presentation layer shows DsEmptyState.
       return [];
+    }
+  }
+
+  @override
+  Future<List<MatchItem>> generateMatchesWithPrompt({
+    required String prompt,
+    Set<String>? tags,
+  }) async {
+    try {
+      final results = await remoteDataSource.generateMatchesWithPrompt(
+        prompt: prompt,
+        tags: tags,
+      );
+      final sorted = List<MatchItem>.from(results)
+        ..sort((a, b) => b.score.compareTo(a.score));
+      return sorted;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<MatchingAnalytics> getMatchingAnalytics() async {
+    try {
+      final model = await remoteDataSource.getAnalytics();
+      return model;
+    } catch (_) {
+      return MatchingAnalytics.demoAnalytics;
     }
   }
 

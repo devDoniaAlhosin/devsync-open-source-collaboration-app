@@ -11,6 +11,7 @@ abstract final class AppRoutes {
   static const String designSystem = '/design-system';
   static const String home = '/home';
   static const String feed = '/feed';
+  static const String analytics = '/analytics';
   static const String projects = '/projects';
   static const String projectDetail = '/projects/detail';
   static const String profile = '/profile';
