@@ -31,7 +31,6 @@ class ExploreDevSyncSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Explore DevSync',
@@ -40,11 +39,11 @@ class ExploreDevSyncSection extends StatelessWidget {
                   fontSize: 17,
                 ),
               ),
+              SizedBox(width: 60),
               Text(
                 'FEATURES',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: ds.textMuted,
-                  fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
                   fontSize: 11,
                 ),

@@ -9,6 +9,14 @@ import '../../../../core/widgets/ds_chip.dart';
 
 /// Card for customizing natural language matching preferences and quick skill tags.
 class AiStudioPreferencesCard extends StatelessWidget {
+  static const _availableTags = ['Flutter UI', 'Testing', 'Firebase'];
+
+  final TextEditingController promptController;
+  final Set<String> selectedTags;
+  final ValueChanged<String> onTagToggled;
+  final VoidCallback onGenerateMatches;
+  final bool isGenerating;
+
   const AiStudioPreferencesCard({
     super.key,
     required this.promptController,
@@ -17,14 +25,6 @@ class AiStudioPreferencesCard extends StatelessWidget {
     required this.onGenerateMatches,
     this.isGenerating = false,
   });
-
-  final TextEditingController promptController;
-  final Set<String> selectedTags;
-  final ValueChanged<String> onTagToggled;
-  final VoidCallback onGenerateMatches;
-  final bool isGenerating;
-
-  static const _availableTags = ['Flutter UI', 'Testing', 'Firebase'];
 
   @override
   Widget build(BuildContext context) {

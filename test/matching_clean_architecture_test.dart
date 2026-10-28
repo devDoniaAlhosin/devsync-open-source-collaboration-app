@@ -11,7 +11,7 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/ai_studio_scoring_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/ai_studio_suggested_matches_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

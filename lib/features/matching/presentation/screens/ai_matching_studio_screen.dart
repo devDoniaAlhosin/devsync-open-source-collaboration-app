@@ -242,10 +242,17 @@ class _StudioAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      leading: DsIconButton(
-        icon: AppIcons.back,
-        tooltip: 'Back',
-        onPressed: onBack,
+      leading: Padding(
+        padding: const EdgeInsets.only(
+          left: AppSpacing.lg,
+          bottom: AppSpacing.sm,
+          top: AppSpacing.sm,
+        ),
+        child: DsIconButton(
+          icon: AppIcons.back,
+          tooltip: 'Back',
+          onPressed: onBack,
+        ),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,8 +260,7 @@ class _StudioAppBar extends StatelessWidget implements PreferredSizeWidget {
           Text(
             'DEVSYNC',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.teal,
-              fontWeight: FontWeight.w800,
+              color: context.ds.textMuted,
               letterSpacing: 1.4,
             ),
           ),
@@ -262,7 +268,7 @@ class _StudioAppBar extends StatelessWidget implements PreferredSizeWidget {
             'AI Studio',
             style: Theme.of(
               context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],
       ),

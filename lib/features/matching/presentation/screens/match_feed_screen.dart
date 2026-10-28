@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/icons/app_icons.dart';
@@ -21,7 +21,7 @@ import '../widgets/match_card_skeleton.dart';
 import '../widgets/match_feed_app_bar.dart';
 import '../widgets/match_feed_greeting.dart';
 import 'ai_analytics_screen.dart';
-import 'matching_screen.dart';
+import 'ai_matching_studio_screen.dart';
 import 'project_details_screen.dart';
 
 /// Screen hosting the AI recommendations and interactive match feed.
@@ -30,19 +30,66 @@ import 'project_details_screen.dart';
 /// business logic to [MatchingController] and separating presentation into
 /// focused reusable widgets.
 class MatchFeedScreen extends StatefulWidget {
-  final bool embedded;
   final MatchingController? controller;
   final MatchingViewMode? initialViewMode;
 
-  const MatchFeedScreen({
-    super.key,
-    this.embedded = false,
-    this.controller,
-    this.initialViewMode,
-  });
+  const MatchFeedScreen({super.key, this.controller, this.initialViewMode});
 
   @override
   State<MatchFeedScreen> createState() => _MatchFeedScreenState();
+}
+
+class _MatchActionBar extends StatelessWidget {
+  final bool canUndo;
+  final VoidCallback onUndo;
+  final VoidCallback onSkip;
+  final VoidCallback onRequest;
+  final VoidCallback onInfo;
+
+  const _MatchActionBar({
+    required this.canUndo,
+    required this.onUndo,
+    required this.onSkip,
+    required this.onRequest,
+    required this.onInfo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _RoundActionButton(
+            tooltip: 'Undo last action',
+            icon: AppIcons.undo,
+            onPressed: canUndo ? onUndo : null,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          _RoundActionButton(
+            tooltip: 'Skip this match',
+            icon: AppIcons.close,
+            foreground: context.ds.danger,
+            onPressed: onSkip,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          _RoundActionButton(
+            tooltip: 'Request collaboration',
+            icon: AppIcons.heart,
+            isPrimary: true,
+            onPressed: onRequest,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          _RoundActionButton(
+            tooltip: 'How this match was scored',
+            icon: AppIcons.info,
+            onPressed: onInfo,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
@@ -53,6 +100,30 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       GlobalKey<DraggableMatchCardState>();
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final page = SafeArea(
+      child: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => _buildPageContent(),
+      ),
+    );
+    return ScaffoldMessenger(
+      key: _scaffoldMessengerKey,
+      child: Scaffold(body: page),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_syncPromptController);
+    _promptTextController.dispose();
+    if (_ownsController) {
+      _controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -83,96 +154,52 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     _controller.addListener(_syncPromptController);
   }
 
-  void _syncPromptController() {
-    if (_promptTextController.text != _controller.preferences.prompt) {
-      _promptTextController.text = _controller.preferences.prompt;
+  Widget _buildDeckView() {
+    final match = _controller.currentDeckMatch;
+    final total = _controller.matches.length;
+
+    if (match == null) {
+      return DsEmptyState(
+        icon: AppIcons.feed,
+        title: total == 0 ? 'No matches yet' : 'You are all caught up',
+        message: total == 0
+            ? 'Complete your profile and add skills so we can find projects for you.'
+            : 'New project matches will appear here when they are ready.',
+        actionLabel: 'Refresh matches',
+        onAction: _controller.loadInitialData,
+      );
     }
-  }
 
-  @override
-  void dispose() {
-    _controller.removeListener(_syncPromptController);
-    _promptTextController.dispose();
-    if (_ownsController) {
-      _controller.dispose();
-    }
-    super.dispose();
-  }
-
-  void _navigateToProjectDetails(MatchItem match) {
-    Navigator.of(context).pushNamed(
-      AppRoutes.projectDetail,
-      arguments: ProjectDetailsArguments(
-        match: match,
-        currentUserSkills: _controller.profile.declaredSkills,
-      ),
-    );
-  }
-
-  void _openAnalytics() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AiAnalyticsScreen(controller: _controller),
-      ),
-    );
-  }
-
-  void _notify(String message) {
-    final messenger = _scaffoldMessengerKey.currentState ??
-        ScaffoldMessenger.maybeOf(context);
-    messenger?.hideCurrentSnackBar();
-    messenger?.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
-    _controller.performDeckAction(match, action);
-    final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
-    _notify('${match.projectName} $verb');
-  }
-
-  void _showMatchInfo(MatchItem match) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: context.ds.surface,
-      showDragHandle: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.sm,
-          AppSpacing.xl,
-          AppSpacing.xxxl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${match.score.round()}% match',
-              style: Theme.of(sheetContext).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: MatchCardDeck(
+                  cardKey: _cardKey,
+                  match: match,
+                  nextMatches: _controller.nextDeckMatches,
+                  onTap: () => _navigateToProjectDetails(match),
+                  onAction: (action) => _handleDeckAction(match, action),
+                ),
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              match.reason,
-              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                    color: sheetContext.ds.textMuted,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Swipe right to request collaboration or left to skip.',
-              style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
-                    color: sheetContext.ds.textMuted,
-                  ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          _MatchActionBar(
+            canUndo: _controller.canUndo,
+            onUndo: _controller.undoLastDeckAction,
+            onSkip: () =>
+                _cardKey.currentState?.complete(MatchSwipeAction.skip),
+            onRequest: () =>
+                _cardKey.currentState?.complete(MatchSwipeAction.request),
+            onInfo: () => _showMatchInfo(match),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+        ],
       ),
     );
   }
@@ -196,7 +223,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ExploreDevSyncItem(
         title: 'Insights',
         subtitle: 'Track contributions',
-        onTap: _openAnalytics,
+        onTap: () {},
       ),
       ExploreDevSyncItem(
         title: 'Collaboration',
@@ -206,28 +233,12 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     ];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final page = SafeArea(
-      top: !widget.embedded,
-      child: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, _) => _buildPageContent(),
-      ),
-    );
-
-    if (widget.embedded) return page;
-    return ScaffoldMessenger(
-      key: _scaffoldMessengerKey,
-      child: Scaffold(body: page),
-    );
-  }
-
   Widget _buildPageContent() {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 540),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top App Bar ("DEVSYNC / For you", Menu, Bookmark, Notification)
             MatchFeedAppBar(
@@ -246,16 +257,16 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               child: _controller.isLoading
                   ? const Center(child: MatchCardSkeleton())
                   : _controller.errorMessage != null
-                      ? DsEmptyState(
-                          icon: AppIcons.error,
-                          title: 'Something went wrong',
-                          message: _controller.errorMessage!,
-                          actionLabel: 'Retry',
-                          onAction: _controller.loadInitialData,
-                        )
-                      : _controller.viewMode == MatchingViewMode.studio
-                          ? _buildStudioView()
-                          : _buildDeckView(),
+                  ? DsEmptyState(
+                      icon: AppIcons.error,
+                      title: 'Something went wrong',
+                      message: _controller.errorMessage!,
+                      actionLabel: 'Retry',
+                      onAction: _controller.loadInitialData,
+                    )
+                  : _controller.viewMode == MatchingViewMode.studio
+                  ? _buildStudioView()
+                  : _buildDeckView(),
             ),
           ],
         ),
@@ -331,106 +342,86 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  Widget _buildDeckView() {
-    final match = _controller.currentDeckMatch;
-    final total = _controller.matches.length;
+  void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
+    _controller.performDeckAction(match, action);
+    final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
+    _notify('${match.projectName} $verb');
+  }
 
-    if (match == null) {
-      return DsEmptyState(
-        icon: AppIcons.feed,
-        title: total == 0 ? 'No matches yet' : 'You are all caught up',
-        message: total == 0
-            ? 'Complete your profile and add skills so we can find projects for you.'
-            : 'New project matches will appear here when they are ready.',
-        actionLabel: 'Refresh matches',
-        onAction: _controller.loadInitialData,
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: MatchCardDeck(
-                  cardKey: _cardKey,
-                  match: match,
-                  nextMatches: _controller.nextDeckMatches,
-                  onTap: () => _navigateToProjectDetails(match),
-                  onAction: (action) => _handleDeckAction(match, action),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          _MatchActionBar(
-            canUndo: _controller.canUndo,
-            onUndo: _controller.undoLastDeckAction,
-            onSkip: () => _cardKey.currentState?.complete(MatchSwipeAction.skip),
-            onRequest: () =>
-                _cardKey.currentState?.complete(MatchSwipeAction.request),
-            onInfo: () => _showMatchInfo(match),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-        ],
+  void _navigateToProjectDetails(MatchItem match) {
+    Navigator.of(context).pushNamed(
+      AppRoutes.projectDetail,
+      arguments: ProjectDetailsArguments(
+        match: match,
+        currentUserSkills: _controller.profile.declaredSkills,
       ),
     );
   }
-}
 
-class _MatchActionBar extends StatelessWidget {
-  final bool canUndo;
-  final VoidCallback onUndo;
-  final VoidCallback onSkip;
-  final VoidCallback onRequest;
-  final VoidCallback onInfo;
+  void _notify(String message) {
+    final messenger =
+        _scaffoldMessengerKey.currentState ??
+        ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
 
-  const _MatchActionBar({
-    required this.canUndo,
-    required this.onUndo,
-    required this.onSkip,
-    required this.onRequest,
-    required this.onInfo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _RoundActionButton(
-            tooltip: 'Undo last action',
-            icon: AppIcons.undo,
-            onPressed: canUndo ? onUndo : null,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          _RoundActionButton(
-            tooltip: 'Skip this match',
-            icon: AppIcons.close,
-            foreground: context.ds.danger,
-            onPressed: onSkip,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          _RoundActionButton(
-            tooltip: 'Request collaboration',
-            icon: AppIcons.heart,
-            isPrimary: true,
-            onPressed: onRequest,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          _RoundActionButton(
-            tooltip: 'How this match was scored',
-            icon: AppIcons.info,
-            onPressed: onInfo,
-          ),
-        ],
+  void _openAnalytics() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AiAnalyticsScreen(controller: _controller),
       ),
     );
+  }
+
+  void _showMatchInfo(MatchItem match) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.ds.surface,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.sm,
+          AppSpacing.xl,
+          AppSpacing.xxxl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${match.score.round()}% match',
+              style: Theme.of(
+                sheetContext,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              match.reason,
+              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                color: sheetContext.ds.textMuted,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Swipe right to request collaboration or left to skip.',
+              style: Theme.of(
+                sheetContext,
+              ).textTheme.bodySmall?.copyWith(color: sheetContext.ds.textMuted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _syncPromptController() {
+    if (_promptTextController.text != _controller.preferences.prompt) {
+      _promptTextController.text = _controller.preferences.prompt;
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_animations.dart';
 import '../theme/app_colors.dart';
@@ -7,6 +7,12 @@ import 'ds_icon.dart';
 
 /// App-bar icon control (prototype `.ab`).
 class DsIconButton extends StatefulWidget {
+  final IconData icon;
+
+  final VoidCallback? onPressed;
+  final String? tooltip;
+  final bool active;
+  final bool showBadge;
   const DsIconButton({
     super.key,
     required this.icon,
@@ -15,12 +21,6 @@ class DsIconButton extends StatefulWidget {
     this.active = false,
     this.showBadge = false,
   });
-
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final String? tooltip;
-  final bool active;
-  final bool showBadge;
 
   @override
   State<DsIconButton> createState() => _DsIconButtonState();

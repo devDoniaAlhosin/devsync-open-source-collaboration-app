@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/icons/app_icons.dart';
@@ -19,15 +19,23 @@ class HomeShellScreen extends StatefulWidget {
   State<HomeShellScreen> createState() => _HomeShellScreenState();
 }
 
-class _HomeShellScreenState extends State<HomeShellScreen> {
-  int _index = 0;
+class _Dest {
+  final String label;
+  final IconData icon;
+  final String route;
+  final String owner;
+  const _Dest(this.label, this.icon, this.route, this.owner);
+}
 
+class _HomeShellScreenState extends State<HomeShellScreen> {
   static const _destinations = [
     _Dest('Feed', AppIcons.feed, AppRoutes.feed, 'Emad'),
     _Dest('Projects', AppIcons.projects, AppRoutes.projects, 'Bishay'),
     _Dest('Requests', AppIcons.requests, AppRoutes.requests, 'Yousef'),
     _Dest('Profile', AppIcons.profile, AppRoutes.profile, 'Saga'),
   ];
+
+  int _index = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +62,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
         index: _index,
         children: [
           // Feed tab — owns its top appbar and header
-          const MatchFeedScreen(embedded: true),
+          const MatchFeedScreen(),
           // Remaining tabs — stub cards until their screens are ready
           for (final d in _destinations.skip(1))
             Padding(
@@ -104,12 +112,4 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       ),
     );
   }
-}
-
-class _Dest {
-  const _Dest(this.label, this.icon, this.route, this.owner);
-  final String label;
-  final IconData icon;
-  final String route;
-  final String owner;
 }

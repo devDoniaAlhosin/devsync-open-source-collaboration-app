@@ -2,7 +2,7 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/match_card_deck.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_item.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

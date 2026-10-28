@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// GitHub mark (Lucide no longer ships brand icons).
 class DsGithubIcon extends StatelessWidget {

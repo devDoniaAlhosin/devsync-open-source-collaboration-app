@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
@@ -12,8 +12,8 @@ import '../features/auth/register_screen.dart';
 import '../features/auth/verify_code_screen.dart';
 import '../features/auth/welcome_screen.dart';
 import '../features/matching/presentation/screens/ai_analytics_screen.dart';
+import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
-import '../features/matching/presentation/screens/matching_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart';
 import '../features/shell/design_system_gallery_screen.dart';
 import '../features/shell/home_shell_screen.dart';
@@ -22,18 +22,18 @@ import 'app_routes.dart';
 
 /// Root app — **light theme is the default**.
 class DevSyncApp extends StatefulWidget {
-  const DevSyncApp({super.key, this.showSplash = true});
+  static _DevSyncAppState? _state;
 
   /// Set `false` in widget tests to skip the open animation.
   final bool showSplash;
 
-  static _DevSyncAppState? _state;
-
-  /// Toggle light / dark from auth chrome.
-  static void toggleTheme() => _state?._toggleTheme();
+  const DevSyncApp({super.key, this.showSplash = true});
 
   @override
   State<DevSyncApp> createState() => _DevSyncAppState();
+
+  /// Toggle light / dark from auth chrome.
+  static void toggleTheme() => _state?._toggleTheme();
 }
 
 class _DevSyncAppState extends State<DevSyncApp> {
@@ -41,50 +41,11 @@ class _DevSyncAppState extends State<DevSyncApp> {
   late bool _booting;
 
   @override
-  void initState() {
-    super.initState();
-    DevSyncApp._state = this;
-    _booting = widget.showSplash;
-    _syncSystemUi(_themeMode);
-  }
-
-  @override
-  void dispose() {
-    if (DevSyncApp._state == this) DevSyncApp._state = null;
-    super.dispose();
-  }
-
-  void _toggleTheme() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.light
-          ? ThemeMode.dark
-          : ThemeMode.light;
-      _syncSystemUi(_themeMode);
-    });
-  }
-
-  void _syncSystemUi(ThemeMode mode) {
-    final dark = mode == ThemeMode.dark;
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
-        statusBarBrightness: dark ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor: dark
-            ? AppColors.darkBackground
-            : AppColors.lightBackground,
-        systemNavigationBarIconBrightness: dark
-            ? Brightness.light
-            : Brightness.dark,
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DevSync',
       debugShowCheckedModeBanner: false,
+
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
@@ -134,5 +95,45 @@ class _DevSyncAppState extends State<DevSyncApp> {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    if (DevSyncApp._state == this) DevSyncApp._state = null;
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    DevSyncApp._state = this;
+    _booting = widget.showSplash;
+    _syncSystemUi(_themeMode);
+  }
+
+  void _syncSystemUi(ThemeMode mode) {
+    final dark = mode == ThemeMode.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: dark
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        systemNavigationBarIconBrightness: dark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+    );
+  }
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light
+          ? ThemeMode.dark
+          : ThemeMode.light;
+      _syncSystemUi(_themeMode);
+    });
   }
 }

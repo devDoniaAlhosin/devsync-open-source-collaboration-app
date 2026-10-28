@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -17,9 +17,9 @@ import '../widgets/ai_analytics_tuning_card.dart';
 /// Screen displaying AI model quality analytics, recommendation insights,
 /// and priority tuning controls.
 class AiAnalyticsScreen extends StatefulWidget {
-  const AiAnalyticsScreen({super.key, this.controller});
-
   final MatchingController? controller;
+
+  const AiAnalyticsScreen({super.key, this.controller});
 
   @override
   State<AiAnalyticsScreen> createState() => _AiAnalyticsScreenState();
@@ -31,69 +31,38 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
   late MatchingPriority _selectedPriority;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.controller != null) {
-      _controller = widget.controller!;
-      _ownsController = false;
-    } else {
-      final repository = MatchingRepositoryImpl(
-        remoteDataSource: MockMatchingRemoteDataSource(),
-        localDataSource: InMemoryMatchingLocalDataSource(),
-      );
-      _controller = MatchingController(repository: repository);
-      _ownsController = true;
-      _controller.loadInitialData();
-    }
-    _selectedPriority = _controller.preferences.priority;
-  }
-
-  @override
-  void dispose() {
-    if (_ownsController) {
-      _controller.dispose();
-    }
-    super.dispose();
-  }
-
-  void _handleRefinePrompt() {
-    _controller.refinePromptWithPriority(_selectedPriority);
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text('Demo prompt refined for ${_selectedPriority.label}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.of(context).maybePop(true);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final ds = context.ds;
 
     return Scaffold(
       appBar: AppBar(
-        leading: DsIconButton(
-          icon: AppIcons.back,
-          tooltip: 'Back',
-          onPressed: () => Navigator.of(context).maybePop(),
+        leading: Padding(
+          padding: const EdgeInsets.only(
+            left: AppSpacing.lg,
+            bottom: AppSpacing.sm,
+            top: AppSpacing.sm,
+          ),
+          child: DsIconButton(
+            icon: AppIcons.back,
+            tooltip: 'Back',
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'MODEL TRANSPARENCY',
+              'DEVSYNC',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.teal,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
+                color: ds.textMuted,
+                letterSpacing: 1.4,
               ),
             ),
             Text(
-              'Recommendation insights',
+              'AI Analytics',
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -112,6 +81,29 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MODEL TRANSPARENCY',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: AppColors.lightAccentText,
+                                  letterSpacing: 1.2,
+                                ),
+                          ),
+                          Text(
+                            'Recommendation insights',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: ds.textPrimary,
+                                  fontSize: 24,
+                                  letterSpacing: -0.3,
+                                ),
+                          ),
+                        ],
+                      ),
                       Text(
                         'Understand your feedback and matching trends.',
                         style: Theme.of(
@@ -165,5 +157,42 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    if (_ownsController) {
+      _controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+      _ownsController = false;
+    } else {
+      final repository = MatchingRepositoryImpl(
+        remoteDataSource: MockMatchingRemoteDataSource(),
+        localDataSource: InMemoryMatchingLocalDataSource(),
+      );
+      _controller = MatchingController(repository: repository);
+      _ownsController = true;
+      _controller.loadInitialData();
+    }
+    _selectedPriority = _controller.preferences.priority;
+  }
+
+  void _handleRefinePrompt() {
+    _controller.refinePromptWithPriority(_selectedPriority);
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text('Demo prompt refined for ${_selectedPriority.label}'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    Navigator.of(context).maybePop(true);
   }
 }

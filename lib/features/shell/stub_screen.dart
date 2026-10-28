@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/icons/app_icons.dart';
 import '../../core/widgets/ds_empty_state.dart';

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Brand constants + semantic palettes.
 ///
@@ -46,34 +46,6 @@ abstract final class AppColors {
 /// Brightness-aware UI colors. Prefer `context.ds` / [DevSyncPalette.of].
 @immutable
 class DevSyncPalette extends ThemeExtension<DevSyncPalette> {
-  const DevSyncPalette({
-    required this.background,
-    required this.surface,
-    required this.surfaceAlt,
-    required this.border,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.accentText,
-    required this.danger,
-    required this.canvas,
-    required this.isDark,
-  });
-
-  final Color background;
-  final Color surface;
-  final Color surfaceAlt;
-  final Color border;
-  final Color textPrimary;
-  final Color textMuted;
-  final Color accentText;
-  final Color danger;
-  final Color canvas;
-  final bool isDark;
-
-  /// Convenience aliases used by widgets.
-  Color get line => border;
-  Color get muted => textMuted;
-
   static const light = DevSyncPalette(
     background: AppColors.lightBackground,
     surface: AppColors.lightSurface,
@@ -99,13 +71,34 @@ class DevSyncPalette extends ThemeExtension<DevSyncPalette> {
     canvas: AppColors.darkCanvas,
     isDark: true,
   );
+  final Color background;
+  final Color surface;
+  final Color surfaceAlt;
+  final Color border;
+  final Color textPrimary;
+  final Color textMuted;
+  final Color accentText;
+  final Color danger;
+  final Color canvas;
 
-  static DevSyncPalette of(BuildContext context) {
-    return Theme.of(context).extension<DevSyncPalette>() ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DevSyncPalette.dark
-            : DevSyncPalette.light);
-  }
+  final bool isDark;
+  const DevSyncPalette({
+    required this.background,
+    required this.surface,
+    required this.surfaceAlt,
+    required this.border,
+    required this.textPrimary,
+    required this.textMuted,
+    required this.accentText,
+    required this.danger,
+    required this.canvas,
+    required this.isDark,
+  });
+
+  /// Convenience aliases used by widgets.
+  Color get line => border;
+
+  Color get muted => textMuted;
 
   @override
   DevSyncPalette copyWith({
@@ -138,6 +131,13 @@ class DevSyncPalette extends ThemeExtension<DevSyncPalette> {
   DevSyncPalette lerp(ThemeExtension<DevSyncPalette>? other, double t) {
     if (other is! DevSyncPalette) return this;
     return t < 0.5 ? this : other;
+  }
+
+  static DevSyncPalette of(BuildContext context) {
+    return Theme.of(context).extension<DevSyncPalette>() ??
+        (Theme.of(context).brightness == Brightness.dark
+            ? DevSyncPalette.dark
+            : DevSyncPalette.light);
   }
 }
 

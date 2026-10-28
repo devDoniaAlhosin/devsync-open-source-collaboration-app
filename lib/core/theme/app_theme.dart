@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app_colors.dart';
 import 'app_spacing.dart';
@@ -10,21 +10,6 @@ abstract final class AppTheme {
   /// Splash / loading window colors (native + Flutter first frame).
   static const Color splashBackground = Color(0xFFC5E6DE);
   static const Color splashIconBackground = AppColors.forest;
-
-  static ThemeData light() {
-    final palette = DevSyncPalette.light;
-    final textTheme = AppTypography.textTheme(
-      color: palette.textPrimary,
-      muted: palette.textMuted,
-    );
-
-    return _base(
-      brightness: Brightness.light,
-      palette: palette,
-      textTheme: textTheme,
-      overlay: SystemUiOverlayStyle.dark,
-    );
-  }
 
   static ThemeData dark() {
     final palette = DevSyncPalette.dark;
@@ -38,6 +23,21 @@ abstract final class AppTheme {
       palette: palette,
       textTheme: textTheme,
       overlay: SystemUiOverlayStyle.light,
+    );
+  }
+
+  static ThemeData? light() {
+    final palette = DevSyncPalette.light;
+    final textTheme = AppTypography.textTheme(
+      color: palette.textPrimary,
+      muted: palette.textMuted,
+    );
+
+    return _base(
+      brightness: Brightness.light,
+      palette: palette,
+      textTheme: textTheme,
+      overlay: SystemUiOverlayStyle.dark,
     );
   }
 
