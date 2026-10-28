@@ -11,8 +11,12 @@ class MatchFeedAppBar extends StatelessWidget {
   final VoidCallback? onBookmarkPressed;
   final VoidCallback? onNotificationsPressed;
   final bool hasUnreadNotifications;
+  final String title;
+  final bool showBookmark;
   const MatchFeedAppBar({
     super.key,
+    this.title = 'For you',
+    this.showBookmark = true,
     this.onMenuPressed,
     this.onBookmarkPressed,
     this.onNotificationsPressed,
@@ -51,7 +55,7 @@ class MatchFeedAppBar extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'For you',
+                  title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                     height: 1.2,
@@ -60,12 +64,14 @@ class MatchFeedAppBar extends StatelessWidget {
               ],
             ),
           ),
-          _SquareIconButton(
-            icon: Icons.bookmark_border_rounded,
-            tooltip: 'Saved matches',
-            onTap: onBookmarkPressed,
-          ),
-          const SizedBox(width: AppSpacing.sm),
+          if (showBookmark) ...[
+            _SquareIconButton(
+              icon: Icons.bookmark_border_rounded,
+              tooltip: 'Saved matches',
+              onTap: onBookmarkPressed,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           _SquareIconButton(
             icon: Icons.notifications_none_rounded,
             tooltip: 'Notifications',

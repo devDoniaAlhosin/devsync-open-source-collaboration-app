@@ -16,9 +16,10 @@ import '../widgets/ai_studio_scoring_card.dart';
 import '../widgets/ai_studio_suggested_matches_card.dart';
 import '../widgets/draggable_match_card.dart';
 import '../widgets/explore_devsync_section.dart';
-import '../widgets/match_card_deck.dart';
 import '../widgets/match_card_skeleton.dart';
 import '../widgets/match_feed_app_bar.dart';
+import '../widgets/match_feed_deck_view.dart';
+import '../widgets/match_feed_empty_state.dart';
 import '../widgets/match_feed_greeting.dart';
 import 'ai_analytics_screen.dart';
 import 'ai_matching_studio_screen.dart';
@@ -37,59 +38,6 @@ class MatchFeedScreen extends StatefulWidget {
 
   @override
   State<MatchFeedScreen> createState() => _MatchFeedScreenState();
-}
-
-class _MatchActionBar extends StatelessWidget {
-  final bool canUndo;
-  final VoidCallback onUndo;
-  final VoidCallback onSkip;
-  final VoidCallback onRequest;
-  final VoidCallback onInfo;
-
-  const _MatchActionBar({
-    required this.canUndo,
-    required this.onUndo,
-    required this.onSkip,
-    required this.onRequest,
-    required this.onInfo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _RoundActionButton(
-            tooltip: 'Undo last action',
-            icon: AppIcons.undo,
-            onPressed: canUndo ? onUndo : null,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          _RoundActionButton(
-            tooltip: 'Skip this match',
-            icon: AppIcons.close,
-            foreground: context.ds.danger,
-            onPressed: onSkip,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          _RoundActionButton(
-            tooltip: 'Request collaboration',
-            icon: AppIcons.heart,
-            isPrimary: true,
-            onPressed: onRequest,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          _RoundActionButton(
-            tooltip: 'How this match was scored',
-            icon: AppIcons.info,
-            onPressed: onInfo,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
@@ -156,51 +104,27 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   Widget _buildDeckView() {
     final match = _controller.currentDeckMatch;
-    final total = _controller.matches.length;
-
-    if (match == null) {
-      return DsEmptyState(
-        icon: AppIcons.feed,
-        title: total == 0 ? 'No matches yet' : 'You are all caught up',
-        message: total == 0
-            ? 'Complete your profile and add skills so we can find projects for you.'
-            : 'New project matches will appear here when they are ready.',
-        actionLabel: 'Refresh matches',
-        onAction: _controller.loadInitialData,
+    if (!_controller.hasMatches) {
+      return MatchFeedEmptyState(
+        onAddSkills: () => Navigator.of(context).pushNamed(AppRoutes.profile),
+        onConnectGitHub: () =>
+            _notify('GitHub connection is not available yet.'),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: MatchCardDeck(
-                  cardKey: _cardKey,
-                  match: match,
-                  nextMatches: _controller.nextDeckMatches,
-                  onTap: () => _navigateToProjectDetails(match),
-                  onAction: (action) => _handleDeckAction(match, action),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          _MatchActionBar(
-            canUndo: _controller.canUndo,
-            onUndo: _controller.undoLastDeckAction,
-            onSkip: () =>
-                _cardKey.currentState?.complete(MatchSwipeAction.skip),
-            onRequest: () =>
-                _cardKey.currentState?.complete(MatchSwipeAction.request),
-            onInfo: () => _showMatchInfo(match),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-        ],
-      ),
+    if (match == null) {
+      return MatchFeedEmptyState(onAddSkills: () {}, onConnectGitHub: () {});
+    }
+
+    return MatchFeedDeckView(
+      cardKey: _cardKey,
+      match: match,
+      nextMatches: _controller.nextDeckMatches,
+      canUndo: _controller.canUndo,
+      onUndo: _controller.undoLastDeckAction,
+      onTap: () => _navigateToProjectDetails(match),
+      onAction: (action) => _handleDeckAction(match, action),
+      onInfo: () => _showMatchInfo(match),
     );
   }
 
@@ -234,6 +158,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   }
 
   Widget _buildPageContent() {
+    final isEmptyFeed =
+        !_controller.isLoading &&
+        _controller.errorMessage == null &&
+        _controller.viewMode == MatchingViewMode.deck &&
+        !_controller.hasMatches;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 540),
@@ -242,16 +171,20 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
           children: [
             // Top App Bar ("DEVSYNC / For you", Menu, Bookmark, Notification)
             MatchFeedAppBar(
+              title: isEmptyFeed ? 'Your matches' : 'For you',
+              showBookmark: !isEmptyFeed,
               onMenuPressed: () => _notify('DevSync menu opened'),
               onBookmarkPressed: () => _notify('Saved matches'),
               onNotificationsPressed: () => _notify('No new notifications'),
             ),
-            // Greeting Section: "Tuesday" / "Good morning, Nour"
-            const MatchFeedGreeting(userName: 'Nour'),
-            const SizedBox(height: AppSpacing.sm),
-            // Explore DevSync Carousel ("Explore DevSync" / "FEATURES")
-            ExploreDevSyncSection(items: _buildExploreItems()),
-            const SizedBox(height: AppSpacing.xs),
+            if (isEmptyFeed)
+              Divider(height: 1, color: context.ds.border)
+            else ...[
+              const MatchFeedGreeting(userName: 'Nour'),
+              const SizedBox(height: AppSpacing.sm),
+              ExploreDevSyncSection(items: _buildExploreItems()),
+              const SizedBox(height: AppSpacing.xs),
+            ],
             // Main dynamic content area
             Expanded(
               child: _controller.isLoading
@@ -422,49 +355,5 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     if (_promptTextController.text != _controller.preferences.prompt) {
       _promptTextController.text = _controller.preferences.prompt;
     }
-  }
-}
-
-class _RoundActionButton extends StatelessWidget {
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final Color? foreground;
-  final bool isPrimary;
-
-  const _RoundActionButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-    this.foreground,
-    this.isPrimary = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-    final color = isPrimary ? AppColors.teal : context.ds.surface;
-    final iconColor =
-        foreground ?? (isPrimary ? AppColors.onTeal : context.ds.textPrimary);
-
-    return Opacity(
-      opacity: enabled ? 1 : 0.4,
-      child: Tooltip(
-        message: tooltip,
-        child: Material(
-          color: color,
-          shape: const CircleBorder(),
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: SizedBox(
-              width: isPrimary ? 64 : 54,
-              height: isPrimary ? 64 : 54,
-              child: Center(child: DsIcon(icon, color: iconColor)),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
