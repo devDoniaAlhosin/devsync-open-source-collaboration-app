@@ -3,16 +3,11 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
-import '../../data/datasources/matching_local_data_source.dart';
-import '../../data/datasources/matching_remote_data_source.dart';
-import '../../data/repositories/matching_repository_impl.dart';
 import '../../domain/entities/match_item.dart';
+import '../../matching_dependencies.dart';
 import '../controllers/matching_controller.dart';
-import '../widgets/ai_studio_preferences_card.dart';
-import '../widgets/ai_studio_scoring_card.dart';
-import '../widgets/ai_studio_suggested_matches_card.dart';
+import '../widgets/ai_studio_content.dart';
 import 'ai_analytics_screen.dart';
 import 'project_details_screen.dart';
 
@@ -41,9 +36,6 @@ class AiMatchingStudioScreen extends StatefulWidget {
 class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
   late final MatchingController _controller;
   late final bool _ownsController;
-  late final TextEditingController _promptTextController;
-
-  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -65,88 +57,43 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
 
   @override
   void dispose() {
-    _controller.removeListener(_syncPromptController);
-    _promptTextController.dispose();
     if (_ownsController) {
       _controller.dispose();
     }
     super.dispose();
   }
 
-  // ── Lifecycle ────────────────────────────────────────────────────────────
-
   @override
   void initState() {
     super.initState();
 
-    if (widget.controller != null) {
-      _controller = widget.controller!;
-      _ownsController = false;
-    } else {
-      final repository = MatchingRepositoryImpl(
-        remoteDataSource: MockMatchingRemoteDataSource(),
-        localDataSource: InMemoryMatchingLocalDataSource(),
-      );
-      _controller = MatchingController(repository: repository);
-      _ownsController = true;
-      _controller.loadInitialData();
-    }
-
-    _promptTextController = TextEditingController(
-      text: _controller.preferences.prompt,
-    );
-    _promptTextController.addListener(_onPromptTextChanged);
-    _controller.addListener(_syncPromptController);
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? createDemoMatchingController();
+    if (_ownsController) _controller.loadInitialData();
   }
 
   Widget _buildBody(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.xxl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── "DEVSYNC INTELLIGENCE / BETA" banner ──────────────────────
-          const _IntelligenceBanner(),
-          const SizedBox(height: AppSpacing.md),
-
-          // ── Match preferences (prompt + skill tags + generate button) ─
-          AiStudioPreferencesCard(
-            promptController: _promptTextController,
-            selectedTags: _controller.preferences.selectedTags,
-            onTagToggled: _controller.toggleTag,
-            isGenerating: _controller.isGenerating,
-            onGenerateMatches: () async {
-              await _controller.generateMatches();
-              if (mounted) {
-                _notify('${_controller.matches.length} matches generated');
-              }
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // ── Suggested matches list ────────────────────────────────────
-          AiStudioSuggestedMatchesCard(
-            matches: _controller.matches,
-            onViewProjectDetails: _navigateToProjectDetails,
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // ── Scoring breakdown + analytics CTA ─────────────────────────
-          AiStudioScoringCard(
-            breakdown: _controller.analytics.scoringBreakdown,
-            onExploreAnalytics: _openAnalytics,
-          ),
-        ],
-      ),
+    return AiStudioContent(
+      onPromptChanged: _controller.updatePrompt,
+      preferences: _controller.preferences,
+      matches: _controller.matches,
+      scoringBreakdown: _controller.analytics.scoringBreakdown,
+      isGenerating: _controller.isGenerating,
+      onTagToggled: _controller.toggleTag,
+      onGenerateMatches: _generateMatches,
+      onViewProjectDetails: _navigateToProjectDetails,
+      onExploreAnalytics: _openAnalytics,
     );
   }
 
-  // ── Navigation helpers ───────────────────────────────────────────────────
+  Future<void> _generateMatches() async {
+    await _controller.generateMatches();
+    if (!mounted) return;
+    _notify(
+      _controller.errorMessage ??
+          '${_controller.matches.length} matches generated',
+    );
+  }
 
   void _navigateToProjectDetails(MatchItem match) {
     Navigator.of(context).push(
@@ -169,10 +116,6 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
       );
   }
 
-  void _onPromptTextChanged() {
-    _controller.updatePrompt(_promptTextController.text);
-  }
-
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
@@ -182,48 +125,6 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
     if (refreshNeeded == true && mounted) {
       await _controller.loadInitialData();
     }
-  }
-
-  void _syncPromptController() {
-    if (_promptTextController.text != _controller.preferences.prompt) {
-      _promptTextController.text = _controller.preferences.prompt;
-    }
-  }
-}
-
-// ── Private sub-widgets ──────────────────────────────────────────────────────
-
-/// Pill-shaped banner showing "DEVSYNC INTELLIGENCE / BETA".
-class _IntelligenceBanner extends StatelessWidget {
-  const _IntelligenceBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      alignment: Alignment.centerLeft,
-      decoration: BoxDecoration(
-        color: context.ds.surface,
-        border: Border.all(color: context.ds.border),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-      ),
-      child: const Row(
-        children: [
-          DsIcon(AppIcons.sparkle, color: AppColors.teal, size: 16),
-          SizedBox(width: AppSpacing.sm),
-          Text(
-            'DEVSYNC INTELLIGENCE / BETA',
-            style: TextStyle(
-              color: AppColors.teal,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

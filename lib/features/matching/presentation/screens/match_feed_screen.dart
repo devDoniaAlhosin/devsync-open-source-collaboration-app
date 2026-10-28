@@ -5,15 +5,10 @@ import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
-import '../../../../core/widgets/ds_icon.dart';
-import '../../data/datasources/matching_local_data_source.dart';
-import '../../data/datasources/matching_remote_data_source.dart';
-import '../../data/repositories/matching_repository_impl.dart';
 import '../../domain/entities/match_item.dart';
+import '../../matching_dependencies.dart';
 import '../controllers/matching_controller.dart';
-import '../widgets/ai_studio_preferences_card.dart';
-import '../widgets/ai_studio_scoring_card.dart';
-import '../widgets/ai_studio_suggested_matches_card.dart';
+import '../widgets/ai_studio_content.dart';
 import '../widgets/draggable_match_card.dart';
 import '../widgets/explore_devsync_section.dart';
 import '../widgets/match_card_skeleton.dart';
@@ -21,6 +16,7 @@ import '../widgets/match_feed_app_bar.dart';
 import '../widgets/match_feed_deck_view.dart';
 import '../widgets/match_feed_empty_state.dart';
 import '../widgets/match_feed_greeting.dart';
+import '../widgets/match_info_sheet.dart';
 import 'ai_analytics_screen.dart';
 import 'ai_matching_studio_screen.dart';
 import 'project_details_screen.dart';
@@ -43,7 +39,6 @@ class MatchFeedScreen extends StatefulWidget {
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
   late final MatchingController _controller;
   late final bool _ownsController;
-  late final TextEditingController _promptTextController;
   final GlobalKey<DraggableMatchCardState> _cardKey =
       GlobalKey<DraggableMatchCardState>();
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
@@ -65,8 +60,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   @override
   void dispose() {
-    _controller.removeListener(_syncPromptController);
-    _promptTextController.dispose();
     if (_ownsController) {
       _controller.dispose();
     }
@@ -76,44 +69,22 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.controller != null) {
-      _controller = widget.controller!;
-      _ownsController = false;
-    } else {
-      final repository = MatchingRepositoryImpl(
-        remoteDataSource: MockMatchingRemoteDataSource(),
-        localDataSource: InMemoryMatchingLocalDataSource(),
-      );
-      _controller = MatchingController(repository: repository);
-      _ownsController = true;
-      _controller.loadInitialData();
-    }
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? createDemoMatchingController();
+    if (_ownsController) _controller.loadInitialData();
 
     final initialMode = widget.initialViewMode ?? MatchingViewMode.deck;
     _controller.setViewMode(initialMode);
-
-    _promptTextController = TextEditingController(
-      text: _controller.preferences.prompt,
-    );
-    _promptTextController.addListener(() {
-      _controller.updatePrompt(_promptTextController.text);
-    });
-
-    _controller.addListener(_syncPromptController);
   }
 
   Widget _buildDeckView() {
     final match = _controller.currentDeckMatch;
-    if (!_controller.hasMatches) {
+    if (match == null) {
       return MatchFeedEmptyState(
         onAddSkills: () => Navigator.of(context).pushNamed(AppRoutes.profile),
         onConnectGitHub: () =>
             _notify('GitHub connection is not available yet.'),
       );
-    }
-
-    if (match == null) {
-      return MatchFeedEmptyState(onAddSkills: () {}, onConnectGitHub: () {});
     }
 
     return MatchFeedDeckView(
@@ -147,7 +118,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ExploreDevSyncItem(
         title: 'Insights',
         subtitle: 'Track contributions',
-        onTap: () {},
+        onTap: _openAnalytics,
       ),
       ExploreDevSyncItem(
         title: 'Collaboration',
@@ -162,14 +133,13 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         !_controller.isLoading &&
         _controller.errorMessage == null &&
         _controller.viewMode == MatchingViewMode.deck &&
-        !_controller.hasMatches;
+        _controller.currentDeckMatch == null;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 540),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top App Bar ("DEVSYNC / For you", Menu, Bookmark, Notification)
             MatchFeedAppBar(
               title: isEmptyFeed ? 'Your matches' : 'For you',
               showBookmark: !isEmptyFeed,
@@ -185,93 +155,51 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               ExploreDevSyncSection(items: _buildExploreItems()),
               const SizedBox(height: AppSpacing.xs),
             ],
-            // Main dynamic content area
-            Expanded(
-              child: _controller.isLoading
-                  ? const Center(child: MatchCardSkeleton())
-                  : _controller.errorMessage != null
-                  ? DsEmptyState(
-                      icon: AppIcons.error,
-                      title: 'Something went wrong',
-                      message: _controller.errorMessage!,
-                      actionLabel: 'Retry',
-                      onAction: _controller.loadInitialData,
-                    )
-                  : _controller.viewMode == MatchingViewMode.studio
-                  ? _buildStudioView()
-                  : _buildDeckView(),
-            ),
+            Expanded(child: _buildContent()),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildContent() {
+    if (_controller.isLoading) return const Center(child: MatchCardSkeleton());
+    final error = _controller.errorMessage;
+    if (error != null) {
+      return DsEmptyState(
+        icon: AppIcons.error,
+        title: 'Something went wrong',
+        message: error,
+        actionLabel: 'Retry',
+        onAction: _controller.loadInitialData,
+      );
+    }
+    return switch (_controller.viewMode) {
+      MatchingViewMode.studio => _buildStudioView(),
+      MatchingViewMode.deck => _buildDeckView(),
+    };
+  }
+
   Widget _buildStudioView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.xs,
-        AppSpacing.lg,
-        AppSpacing.xxl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Beta Badge
-          Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            alignment: Alignment.centerLeft,
-            decoration: BoxDecoration(
-              color: context.ds.surface,
-              border: Border.all(color: context.ds.border),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            ),
-            child: const Row(
-              children: [
-                DsIcon(AppIcons.sparkle, color: AppColors.teal, size: 16),
-                SizedBox(width: AppSpacing.sm),
-                Text(
-                  'DEVSYNC INTELLIGENCE / BETA',
-                  style: TextStyle(
-                    color: AppColors.teal,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Preferences Card
-          AiStudioPreferencesCard(
-            promptController: _promptTextController,
-            selectedTags: _controller.preferences.selectedTags,
-            onTagToggled: _controller.toggleTag,
-            isGenerating: _controller.isGenerating,
-            onGenerateMatches: () async {
-              await _controller.generateMatches();
-              if (mounted) {
-                _notify('${_controller.matches.length} matches generated');
-              }
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Suggested Matches Card
-          AiStudioSuggestedMatchesCard(
-            matches: _controller.matches,
-            onViewProjectDetails: _navigateToProjectDetails,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Scoring Breakdown Card
-          AiStudioScoringCard(
-            breakdown: _controller.analytics.scoringBreakdown,
-            onExploreAnalytics: _openAnalytics,
-          ),
-        ],
-      ),
+    return AiStudioContent(
+      onPromptChanged: _controller.updatePrompt,
+      preferences: _controller.preferences,
+      matches: _controller.matches,
+      scoringBreakdown: _controller.analytics.scoringBreakdown,
+      isGenerating: _controller.isGenerating,
+      onTagToggled: _controller.toggleTag,
+      onGenerateMatches: _generateMatches,
+      onViewProjectDetails: _navigateToProjectDetails,
+      onExploreAnalytics: _openAnalytics,
+    );
+  }
+
+  Future<void> _generateMatches() async {
+    await _controller.generateMatches();
+    if (!mounted) return;
+    _notify(
+      _controller.errorMessage ??
+          '${_controller.matches.length} matches generated',
     );
   }
 
@@ -301,12 +229,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  void _openAnalytics() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
+  Future<void> _openAnalytics() async {
+    final refreshNeeded = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
         builder: (_) => AiAnalyticsScreen(controller: _controller),
       ),
     );
+    if (refreshNeeded == true && mounted) {
+      await _controller.loadInitialData();
+    }
   }
 
   void _showMatchInfo(MatchItem match) {
@@ -314,46 +245,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       context: context,
       backgroundColor: context.ds.surface,
       showDragHandle: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.sm,
-          AppSpacing.xl,
-          AppSpacing.xxxl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${match.score.round()}% match',
-              style: Theme.of(
-                sheetContext,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              match.reason,
-              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                color: sheetContext.ds.textMuted,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Swipe right to request collaboration or left to skip.',
-              style: Theme.of(
-                sheetContext,
-              ).textTheme.bodySmall?.copyWith(color: sheetContext.ds.textMuted),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => MatchInfoSheet(match: match),
     );
-  }
-
-  void _syncPromptController() {
-    if (_promptTextController.text != _controller.preferences.prompt) {
-      _promptTextController.text = _controller.preferences.prompt;
-    }
   }
 }

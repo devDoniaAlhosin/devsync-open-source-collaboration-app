@@ -89,6 +89,8 @@ class MatchingController extends ChangeNotifier {
   MatchingViewMode get viewMode => _viewMode;
 
   Future<void> generateMatches() async {
+    if (_isGenerating) return;
+    _errorMessage = null;
     _isGenerating = true;
     notifyListeners();
 
