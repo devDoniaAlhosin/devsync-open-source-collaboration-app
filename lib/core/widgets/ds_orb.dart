@@ -6,11 +6,7 @@ import 'ds_icon.dart';
 
 /// Gradient icon orb used on recovery / verify screens (prototype `.auth-orb`).
 class DsOrb extends StatelessWidget {
-  const DsOrb({
-    super.key,
-    required this.icon,
-    this.size = 94,
-  });
+  const DsOrb({super.key, required this.icon, this.size = 94});
 
   final IconData icon;
   final double size;

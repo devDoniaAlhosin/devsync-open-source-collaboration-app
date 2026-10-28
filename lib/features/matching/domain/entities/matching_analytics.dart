@@ -29,10 +29,6 @@ class MatchingAnalytics {
     positiveSignalsPercentage: 83,
     skillsMatchedCount: 4,
     relevanceTrend: [43.0, 59.0, 68.0, 65.0, 87.0, 100.0, 111.0],
-    scoringBreakdown: {
-      'Skills': 90,
-      'Activity': 75,
-      'Interests': 85,
-    },
+    scoringBreakdown: {'Skills': 90, 'Activity': 75, 'Interests': 85},
   );
 }

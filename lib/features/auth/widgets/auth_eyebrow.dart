@@ -12,11 +12,11 @@ class AuthEyebrow extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: AppColors.teal,
-            fontWeight: FontWeight.w800,
-            fontSize: 11,
-            letterSpacing: 1.8,
-          ),
+        color: AppColors.teal,
+        fontWeight: FontWeight.w800,
+        fontSize: 11,
+        letterSpacing: 1.8,
+      ),
     );
   }
 }

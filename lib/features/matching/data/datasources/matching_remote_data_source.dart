@@ -163,8 +163,7 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
         MatchItemModel(
           projectId: 'custom-tag-match',
           projectName: 'community/devkit',
-          description:
-              'Matched on active tags: ${tagList.join(", ")}.',
+          description: 'Matched on active tags: ${tagList.join(", ")}.',
           githubUrl: 'https://github.com/community/devkit',
           neededSkills: tagList,
           score: 79,

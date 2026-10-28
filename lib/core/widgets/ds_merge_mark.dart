@@ -97,10 +97,7 @@ class _DsMergeMarkState extends State<DsMergeMark>
             ],
           ),
           child: CustomPaint(
-            painter: _MergePainter(
-              progress: _draw.value,
-              pulse: _pulse.value,
-            ),
+            painter: _MergePainter(progress: _draw.value, pulse: _pulse.value),
           ),
         );
       },
@@ -191,10 +188,7 @@ class _MergePainter extends CustomPainter {
         ..shader = ui.Gradient.radial(
           Offset(right - sinkR * 0.25, midY - sinkR * 0.25),
           sinkR,
-          [
-            Colors.white.withValues(alpha: 0.28 * sinkT),
-            Colors.transparent,
-          ],
+          [Colors.white.withValues(alpha: 0.28 * sinkT), Colors.transparent],
         );
       canvas.drawCircle(Offset(right, midY), sinkR, hi);
     }
@@ -205,11 +199,7 @@ class _MergePainter extends CustomPainter {
         ..color = AppColors.teal.withValues(alpha: 0.22 * (1 - pulse))
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
-      canvas.drawCircle(
-        Offset(cx, cy),
-        s * 0.42 * (0.9 + pulse * 0.15),
-        ring,
-      );
+      canvas.drawCircle(Offset(cx, cy), s * 0.42 * (0.9 + pulse * 0.15), ring);
     }
   }
 

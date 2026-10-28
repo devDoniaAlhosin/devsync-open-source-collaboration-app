@@ -205,10 +205,7 @@ class _IntroScreenState extends State<IntroScreen>
                               fontSize: 12,
                             ),
                           ),
-                          AuthTextLink(
-                            label: 'Sign in →',
-                            onPressed: _goLogin,
-                          ),
+                          AuthTextLink(label: 'Sign in →', onPressed: _goLogin),
                         ],
                       ),
                     ),

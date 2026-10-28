@@ -11,10 +11,9 @@ class AuthDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
-    final style = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: ds.textMuted,
-          fontSize: 13,
-        );
+    final style = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: ds.textMuted, fontSize: 13);
 
     return Row(
       children: [

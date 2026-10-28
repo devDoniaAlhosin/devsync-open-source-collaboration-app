@@ -57,7 +57,9 @@ class _DsChipState extends State<DsChip> {
         decoration: BoxDecoration(
           color: style.background,
           borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-          border: style.border == null ? null : Border.fromBorderSide(style.border!),
+          border: style.border == null
+              ? null
+              : Border.fromBorderSide(style.border!),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -69,10 +71,10 @@ class _DsChipState extends State<DsChip> {
             Text(
               widget.label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: style.foreground,
-                    fontWeight: style.bold ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 13,
-                  ),
+                color: style.foreground,
+                fontWeight: style.bold ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 13,
+              ),
             ),
             if (widget.onDeleted != null)
               SizedBox(
@@ -82,7 +84,11 @@ class _DsChipState extends State<DsChip> {
                   padding: EdgeInsets.zero,
                   iconSize: 16,
                   onPressed: widget.onDeleted,
-                  icon: DsIcon(AppIcons.close, color: style.foreground, size: 16),
+                  icon: DsIcon(
+                    AppIcons.close,
+                    color: style.foreground,
+                    size: 16,
+                  ),
                   tooltip: 'Remove ${widget.label}',
                 ),
               ),
@@ -105,19 +111,19 @@ class _DsChipState extends State<DsChip> {
   _ChipStyle _styleFor(DsChipVariant variant, DevSyncPalette palette) {
     return switch (variant) {
       DsChipVariant.neutral || DsChipVariant.muted => _ChipStyle(
-          background: palette.surfaceAlt,
-          foreground: palette.textPrimary,
-        ),
+        background: palette.surfaceAlt,
+        foreground: palette.textPrimary,
+      ),
       DsChipVariant.selected || DsChipVariant.success => const _ChipStyle(
-          background: AppColors.teal,
-          foreground: AppColors.onTeal,
-          bold: true,
-        ),
+        background: AppColors.teal,
+        foreground: AppColors.onTeal,
+        bold: true,
+      ),
       DsChipVariant.outline => _ChipStyle(
-          background: Colors.transparent,
-          foreground: palette.textMuted,
-          border: BorderSide(color: palette.border),
-        ),
+        background: Colors.transparent,
+        foreground: palette.textMuted,
+        border: BorderSide(color: palette.border),
+      ),
     };
   }
 }

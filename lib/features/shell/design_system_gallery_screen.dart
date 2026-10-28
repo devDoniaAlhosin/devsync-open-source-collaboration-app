@@ -62,7 +62,11 @@ class _DesignSystemGalleryScreenState extends State<DesignSystemGalleryScreen> {
               _Swatch('Teal', AppColors.teal, AppColors.onTeal),
               _Swatch('Forest', AppColors.forest, AppColors.mint),
               _Swatch('Mint / splash', AppColors.mint, AppColors.forest),
-              _Swatch('Background', AppColors.lightBackground, AppColors.forest),
+              _Swatch(
+                'Background',
+                AppColors.lightBackground,
+                AppColors.forest,
+              ),
               _Swatch('Surface', AppColors.lightSurface, AppColors.forest),
               _Swatch('Border', AppColors.lightBorder, AppColors.forest),
               _Swatch('Text', AppColors.lightText, AppColors.mint),
@@ -122,9 +126,7 @@ class _DesignSystemGalleryScreenState extends State<DesignSystemGalleryScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
-                child: DsButton(label: 'Disabled', compact: true),
-              ),
+              const Expanded(child: DsButton(label: 'Disabled', compact: true)),
             ],
           ),
           const SizedBox(height: AppSpacing.xxl),
@@ -251,9 +253,9 @@ class _Swatch extends StatelessWidget {
         alignment: Alignment.bottomLeft,
         child: Text(
           name,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: onColor,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: onColor),
         ),
       ),
     );

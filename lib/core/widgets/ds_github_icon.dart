@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 /// GitHub mark (Lucide no longer ships brand icons).
 class DsGithubIcon extends StatelessWidget {
-  const DsGithubIcon({
-    super.key,
-    this.size = 18,
-    this.color,
-  });
+  const DsGithubIcon({super.key, this.size = 18, this.color});
 
   final double size;
   final Color? color;

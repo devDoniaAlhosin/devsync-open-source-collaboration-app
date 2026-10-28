@@ -7,13 +7,7 @@ class GenerateMatchesUseCase {
 
   final MatchingRepository _repository;
 
-  Future<List<MatchItem>> call({
-    required String prompt,
-    Set<String>? tags,
-  }) {
-    return _repository.generateMatchesWithPrompt(
-      prompt: prompt,
-      tags: tags,
-    );
+  Future<List<MatchItem>> call({required String prompt, Set<String>? tags}) {
+    return _repository.generateMatchesWithPrompt(prompt: prompt, tags: tags);
   }
 }

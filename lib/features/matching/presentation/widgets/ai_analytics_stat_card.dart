@@ -31,9 +31,9 @@ class AiAnalyticsStatCard extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.teal,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: AppColors.teal,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
           FittedBox(
@@ -41,9 +41,9 @@ class AiAnalyticsStatCard extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: ds.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: ds.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

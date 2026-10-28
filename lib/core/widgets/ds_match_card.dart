@@ -36,7 +36,8 @@ class DsMatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final initials = projectInitials ??
+    final initials =
+        projectInitials ??
         projectName
             .split(RegExp(r'[/\s-]'))
             .where((p) => p.isNotEmpty)
@@ -127,9 +128,7 @@ class DsMatchCard extends StatelessWidget {
           Wrap(
             spacing: 7,
             runSpacing: 7,
-            children: [
-              for (final skill in skills) DsChip(label: skill),
-            ],
+            children: [for (final skill in skills) DsChip(label: skill)],
           ),
           const SizedBox(height: AppSpacing.lg),
           Row(

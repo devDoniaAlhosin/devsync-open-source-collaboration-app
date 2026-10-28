@@ -5,10 +5,7 @@ import 'app_colors.dart';
 
 /// Typography: Bricolage Grotesque (headings) + Figtree (body / UI).
 abstract final class AppTypography {
-  static TextTheme textTheme({
-    Color? color,
-    Color? muted,
-  }) {
+  static TextTheme textTheme({Color? color, Color? muted}) {
     final base = color ?? AppColors.lightText;
     final soft = muted ?? AppColors.lightMuted;
 
@@ -51,21 +48,9 @@ abstract final class AppTypography {
         height: 1.25,
         color: base,
       ),
-      titleLarge: body(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: base,
-      ),
-      titleMedium: body(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: base,
-      ),
-      titleSmall: body(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: base,
-      ),
+      titleLarge: body(fontSize: 18, fontWeight: FontWeight.w600, color: base),
+      titleMedium: body(fontSize: 16, fontWeight: FontWeight.w600, color: base),
+      titleSmall: body(fontSize: 14, fontWeight: FontWeight.w600, color: base),
       bodyLarge: body(
         fontSize: 16,
         fontWeight: FontWeight.w400,
@@ -84,21 +69,9 @@ abstract final class AppTypography {
         height: 1.45,
         color: soft,
       ),
-      labelLarge: body(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        color: base,
-      ),
-      labelMedium: body(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-        color: soft,
-      ),
-      labelSmall: body(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: soft,
-      ),
+      labelLarge: body(fontSize: 15, fontWeight: FontWeight.w600, color: base),
+      labelMedium: body(fontSize: 13, fontWeight: FontWeight.w500, color: soft),
+      labelSmall: body(fontSize: 12, fontWeight: FontWeight.w500, color: soft),
     );
   }
 }

@@ -40,13 +40,16 @@ class AiStudioPreferencesCard extends StatelessWidget {
                 child: Text(
                   'Match\npreferences',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                      ),
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: ds.surfaceAlt,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
@@ -55,9 +58,9 @@ class AiStudioPreferencesCard extends StatelessWidget {
                 child: Text(
                   'Demo',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: ds.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: ds.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -65,9 +68,9 @@ class AiStudioPreferencesCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             'Describe the kind of open-source work you want to do.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: ds.textMuted,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
           ),
           const SizedBox(height: AppSpacing.sm),
           TextField(
@@ -75,9 +78,9 @@ class AiStudioPreferencesCard extends StatelessWidget {
             maxLines: 4,
             minLines: 3,
             textAlignVertical: TextAlignVertical.top,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.5,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(height: 1.5),
             decoration: InputDecoration(
               filled: true,
               fillColor: ds.surfaceAlt,
@@ -115,9 +118,9 @@ class AiStudioPreferencesCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Using demo project data; no external AI request is sent.',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: ds.textMuted,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: ds.textMuted),
           ),
         ],
       ),

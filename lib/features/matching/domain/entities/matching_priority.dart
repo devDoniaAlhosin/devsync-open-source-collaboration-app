@@ -16,10 +16,7 @@ enum MatchingPriority {
         'Prioritize Flutter and Firebase repositories with recent commits, active maintainers, and open issues that match my skills.',
   );
 
-  const MatchingPriority({
-    required this.label,
-    required this.promptTemplate,
-  });
+  const MatchingPriority({required this.label, required this.promptTemplate});
 
   final String label;
   final String promptTemplate;

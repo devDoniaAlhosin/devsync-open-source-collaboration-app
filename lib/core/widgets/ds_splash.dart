@@ -36,7 +36,8 @@ class DsSplash extends StatefulWidget {
   State<DsSplash> createState() => _DsSplashState();
 }
 
-class _DsSplashState extends State<DsSplash> with SingleTickerProviderStateMixin {
+class _DsSplashState extends State<DsSplash>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _fade;
   bool _mergeDone = false;
   bool _timerDone = false;
@@ -87,10 +88,7 @@ class _DsSplashState extends State<DsSplash> with SingleTickerProviderStateMixin
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DsMergeMark(
-                  size: 120,
-                  onCompleted: _onMergeDone,
-                ),
+                DsMergeMark(size: 120, onCompleted: _onMergeDone),
                 if (widget.showWordmark) ...[
                   const SizedBox(height: 28),
                   const DsWordmark(fontSize: 34),
@@ -100,8 +98,8 @@ class _DsSplashState extends State<DsSplash> with SingleTickerProviderStateMixin
                   Text(
                     widget.message!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.lightMuted,
-                        ),
+                      color: AppColors.lightMuted,
+                    ),
                   ),
                 ],
               ],

@@ -16,12 +16,12 @@ class DsLogo extends StatelessWidget {
   final double height;
 
   String get _asset => switch (variant) {
-        DsLogoVariant.wordmarkTeal => AppAssets.logoTeal,
-        DsLogoVariant.wordmarkLight => AppAssets.logoLight,
-        DsLogoVariant.wordmarkDark => AppAssets.logoDark,
-        DsLogoVariant.appIcon => AppAssets.appIconTeal,
-        DsLogoVariant.icon => AppAssets.icon,
-      };
+    DsLogoVariant.wordmarkTeal => AppAssets.logoTeal,
+    DsLogoVariant.wordmarkLight => AppAssets.logoLight,
+    DsLogoVariant.wordmarkDark => AppAssets.logoDark,
+    DsLogoVariant.appIcon => AppAssets.appIconTeal,
+    DsLogoVariant.icon => AppAssets.icon,
+  };
 
   @override
   Widget build(BuildContext context) {

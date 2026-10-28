@@ -43,9 +43,9 @@ class PasswordStrengthMeter extends StatelessWidget {
         const SizedBox(height: 7),
         Text(
           '8+ characters, uppercase, number and symbol.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: ds.textMuted,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
         ),
       ],
     );

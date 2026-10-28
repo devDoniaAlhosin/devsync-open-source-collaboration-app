@@ -26,9 +26,9 @@ class AiStudioScoringCard extends StatelessWidget {
         children: [
           Text(
             'How scoring works',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: AppSpacing.lg),
           for (final entry in breakdown.entries) ...[
@@ -37,9 +37,9 @@ class AiStudioScoringCard extends StatelessWidget {
           ],
           Text(
             'Illustrative explanations, not real model scores.',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: ds.textMuted,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: ds.textMuted),
           ),
           const SizedBox(height: AppSpacing.md),
           Center(
@@ -48,9 +48,9 @@ class AiStudioScoringCard extends StatelessWidget {
               child: Text(
                 'Explore AI quality analytics',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.teal,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppColors.teal,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -61,10 +61,7 @@ class AiStudioScoringCard extends StatelessWidget {
 }
 
 class _ScoreRow extends StatelessWidget {
-  const _ScoreRow({
-    required this.label,
-    required this.score,
-  });
+  const _ScoreRow({required this.label, required this.score});
 
   final String label;
   final int score;
@@ -80,17 +77,12 @@ class _ScoreRow extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: ds.textMuted,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: ds.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-        Expanded(
-          child: DsScoreMeter(
-            score: score.toDouble(),
-            height: 6,
-          ),
-        ),
+        Expanded(child: DsScoreMeter(score: score.toDouble(), height: 6)),
         const SizedBox(width: AppSpacing.md),
         SizedBox(
           width: 32,
@@ -98,9 +90,9 @@ class _ScoreRow extends StatelessWidget {
             '$score',
             textAlign: TextAlign.right,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: ds.textMuted,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: ds.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],

@@ -65,10 +65,12 @@ class DsTextField extends StatelessWidget {
           cursorColor: AppColors.teal,
           decoration: InputDecoration(
             labelText: label,
-            labelStyle:
-                textTheme.bodyMedium?.copyWith(color: palette.textMuted),
-            floatingLabelStyle:
-                textTheme.labelMedium?.copyWith(color: palette.accentText),
+            labelStyle: textTheme.bodyMedium?.copyWith(
+              color: palette.textMuted,
+            ),
+            floatingLabelStyle: textTheme.labelMedium?.copyWith(
+              color: palette.accentText,
+            ),
             filled: true,
             fillColor: palette.surface,
             counterText: '',

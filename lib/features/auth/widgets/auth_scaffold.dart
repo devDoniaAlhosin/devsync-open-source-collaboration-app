@@ -57,9 +57,9 @@ class AuthScaffold extends StatelessWidget {
         title: title != null
             ? Text(
                 title!,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: context.ds.textPrimary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(color: context.ds.textPrimary),
               )
             : (showWordmark ? const DsWordmark(fontSize: 20) : null),
         actions: [
@@ -88,10 +88,7 @@ class AuthScaffold extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: ListView(
-                padding: padding,
-                children: [body],
-              ),
+              child: ListView(padding: padding, children: [body]),
             ),
             if (bottom != null)
               Padding(
@@ -133,11 +130,7 @@ class AuthInlineHeading extends StatelessWidget {
         DsOrb(icon: orbIcon, size: 72),
         const SizedBox(width: AppSpacing.lg),
         Expanded(
-          child: DsPageHeader(
-            eyebrow: eyebrow,
-            title: title,
-            body: body,
-          ),
+          child: DsPageHeader(eyebrow: eyebrow, title: title, body: body),
         ),
       ],
     );
@@ -146,11 +139,7 @@ class AuthInlineHeading extends StatelessWidget {
 
 /// Muted note card used under auth forms.
 class AuthNote extends StatelessWidget {
-  const AuthNote({
-    super.key,
-    required this.title,
-    required this.message,
-  });
+  const AuthNote({super.key, required this.title, required this.message});
 
   final String title;
   final String message;

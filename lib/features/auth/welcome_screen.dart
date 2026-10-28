@@ -151,8 +151,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     height: 8,
                     decoration: BoxDecoration(
                       color: on ? AppColors.teal : ds.border,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusPill),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusPill,
+                      ),
                     ),
                   );
                 }),
@@ -199,85 +200,81 @@ class _SlideVisualView extends StatelessWidget {
         final child = switch (type) {
           _SlideVisual.brand => const _WelcomeHeroMark(),
           _SlideVisual.match => Container(
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              decoration: BoxDecoration(
-                color: ds.surface,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                border: Border.all(color: ds.border),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      const DsProjectAvatar(label: 'FC'),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'flutter-oss/charts',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: ds.textPrimary,
-                                  ),
-                            ),
-                            Text(
-                              'Needs a Dart contributor',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: ds.textMuted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const DsScoreRing(score: 92, size: 54),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.forest,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      'You shipped 14 Dart repos and Firebase auth twice.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.darkMuted,
-                            fontSize: 13,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+            decoration: BoxDecoration(
+              color: ds.surface,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              border: Border.all(color: ds.border),
             ),
-          _SlideVisual.connect => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const DsAvatar(initials: 'N', size: DsAvatarSize.lg),
+                Row(
+                  children: [
+                    const DsProjectAvatar(label: 'FC'),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'flutter-oss/charts',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: ds.textPrimary,
+                                ),
+                          ),
+                          Text(
+                            'Needs a Dart contributor',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: ds.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const DsScoreRing(score: 92, size: 54),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Container(
-                  width: 48,
-                  height: 3,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.teal,
-                    borderRadius: BorderRadius.circular(99),
+                    color: AppColors.forest,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    'You shipped 14 Dart repos and Firebase auth twice.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.darkMuted,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-                const DsAvatar(initials: 'K', size: DsAvatarSize.lg),
               ],
             ),
+          ),
+          _SlideVisual.connect => Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const DsAvatar(initials: 'N', size: DsAvatarSize.lg),
+              Container(
+                width: 48,
+                height: 3,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.teal,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const DsAvatar(initials: 'K', size: DsAvatarSize.lg),
+            ],
+          ),
         };
 
         return Center(
@@ -323,7 +320,10 @@ class _WelcomeHeroMark extends StatelessWidget {
             height: 220,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.darkBorder.withValues(alpha: 0.7), width: 1.5),
+              border: Border.all(
+                color: AppColors.darkBorder.withValues(alpha: 0.7),
+                width: 1.5,
+              ),
             ),
           ),
           Container(
@@ -331,7 +331,10 @@ class _WelcomeHeroMark extends StatelessWidget {
             height: 150,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.darkBorder.withValues(alpha: 0.55), width: 1.5),
+              border: Border.all(
+                color: AppColors.darkBorder.withValues(alpha: 0.55),
+                width: 1.5,
+              ),
             ),
           ),
           Image.asset(

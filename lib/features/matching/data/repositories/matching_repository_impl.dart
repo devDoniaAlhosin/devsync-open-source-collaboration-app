@@ -79,9 +79,7 @@ class MatchingRepositoryImpl implements MatchingRepository {
 
   @override
   Future<void> cacheMatches(String uid, List<MatchItem> matches) {
-    final models = matches
-        .map((e) => MatchItemModel.fromEntity(e))
-        .toList();
+    final models = matches.map((e) => MatchItemModel.fromEntity(e)).toList();
     return localDataSource.cacheMatches(uid, models);
   }
 }

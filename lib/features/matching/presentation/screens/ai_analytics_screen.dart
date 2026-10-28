@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -17,10 +17,7 @@ import '../widgets/ai_analytics_tuning_card.dart';
 /// Screen displaying AI model quality analytics, recommendation insights,
 /// and priority tuning controls.
 class AiAnalyticsScreen extends StatefulWidget {
-  const AiAnalyticsScreen({
-    super.key,
-    this.controller,
-  });
+  const AiAnalyticsScreen({super.key, this.controller});
 
   final MatchingController? controller;
 
@@ -87,16 +84,16 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
             Text(
               'MODEL TRANSPARENCY',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.teal,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                  ),
+                color: AppColors.teal,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
             ),
             Text(
               'Recommendation insights',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -117,9 +114,9 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                     children: [
                       Text(
                         'Understand your feedback and matching trends.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: ds.textMuted,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Row(

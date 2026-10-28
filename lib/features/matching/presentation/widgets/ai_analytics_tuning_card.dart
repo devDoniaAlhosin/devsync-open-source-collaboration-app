@@ -30,16 +30,16 @@ class AiAnalyticsTuningCard extends StatelessWidget {
         children: [
           Text(
             'Tune your recommendations',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'What should the next match prioritize?',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: ds.textMuted,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
           ),
           const SizedBox(height: AppSpacing.md),
           Wrap(
@@ -55,10 +55,7 @@ class AiAnalyticsTuningCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          DsButton(
-            label: 'Refine AI prompt',
-            onPressed: onRefinePrompt,
-          ),
+          DsButton(label: 'Refine AI prompt', onPressed: onRefinePrompt),
         ],
       ),
     );

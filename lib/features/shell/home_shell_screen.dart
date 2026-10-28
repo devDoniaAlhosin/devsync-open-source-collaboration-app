@@ -34,24 +34,26 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     final ds = context.ds;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const DsLogo(height: 28),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: DsIconButton(
-              icon: AppIcons.designSystem,
-              tooltip: 'Design system',
-              onPressed: () =>
-                  Navigator.of(context).pushNamed(AppRoutes.designSystem),
+      appBar: _index == 0
+          ? null
+          : AppBar(
+              title: const DsLogo(height: 28),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: DsIconButton(
+                    icon: AppIcons.designSystem,
+                    tooltip: 'Design system',
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed(AppRoutes.designSystem),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       body: IndexedStack(
         index: _index,
         children: [
-          // Feed tab — real MatchFeedScreen (no AppBar; shell owns it)
+          // Feed tab — owns its top appbar and header
           const MatchFeedScreen(embedded: true),
           // Remaining tabs — stub cards until their screens are ready
           for (final d in _destinations.skip(1))
@@ -106,7 +108,6 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
 
 class _Dest {
   const _Dest(this.label, this.icon, this.route, this.owner);
-
   final String label;
   final IconData icon;
   final String route;

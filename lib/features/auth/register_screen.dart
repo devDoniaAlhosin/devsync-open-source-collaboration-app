@@ -43,9 +43,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _submit() async {
@@ -74,10 +74,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.home,
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
   }
 
   @override
@@ -161,8 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 Checkbox(
                   value: _acceptedTerms,
-                  onChanged: (v) =>
-                      setState(() => _acceptedTerms = v ?? false),
+                  onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
                   activeColor: AppColors.teal,
                   checkColor: AppColors.onTeal,
                 ),
@@ -172,8 +170,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Text(
                       'I agree to the Terms and Privacy Policy',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: context.ds.textPrimary,
-                          ),
+                        color: context.ds.textPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -191,14 +189,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               Text(
                 'Already have an account?',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: context.ds.textMuted,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
               ),
               AuthTextLink(
                 label: 'Sign in',
-                onPressed: () => Navigator.of(context)
-                    .pushReplacementNamed(AppRoutes.login),
+                onPressed: () =>
+                    Navigator.of(context).pushReplacementNamed(AppRoutes.login),
               ),
             ],
           ),

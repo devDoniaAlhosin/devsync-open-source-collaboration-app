@@ -53,17 +53,15 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password reset verified (demo)')),
       );
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.login,
-        (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
       return;
     }
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.home,
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
   }
 
   @override
@@ -97,10 +95,9 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               _error!,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: context.ds.danger),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: context.ds.danger),
             ),
           ],
           const SizedBox(height: AppSpacing.md),

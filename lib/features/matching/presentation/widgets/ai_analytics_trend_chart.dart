@@ -6,10 +6,7 @@ import '../../../../core/widgets/ds_card.dart';
 
 /// Card showing bar chart visual of match relevance trend across sessions.
 class AiAnalyticsTrendChart extends StatelessWidget {
-  const AiAnalyticsTrendChart({
-    super.key,
-    required this.trendValues,
-  });
+  const AiAnalyticsTrendChart({super.key, required this.trendValues});
 
   final List<double> trendValues;
 
@@ -26,9 +23,9 @@ class AiAnalyticsTrendChart extends StatelessWidget {
         children: [
           Text(
             'Match relevance trend',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: AppSpacing.xl),
           SizedBox(
@@ -43,20 +40,20 @@ class AiAnalyticsTrendChart extends StatelessWidget {
                       builder: (context, constraints) {
                         final barHeight =
                             (trendValues[i] / (maxVal > 0 ? maxVal : 1.0)) *
-                                (constraints.maxHeight - 8);
+                            (constraints.maxHeight - 8);
                         return Column(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Container(
-                              height: barHeight.clamp(14.0, constraints.maxHeight),
+                              height: barHeight.clamp(
+                                14.0,
+                                constraints.maxHeight,
+                              ),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [
-                                    ds.surfaceAlt,
-                                    AppColors.teal,
-                                  ],
+                                  colors: [ds.surfaceAlt, AppColors.teal],
                                 ),
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(AppSpacing.radiusSm),
@@ -75,10 +72,9 @@ class AiAnalyticsTrendChart extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           Text(
             'Demo values showing how recommendations can improve with feedback.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: ds.textMuted,
-                  height: 1.5,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: ds.textMuted, height: 1.5),
           ),
         ],
       ),

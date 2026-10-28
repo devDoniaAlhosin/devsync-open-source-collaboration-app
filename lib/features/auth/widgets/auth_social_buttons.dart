@@ -7,11 +7,7 @@ import '../../../core/widgets/ds_button.dart';
 import '../../../core/widgets/ds_github_icon.dart';
 
 class AuthSocialButtons extends StatelessWidget {
-  const AuthSocialButtons({
-    super.key,
-    this.onGoogle,
-    this.onGitHub,
-  });
+  const AuthSocialButtons({super.key, this.onGoogle, this.onGitHub});
 
   final VoidCallback? onGoogle;
   final VoidCallback? onGitHub;
@@ -63,11 +59,14 @@ class AuthTextLink extends StatelessWidget {
       onPressed: onPressed,
       style: TextButton.styleFrom(
         foregroundColor: accent,
-        minimumSize: const Size(AppSpacing.minTouchTarget, AppSpacing.minTouchTarget),
+        minimumSize: const Size(
+          AppSpacing.minTouchTarget,
+          AppSpacing.minTouchTarget,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 4),
-        textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+        textStyle: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
       child: Text(label),
     );
@@ -87,7 +86,10 @@ class AuthGithubSignInLink extends StatelessWidget {
       onPressed: onPressed,
       style: TextButton.styleFrom(
         foregroundColor: accent,
-        minimumSize: const Size(AppSpacing.minTouchTarget, AppSpacing.minTouchTarget),
+        minimumSize: const Size(
+          AppSpacing.minTouchTarget,
+          AppSpacing.minTouchTarget,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 6),
       ),
       child: Row(
@@ -98,9 +100,9 @@ class AuthGithubSignInLink extends StatelessWidget {
           Text(
             'Sign in',
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: accent,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: accent,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

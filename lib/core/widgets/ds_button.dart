@@ -41,10 +41,10 @@ class _DsButtonState extends State<DsButton> {
   Widget build(BuildContext context) {
     final palette = DevSyncPalette.of(context);
     final colors = _colorsFor(widget.variant, palette);
-    final height =
-        widget.compact ? AppSpacing.buttonHeightSm : AppSpacing.buttonHeight;
-    final radius =
-        widget.compact ? AppSpacing.radiusMd : AppSpacing.radiusLg;
+    final height = widget.compact
+        ? AppSpacing.buttonHeightSm
+        : AppSpacing.buttonHeight;
+    final radius = widget.compact ? AppSpacing.radiusMd : AppSpacing.radiusLg;
 
     final child = AnimatedScale(
       scale: _pressed && _enabled ? AppAnimations.pressScale : 1,
@@ -70,8 +70,9 @@ class _DsButtonState extends State<DsButton> {
                 horizontal: widget.compact ? AppSpacing.lg : AppSpacing.xl + 2,
               ),
               child: Row(
-                mainAxisSize:
-                    widget.expanded ? MainAxisSize.max : MainAxisSize.min,
+                mainAxisSize: widget.expanded
+                    ? MainAxisSize.max
+                    : MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (widget.isLoading)
@@ -92,10 +93,10 @@ class _DsButtonState extends State<DsButton> {
                       child: Text(
                         widget.label,
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: colors.foreground,
-                              fontSize: widget.compact ? 15 : 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: colors.foreground,
+                          fontSize: widget.compact ? 15 : 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -117,27 +118,27 @@ class _DsButtonState extends State<DsButton> {
   _ButtonColors _colorsFor(DsButtonVariant variant, DevSyncPalette palette) {
     return switch (variant) {
       DsButtonVariant.primary => const _ButtonColors(
-          background: AppColors.teal,
-          foreground: AppColors.onTeal,
-        ),
+        background: AppColors.teal,
+        foreground: AppColors.onTeal,
+      ),
       DsButtonVariant.secondary => _ButtonColors(
-          background: Colors.transparent,
-          foreground: palette.textPrimary,
-          border: const BorderSide(color: AppColors.teal, width: 1.5),
-        ),
+        background: Colors.transparent,
+        foreground: palette.textPrimary,
+        border: const BorderSide(color: AppColors.teal, width: 1.5),
+      ),
       DsButtonVariant.quiet => _ButtonColors(
-          background: palette.surfaceAlt,
-          foreground: palette.textPrimary,
-        ),
+        background: palette.surfaceAlt,
+        foreground: palette.textPrimary,
+      ),
       DsButtonVariant.danger => _ButtonColors(
-          background: Colors.transparent,
-          foreground: palette.danger,
-          border: BorderSide(color: palette.danger, width: 1.5),
-        ),
+        background: Colors.transparent,
+        foreground: palette.danger,
+        border: BorderSide(color: palette.danger, width: 1.5),
+      ),
       DsButtonVariant.dangerFilled => _ButtonColors(
-          background: palette.danger,
-          foreground: Colors.white,
-        ),
+        background: palette.danger,
+        foreground: Colors.white,
+      ),
     };
   }
 }

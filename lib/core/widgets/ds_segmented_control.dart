@@ -63,9 +63,7 @@ class DsSegmentedControl extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: AnimatedDefaultTextStyle(
                               duration: AppAnimations.fast,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium!
+                              style: Theme.of(context).textTheme.labelMedium!
                                   .copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: i == index

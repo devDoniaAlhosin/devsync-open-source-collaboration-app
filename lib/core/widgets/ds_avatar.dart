@@ -19,16 +19,16 @@ class DsAvatar extends StatelessWidget {
   final DsAvatarSize size;
 
   double get _diameter => switch (size) {
-        DsAvatarSize.sm => 40,
-        DsAvatarSize.md => AppSpacing.avatar,
-        DsAvatarSize.lg => AppSpacing.avatarLg,
-      };
+    DsAvatarSize.sm => 40,
+    DsAvatarSize.md => AppSpacing.avatar,
+    DsAvatarSize.lg => AppSpacing.avatarLg,
+  };
 
   double get _fontSize => switch (size) {
-        DsAvatarSize.sm => 14,
-        DsAvatarSize.md => 15,
-        DsAvatarSize.lg => 30,
-      };
+    DsAvatarSize.sm => 14,
+    DsAvatarSize.md => 15,
+    DsAvatarSize.lg => 30,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +44,7 @@ class DsAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: ds.border),
         image: imageUrl != null
-            ? DecorationImage(
-                image: NetworkImage(imageUrl!),
-                fit: BoxFit.cover,
-              )
+            ? DecorationImage(image: NetworkImage(imageUrl!), fit: BoxFit.cover)
             : null,
       ),
       child: imageUrl != null
@@ -55,10 +52,10 @@ class DsAvatar extends StatelessWidget {
           : Text(
               label.length > 2 ? label.substring(0, 2) : label,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.teal,
-                    fontSize: _fontSize,
-                    fontWeight: FontWeight.w800,
-                  ),
+                color: AppColors.teal,
+                fontSize: _fontSize,
+                fontWeight: FontWeight.w800,
+              ),
             ),
     );
   }
@@ -66,11 +63,7 @@ class DsAvatar extends StatelessWidget {
 
 /// Squared project / repo mark (prototype `.pa`) — intentional dark panel.
 class DsProjectAvatar extends StatelessWidget {
-  const DsProjectAvatar({
-    super.key,
-    required this.label,
-    this.large = false,
-  });
+  const DsProjectAvatar({super.key, required this.label, this.large = false});
 
   final String label;
   final bool large;
@@ -94,10 +87,10 @@ class DsProjectAvatar extends StatelessWidget {
             ? label.substring(0, 2).toUpperCase()
             : label.toUpperCase(),
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.teal,
-              fontSize: large ? 24 : 16,
-              fontWeight: FontWeight.w800,
-            ),
+          color: AppColors.teal,
+          fontSize: large ? 24 : 16,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

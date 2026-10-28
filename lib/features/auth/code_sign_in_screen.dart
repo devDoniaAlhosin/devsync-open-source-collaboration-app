@@ -69,8 +69,7 @@ class _CodeSignInScreenState extends State<CodeSignInScreen> {
             orbIcon: AppIcons.shield,
             eyebrow: 'No password needed',
             title: 'Sign in with a code.',
-            body:
-                "Enter your email. We'll send a six-digit verification code.",
+            body: "Enter your email. We'll send a six-digit verification code.",
           ),
           const SizedBox(height: AppSpacing.xl),
           DsTextField(

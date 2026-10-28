@@ -37,9 +37,9 @@ class DsScoreMeter extends StatelessWidget {
             child: Text(
               '${score.round()}%',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.teal,
-                    fontWeight: FontWeight.w800,
-                  ),
+                color: AppColors.teal,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         if (showLabel) const SizedBox(height: AppSpacing.sm),
@@ -116,10 +116,10 @@ class DsScoreRing extends StatelessWidget {
               child: Text(
                 '${score.round()}',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: context.ds.textPrimary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: size > 90 ? 30 : 17,
-                    ),
+                  color: context.ds.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: size > 90 ? 30 : 17,
+                ),
               ),
             ),
           );

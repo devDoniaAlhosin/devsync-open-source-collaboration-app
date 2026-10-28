@@ -1,14 +1,11 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
 import '../../../../core/widgets/ds_icon.dart';
-import '../../../../core/widgets/ds_icon_button.dart';
-import '../../../../core/widgets/ds_segmented_control.dart';
 import '../../data/datasources/matching_local_data_source.dart';
 import '../../data/datasources/matching_remote_data_source.dart';
 import '../../data/repositories/matching_repository_impl.dart';
@@ -18,15 +15,19 @@ import '../widgets/ai_studio_preferences_card.dart';
 import '../widgets/ai_studio_scoring_card.dart';
 import '../widgets/ai_studio_suggested_matches_card.dart';
 import '../widgets/draggable_match_card.dart';
+import '../widgets/explore_devsync_section.dart';
 import '../widgets/match_card_deck.dart';
 import '../widgets/match_card_skeleton.dart';
+import '../widgets/match_feed_app_bar.dart';
+import '../widgets/match_feed_greeting.dart';
 import 'ai_analytics_screen.dart';
 import 'project_details_screen.dart';
 
-/// Screen hosting the AI Studio recommendation experience and Card Deck swiping.
+/// Screen hosting the AI recommendations and interactive match feed.
 ///
-/// Follows Clean Architecture by delegating state and business logic to
-/// [MatchingController].
+/// Follows Clean Architecture and SOLID standards by delegating state and
+/// business logic to [MatchingController] and separating presentation into
+/// focused reusable widgets.
 class MatchFeedScreen extends StatefulWidget {
   final bool embedded;
   final MatchingController? controller;
@@ -68,8 +69,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       _controller.loadInitialData();
     }
 
-    final initialMode = widget.initialViewMode ??
-        (widget.embedded ? MatchingViewMode.studio : MatchingViewMode.deck);
+    final initialMode = widget.initialViewMode ?? MatchingViewMode.deck;
     _controller.setViewMode(initialMode);
 
     _promptTextController = TextEditingController(
@@ -116,14 +116,22 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
+  void _notify(String message) {
+    final messenger = _scaffoldMessengerKey.currentState ??
+        ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
     _controller.performDeckAction(match, action);
     final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
-    final messenger =
-        _scaffoldMessengerKey.currentState ?? ScaffoldMessenger.maybeOf(context);
-    messenger?.showSnackBar(
-      SnackBar(content: Text('${match.projectName} $verb')),
-    );
+    _notify('${match.projectName} $verb');
   }
 
   void _showMatchInfo(MatchItem match) {
@@ -168,6 +176,43 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
+  List<ExploreDevSyncItem> _buildExploreItems() {
+    return [
+      ExploreDevSyncItem(
+        title: _controller.viewMode == MatchingViewMode.studio
+            ? 'Swipe Deck'
+            : 'AI Studio',
+        subtitle: _controller.viewMode == MatchingViewMode.studio
+            ? 'Return to match cards'
+            : 'Tune your match\nprompts',
+        onTap: () {
+          final next = _controller.viewMode == MatchingViewMode.studio
+              ? MatchingViewMode.deck
+              : MatchingViewMode.studio;
+          _controller.setViewMode(next);
+          _notify(next == MatchingViewMode.studio
+              ? 'Switched to AI Studio'
+              : 'Switched to Swipe Deck');
+        },
+      ),
+      ExploreDevSyncItem(
+        title: 'Task board',
+        subtitle: 'Plan your next\nsprint',
+        onTap: () => Navigator.of(context).pushNamed(AppRoutes.requests),
+      ),
+      ExploreDevSyncItem(
+        title: 'Insights',
+        subtitle: 'Track contributions',
+        onTap: _openAnalytics,
+      ),
+      ExploreDevSyncItem(
+        title: 'Collaboration',
+        subtitle: 'Work with your\nteam',
+        onTap: () => Navigator.of(context).pushNamed(AppRoutes.requests),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final page = SafeArea(
@@ -179,7 +224,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
 
     if (widget.embedded) return page;
-    return Scaffold(body: page);
+    return ScaffoldMessenger(
+      key: _scaffoldMessengerKey,
+      child: Scaffold(body: page),
+    );
   }
 
   Widget _buildPageContent() {
@@ -188,7 +236,19 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         constraints: const BoxConstraints(maxWidth: 540),
         child: Column(
           children: [
-            _buildHeader(),
+            // Top App Bar ("DEVSYNC / For you", Menu, Bookmark, Notification)
+            MatchFeedAppBar(
+              onMenuPressed: () => _notify('DevSync menu opened'),
+              onBookmarkPressed: () => _notify('Saved matches'),
+              onNotificationsPressed: () => _notify('No new notifications'),
+            ),
+            // Greeting Section: "Tuesday" / "Good morning, Nour"
+            const MatchFeedGreeting(userName: 'Nour'),
+            const SizedBox(height: AppSpacing.sm),
+            // Explore DevSync Carousel ("Explore DevSync" / "FEATURES")
+            ExploreDevSyncSection(items: _buildExploreItems()),
+            const SizedBox(height: AppSpacing.xs),
+            // Main dynamic content area
             Expanded(
               child: _controller.isLoading
                   ? const Center(child: MatchCardSkeleton())
@@ -210,72 +270,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    final ds = context.ds;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'D E V S Y N C',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: ds.textMuted,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                    ),
-                    Text(
-                      _controller.viewMode == MatchingViewMode.studio
-                          ? 'AI Studio'
-                          : 'Match Deck',
-                      style:
-                          Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                    ),
-                  ],
-                ),
-              ),
-              DsIconButton(
-                icon: AppIcons.tasks,
-                tooltip: 'AI quality analytics',
-                onPressed: _openAnalytics,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          DsSegmentedControl(
-            labels: const ['AI Studio', 'Swipe Deck'],
-            index: _controller.viewMode == MatchingViewMode.studio ? 0 : 1,
-            onChanged: (i) {
-              _controller.setViewMode(
-                i == 0 ? MatchingViewMode.studio : MatchingViewMode.deck,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStudioView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.sm,
+        AppSpacing.xs,
         AppSpacing.lg,
         AppSpacing.xxl,
       ),
@@ -318,14 +317,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
             onGenerateMatches: () async {
               await _controller.generateMatches();
               if (mounted) {
-                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${_controller.matches.length} matches generated',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                _notify('${_controller.matches.length} matches generated');
               }
             },
           ),
@@ -349,7 +341,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Widget _buildDeckView() {
     final match = _controller.currentDeckMatch;
     final total = _controller.matches.length;
-    final currentPos = _controller.currentDeckIndex;
 
     if (match == null) {
       return DsEmptyState(
@@ -367,58 +358,21 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Your next match',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: context.ds.surface,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-                  border: Border.all(color: context.ds.border),
-                ),
-                child: Text(
-                  '${currentPos + 1} / $total',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.teal,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 460),
-                      child: MatchCardDeck(
-                        cardKey: _cardKey,
-                        match: match,
-                        nextMatches: _controller.nextDeckMatches,
-                        onTap: () => _navigateToProjectDetails(match),
-                        onAction: (action) => _handleDeckAction(match, action),
-                      ),
-                    ),
-                  ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: MatchCardDeck(
+                  cardKey: _cardKey,
+                  match: match,
+                  nextMatches: _controller.nextDeckMatches,
+                  onTap: () => _navigateToProjectDetails(match),
+                  onAction: (action) => _handleDeckAction(match, action),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.xs),
           _MatchActionBar(
             canUndo: _controller.canUndo,
             onUndo: _controller.undoLastDeckAction,
@@ -427,14 +381,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 _cardKey.currentState?.complete(MatchSwipeAction.request),
             onInfo: () => _showMatchInfo(match),
           ),
-          const SizedBox(height: AppSpacing.md),
-          DsButton(
-            label: 'Open collaboration workspace',
-            icon: AppIcons.forward,
-            compact: true,
-            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.requests),
-          ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.xs),
         ],
       ),
     );

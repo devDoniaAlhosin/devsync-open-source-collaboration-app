@@ -31,13 +31,16 @@ class AiStudioSuggestedMatchesCard extends StatelessWidget {
                 child: Text(
                   'Suggested\nmatches',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                      ),
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.teal,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
@@ -45,9 +48,9 @@ class AiStudioSuggestedMatchesCard extends StatelessWidget {
                 child: Text(
                   '${matches.length} matches',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.onTeal,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.onTeal,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -59,20 +62,16 @@ class AiStudioSuggestedMatchesCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   'No matches generated yet. Tap "Generate matches" above.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: ds.textMuted,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
                   textAlign: TextAlign.center,
                 ),
               ),
             )
           else
             for (var i = 0; i < matches.length; i++) ...[
-              if (i > 0)
-                Divider(
-                  height: AppSpacing.xxl,
-                  color: ds.border,
-                ),
+              if (i > 0) Divider(height: AppSpacing.xxl, color: ds.border),
               _MatchRow(
                 match: matches[i],
                 onTap: () => onViewProjectDetails(matches[i]),
@@ -85,10 +84,7 @@ class AiStudioSuggestedMatchesCard extends StatelessWidget {
 }
 
 class _MatchRow extends StatelessWidget {
-  const _MatchRow({
-    required this.match,
-    required this.onTap,
-  });
+  const _MatchRow({required this.match, required this.onTap});
 
   final MatchItem match;
   final VoidCallback onTap;
@@ -105,35 +101,30 @@ class _MatchRow extends StatelessWidget {
             Expanded(
               child: Text(
                 match.projectName,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
               '${match.score.round()}%',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppColors.teal,
-                    fontWeight: FontWeight.w800,
-                  ),
+                color: AppColors.teal,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           match.description,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: ds.textMuted,
-                height: 1.5,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: ds.textMuted, height: 1.5),
         ),
         const SizedBox(height: AppSpacing.sm),
-        DsScoreMeter(
-          score: match.score,
-          height: 6,
-          animate: true,
-        ),
+        DsScoreMeter(score: match.score, height: 6, animate: true),
         const SizedBox(height: AppSpacing.xs),
         Align(
           alignment: Alignment.center,
@@ -145,9 +136,9 @@ class _MatchRow extends StatelessWidget {
                 Text(
                   'View project details →',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppColors.teal,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: AppColors.teal,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),

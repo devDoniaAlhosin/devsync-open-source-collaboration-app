@@ -18,19 +18,15 @@ class AiAnalyticsTransparencyCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DsIcon(
-            AppIcons.shield,
-            color: AppColors.teal,
-            size: 22,
-          ),
+          const DsIcon(AppIcons.shield, color: AppColors.teal, size: 22),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               'Matching should use public GitHub activity and your declared skills only. Scores here are sample data.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: ds.textPrimary,
-                    height: 1.55,
-                  ),
+                color: ds.textPrimary,
+                height: 1.55,
+              ),
             ),
           ),
         ],

@@ -131,10 +131,7 @@ class _IntroOrbitVisualState extends State<IntroOrbitVisual>
                 final y = reduce ? 0.0 : (_float.value - 0.5) * 10;
                 return Transform.translate(
                   offset: Offset(0, y),
-                  child: Transform.rotate(
-                    angle: -0.08,
-                    child: child,
-                  ),
+                  child: Transform.rotate(angle: -0.08, child: child),
                 );
               },
               child: _FloatingChip(
@@ -155,10 +152,7 @@ class _IntroOrbitVisualState extends State<IntroOrbitVisual>
                 final y = reduce ? 0.0 : (0.5 - _float.value) * 10;
                 return Transform.translate(
                   offset: Offset(0, y),
-                  child: Transform.rotate(
-                    angle: 0.08,
-                    child: child,
-                  ),
+                  child: Transform.rotate(angle: 0.08, child: child),
                 );
               },
               child: _FloatingChip(
@@ -215,10 +209,10 @@ class _FloatingChip extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: context.ds.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
+              color: context.ds.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -227,11 +221,7 @@ class _FloatingChip extends StatelessWidget {
 }
 
 class _DashedRingPainter extends CustomPainter {
-  _DashedRingPainter({
-    required this.color,
-    this.dash = 6,
-    this.gap = 5,
-  });
+  _DashedRingPainter({required this.color, this.dash = 6, this.gap = 5});
 
   final Color color;
   final double dash;

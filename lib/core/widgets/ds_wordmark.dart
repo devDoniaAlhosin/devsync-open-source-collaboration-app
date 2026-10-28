@@ -19,11 +19,11 @@ class DsWordmark extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = DevSyncPalette.of(context);
     final base = Theme.of(context).textTheme.displayMedium?.copyWith(
-          fontSize: fontSize,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.9,
-          height: 1,
-        );
+      fontSize: fontSize,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -0.9,
+      height: 1,
+    );
 
     return Text.rich(
       TextSpan(

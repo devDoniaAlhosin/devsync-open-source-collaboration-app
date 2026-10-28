@@ -28,8 +28,9 @@ class DsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = DevSyncPalette.of(context);
     final radius = borderRadius ?? AppSpacing.radiusCard;
-    final color =
-        tone == DsCardTone.inset ? palette.surfaceAlt : palette.surface;
+    final color = tone == DsCardTone.inset
+        ? palette.surfaceAlt
+        : palette.surface;
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radius),
       side: BorderSide(color: palette.border),

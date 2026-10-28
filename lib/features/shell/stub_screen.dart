@@ -23,7 +23,8 @@ class StubScreen extends StatelessWidget {
       body: DsEmptyState(
         icon: AppIcons.construction,
         title: '$title (stub)',
-        message: description ??
+        message:
+            description ??
             'Owned by $owner. Replace this stub with the real screen.',
         actionLabel: 'Back',
         onAction: () {

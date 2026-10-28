@@ -85,12 +85,7 @@ class _DsOtpFieldState extends State<DsOtpField> {
                 width: filled || focused ? 2 : 1.5,
               ),
               boxShadow: focused
-                  ? [
-                      const BoxShadow(
-                        color: AppColors.glow,
-                        blurRadius: 12,
-                      ),
-                    ]
+                  ? [const BoxShadow(color: AppColors.glow, blurRadius: 12)]
                   : null,
             ),
             child: TextField(
@@ -100,10 +95,10 @@ class _DsOtpFieldState extends State<DsOtpField> {
               keyboardType: TextInputType.number,
               maxLength: 1,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: ds.textPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 24,
-                  ),
+                color: ds.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 24,
+              ),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
                 counterText: '',
