@@ -9,11 +9,12 @@ import '../../core/widgets/ds_bottom_nav.dart';
 import '../../core/widgets/ds_card.dart';
 import '../../core/widgets/ds_icon.dart';
 import '../../core/widgets/ds_section_header.dart';
+import '../matching/presentation/screens/match_feed_screen.dart';
 import '../profile/presentation/screens/profile_screen.dart';
 import '../projects/screens/projects_shell.dart';
 import 'app_drawer.dart';
 
-/// Bottom-nav shell with stub destinations for each feature area.
+/// Bottom-nav shell with feature destinations.
 class HomeShellScreen extends StatefulWidget {
   const HomeShellScreen({super.key});
 
@@ -74,15 +75,17 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
   Widget build(BuildContext context) {
     final dest = _destinations[_index];
     final ds = context.ds;
-    final isProfile = _index == 4;
+    final isMatches = _index == 0;
     final isProjectsArea = _index == 1 || _index == 2;
+    final isProfile = _index == 4;
+    final hideShellAppBar = isMatches || isProjectsArea || isProfile;
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: AppDrawer(
         onSelectTab: (i) => setState(() => _index = i),
       ),
-      appBar: (isProfile || isProjectsArea)
+      appBar: hideShellAppBar
           ? null
           : DsAppBar(
               title: dest.title,
@@ -94,10 +97,12 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
               },
               notificationBadge: true,
             ),
-      body: isProfile
-          ? const ProfileScreen()
+      body: isMatches
+          ? const MatchFeedScreen()
           : isProjectsArea
           ? const ProjectsShell(showBottomNav: false)
+          : isProfile
+          ? const ProfileScreen()
           : Padding(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
               child: Column(

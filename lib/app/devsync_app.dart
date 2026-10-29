@@ -17,6 +17,11 @@ import '../features/auth/presentation/pages/verify_email_screen.dart';
 import '../features/auth/presentation/pages/welcome_screen.dart';
 import '../features/auth/presentation/widgets/auth_gate.dart';
 import '../features/auth/presentation/widgets/email_link_listener.dart';
+import '../features/matching/presentation/screens/ai_analytics_screen.dart';
+import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
+import '../features/matching/presentation/screens/match_feed_screen.dart';
+import '../features/matching/presentation/screens/project_details_screen.dart'
+    as matching_details;
 import '../features/projects/data/project_repository.dart';
 import '../features/projects/models/project_model.dart';
 import '../features/projects/screens/project_details_screen.dart';
@@ -152,25 +157,26 @@ class _DevSyncAppState extends State<DevSyncApp> {
         },
         AppRoutes.settings: (_) => const SettingsScreen(),
         AppRoutes.home: (_) => const HomeShellScreen(),
-        AppRoutes.feed: (_) => const StubScreen(
-          title: 'Match feed',
-          owner: 'Emad',
-          description: 'Ranked AI match feed with score meter and reason.',
-        ),
+        AppRoutes.feed: (_) => const MatchFeedScreen(),
+        AppRoutes.analytics: (_) => const AiAnalyticsScreen(),
+        AppRoutes.aiStudio: (_) => const AiMatchingStudioScreen(),
         AppRoutes.projects: (_) => const ProjectsShell(),
         AppRoutes.projectDetail: (context) {
-          final project = ModalRoute.of(context)?.settings.arguments;
-          if (project is! ProjectModel) {
-            return const StubScreen(
-              title: 'Project detail',
-              owner: 'Bishay',
-              description:
-                  'Open a project from Discover or My projects to view its details.',
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is matching_details.ProjectDetailsArguments) {
+            return matching_details.ProjectDetailsScreen(arguments: args);
+          }
+          if (args is ProjectModel) {
+            return ProjectDetailsScreen(
+              project: args,
+              stats: ProjectRepository.statsFor(args.id),
             );
           }
-          return ProjectDetailsScreen(
-            project: project,
-            stats: ProjectRepository.statsFor(project.id),
+          return const StubScreen(
+            title: 'Project detail',
+            owner: 'Bishay',
+            description:
+                'Open a project from Discover, Matches, or My projects.',
           );
         },
         AppRoutes.profile: (_) => const ProfileScreen(),
@@ -182,16 +188,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
           owner: 'Donia',
           description: 'If-time board for collaboration tasks.',
         ),
-        AppRoutes.aiStudio: (_) => const StubScreen(
-          title: 'AI Studio',
-          owner: 'Emad',
-          description: 'Prompt studio for matching quality.',
-        ),
-        AppRoutes.aiInsights: (_) => const StubScreen(
-          title: 'AI analytics',
-          owner: 'Emad',
-          description: 'If-time quality analytics.',
-        ),
+        AppRoutes.aiInsights: (_) => const AiAnalyticsScreen(),
         AppRoutes.insights: (_) => const InsightsScreen(),
         AppRoutes.community: (_) => const StubScreen(
           title: 'Community',
