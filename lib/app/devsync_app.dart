@@ -1,5 +1,6 @@
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/requests/presentation/pages/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -180,8 +181,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
           );
         },
         AppRoutes.profile: (_) => const ProfileScreen(),
-        AppRoutes.requests: (_) =>
-            const StubScreen(title: 'Collaboration requests', owner: 'Yousef'),
+        AppRoutes.requests: (_) => const RequestsScreen(),
         AppRoutes.discover: (_) => const ProjectsShell(),
         AppRoutes.tasks: (_) => const StubScreen(
           title: 'Task board',

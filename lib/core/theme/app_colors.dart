@@ -20,6 +20,7 @@ abstract final class AppColors {
   static const Color lightBorder = Color(0xFFE2DDD3);
   static const Color lightText = Color(0xFF0E2624);
   static const Color lightMuted = Color(0xFF5C6B66);
+
   /// Link / eyebrow accent (prototype `--accent-text`, not bright teal).
   static const Color lightAccentText = Color(0xFF087C71);
   static const Color lightCanvas = Color(0xFFEDE9E0);

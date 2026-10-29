@@ -55,11 +55,11 @@ abstract final class AppTheme {
       onSecondary: AppColors.onTeal,
       surface: palette.surface,
       onSurface: palette.textPrimary,
+      onSurfaceVariant: palette.textMuted,
       error: palette.danger,
-      onError: brightness == Brightness.light
-          ? Colors.white
-          : AppColors.forest,
+      onError: brightness == Brightness.light ? Colors.white : AppColors.forest,
       outline: palette.border,
+      surfaceContainerHighest: palette.surfaceAlt,
     );
 
     return ThemeData(
@@ -106,8 +106,9 @@ abstract final class AppTheme {
         fillColor: palette.surface,
         hintStyle: textTheme.bodyMedium?.copyWith(color: palette.textMuted),
         labelStyle: textTheme.bodyMedium?.copyWith(color: palette.textMuted),
-        floatingLabelStyle:
-            textTheme.labelMedium?.copyWith(color: palette.accentText),
+        floatingLabelStyle: textTheme.labelMedium?.copyWith(
+          color: palette.accentText,
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,

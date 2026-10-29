@@ -12,6 +12,7 @@ import '../../core/widgets/ds_section_header.dart';
 import '../matching/presentation/screens/match_feed_screen.dart';
 import '../profile/presentation/screens/profile_screen.dart';
 import '../projects/screens/projects_shell.dart';
+import '../requests/presentation/pages/requests_screen.dart';
 import 'app_drawer.dart';
 
 /// Bottom-nav shell with feature destinations.
@@ -77,8 +78,10 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     final ds = context.ds;
     final isMatches = _index == 0;
     final isProjectsArea = _index == 1 || _index == 2;
+    final isRequests = _index == 3;
     final isProfile = _index == 4;
-    final hideShellAppBar = isMatches || isProjectsArea || isProfile;
+    final hideShellAppBar =
+        isMatches || isProjectsArea || isRequests || isProfile;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -101,6 +104,8 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
           ? const MatchFeedScreen()
           : isProjectsArea
           ? const ProjectsShell(showBottomNav: false)
+          : isRequests
+          ? const RequestsScreen()
           : isProfile
           ? const ProfileScreen()
           : Padding(
