@@ -9,6 +9,7 @@ import '../../core/widgets/ds_bottom_nav.dart';
 import '../../core/widgets/ds_card.dart';
 import '../../core/widgets/ds_icon.dart';
 import '../../core/widgets/ds_section_header.dart';
+import '../profile/presentation/screens/profile_screen.dart';
 import 'app_drawer.dart';
 
 /// Bottom-nav shell with stub destinations for each feature area.
@@ -79,48 +80,49 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       drawer: AppDrawer(
         onSelectTab: (i) => setState(() => _index = i),
       ),
-      appBar: DsAppBar(
-        title: dest.title,
-        eyebrow: dest.eyebrow,
-        showMenu: true,
-        onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-        onNotifications: () {
-          Navigator.of(context).pushNamed(AppRoutes.notifications);
-        },
-        notificationBadge: true,
-        onSettings: isProfile
-            ? () => Navigator.of(context).pushNamed(AppRoutes.settings)
-            : null,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DsSectionHeader(
-              title: dest.label,
-              subtitle: 'Stub — owned by ${dest.owner}',
+      appBar: isProfile
+          ? null
+          : DsAppBar(
+              title: dest.title,
+              eyebrow: dest.eyebrow,
+              showMenu: true,
+              onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+              onNotifications: () {
+                Navigator.of(context).pushNamed(AppRoutes.notifications);
+              },
+              notificationBadge: true,
             ),
-            const SizedBox(height: AppSpacing.md),
-            DsCard(
-              onTap: () => Navigator.of(context).pushNamed(dest.route),
-              child: Row(
+      body: isProfile
+          ? const ProfileScreen()
+          : Padding(
+              padding: const EdgeInsets.all(AppSpacing.screenPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  DsIcon(dest.icon, color: AppColors.teal),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      'Open ${dest.title} screen stub',
-                      style: Theme.of(context).textTheme.titleMedium,
+                  DsSectionHeader(
+                    title: dest.label,
+                    subtitle: 'Stub — owned by ${dest.owner}',
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  DsCard(
+                    onTap: () => Navigator.of(context).pushNamed(dest.route),
+                    child: Row(
+                      children: [
+                        DsIcon(dest.icon, color: AppColors.teal),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            'Open ${dest.title} screen stub',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        DsIcon(AppIcons.chevronRight, color: ds.textMuted),
+                      ],
                     ),
                   ),
-                  DsIcon(AppIcons.chevronRight, color: ds.textMuted),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
       bottomNavigationBar: DsBottomNav(
         index: _index,
         onChanged: (i) => setState(() => _index = i),

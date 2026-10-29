@@ -1,3 +1,5 @@
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -155,11 +157,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
             const StubScreen(title: 'Projects', owner: 'Bishay'),
         AppRoutes.projectDetail: (_) =>
             const StubScreen(title: 'Project detail', owner: 'Bishay'),
-        AppRoutes.profile: (_) => const StubScreen(
-          title: 'Profile',
-          owner: 'Saga',
-          description: 'Skills, bio, and GitHub activity.',
-        ),
+        AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.requests: (_) =>
             const StubScreen(title: 'Collaboration requests', owner: 'Yousef'),
         AppRoutes.discover: (_) => const StubScreen(
@@ -182,11 +180,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
           owner: 'Emad',
           description: 'If-time quality analytics.',
         ),
-        AppRoutes.insights: (_) => const StubScreen(
-          title: 'Insights',
-          owner: 'Saga',
-          description: 'Contribution insights from public GitHub data.',
-        ),
+        AppRoutes.insights: (_) => const InsightsScreen(),
         AppRoutes.community: (_) => const StubScreen(
           title: 'Community',
           owner: 'If time',
