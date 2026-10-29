@@ -10,6 +10,7 @@ import '../../core/widgets/ds_card.dart';
 import '../../core/widgets/ds_icon.dart';
 import '../../core/widgets/ds_section_header.dart';
 import '../profile/presentation/screens/profile_screen.dart';
+import '../projects/screens/projects_shell.dart';
 import 'app_drawer.dart';
 
 /// Bottom-nav shell with stub destinations for each feature area.
@@ -74,13 +75,14 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     final dest = _destinations[_index];
     final ds = context.ds;
     final isProfile = _index == 4;
+    final isProjectsArea = _index == 1 || _index == 2;
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: AppDrawer(
         onSelectTab: (i) => setState(() => _index = i),
       ),
-      appBar: isProfile
+      appBar: (isProfile || isProjectsArea)
           ? null
           : DsAppBar(
               title: dest.title,
@@ -94,6 +96,8 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
             ),
       body: isProfile
           ? const ProfileScreen()
+          : isProjectsArea
+          ? const ProjectsShell(showBottomNav: false)
           : Padding(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
               child: Column(

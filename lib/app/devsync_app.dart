@@ -17,6 +17,10 @@ import '../features/auth/presentation/pages/verify_email_screen.dart';
 import '../features/auth/presentation/pages/welcome_screen.dart';
 import '../features/auth/presentation/widgets/auth_gate.dart';
 import '../features/auth/presentation/widgets/email_link_listener.dart';
+import '../features/projects/data/project_repository.dart';
+import '../features/projects/models/project_model.dart';
+import '../features/projects/screens/project_details_screen.dart';
+import '../features/projects/screens/projects_shell.dart';
 import '../features/shell/home_shell_screen.dart';
 import '../features/shell/settings_screen.dart';
 import '../features/shell/stub_screen.dart';
@@ -153,18 +157,26 @@ class _DevSyncAppState extends State<DevSyncApp> {
           owner: 'Emad',
           description: 'Ranked AI match feed with score meter and reason.',
         ),
-        AppRoutes.projects: (_) =>
-            const StubScreen(title: 'Projects', owner: 'Bishay'),
-        AppRoutes.projectDetail: (_) =>
-            const StubScreen(title: 'Project detail', owner: 'Bishay'),
+        AppRoutes.projects: (_) => const ProjectsShell(),
+        AppRoutes.projectDetail: (context) {
+          final project = ModalRoute.of(context)?.settings.arguments;
+          if (project is! ProjectModel) {
+            return const StubScreen(
+              title: 'Project detail',
+              owner: 'Bishay',
+              description:
+                  'Open a project from Discover or My projects to view its details.',
+            );
+          }
+          return ProjectDetailsScreen(
+            project: project,
+            stats: ProjectRepository.statsFor(project.id),
+          );
+        },
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.requests: (_) =>
             const StubScreen(title: 'Collaboration requests', owner: 'Yousef'),
-        AppRoutes.discover: (_) => const StubScreen(
-          title: 'Discover',
-          owner: 'Bishay',
-          description: 'Find a team that needs your skills.',
-        ),
+        AppRoutes.discover: (_) => const ProjectsShell(),
         AppRoutes.tasks: (_) => const StubScreen(
           title: 'Task board',
           owner: 'Donia',
