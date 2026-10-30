@@ -74,7 +74,7 @@ class _VerifyEmailViewState extends State<_VerifyEmailView>
             );
           case VerifyEmailVerified():
             getIt<AuthCubit>().refresh();
-            navigateToHome(context);
+            navigateToOnboarding(context);
           case VerifyEmailNotYet():
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(

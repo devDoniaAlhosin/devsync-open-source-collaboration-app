@@ -1,32 +1,40 @@
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/pages/requests_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/theme/app_animations.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/ds_fade_switch.dart';
 import '../core/widgets/ds_splash.dart';
-import '../features/auth/presentation/pages/code_sign_in_screen.dart';
-import '../features/auth/presentation/pages/email_link_sent_screen.dart';
-import '../features/auth/presentation/pages/forgot_password_screen.dart';
-import '../features/auth/presentation/pages/login_screen.dart';
-import '../features/auth/presentation/pages/register_screen.dart';
-import '../features/auth/presentation/pages/verify_code_screen.dart';
-import '../features/auth/presentation/pages/verify_email_screen.dart';
-import '../features/auth/presentation/pages/welcome_screen.dart';
+import '../features/auth/presentation/screens/code_sign_in_screen.dart';
+import '../features/auth/presentation/screens/email_link_sent_screen.dart';
+import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/auth/presentation/screens/register_screen.dart';
+import '../features/auth/presentation/screens/verify_code_screen.dart';
+import '../features/auth/presentation/screens/verify_email_screen.dart';
+import '../features/auth/presentation/screens/welcome_screen.dart';
 import '../features/auth/presentation/widgets/auth_gate.dart';
 import '../features/auth/presentation/widgets/email_link_listener.dart';
 import '../features/matching/presentation/screens/ai_analytics_screen.dart';
 import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
+import '../features/matching/presentation/screens/connect_github_screen.dart';
+import '../features/matching/presentation/screens/liked_matches_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart'
     as matching_details;
+import '../features/profile/data/models/profile_data.dart';
+import '../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../features/requests/presentation/screens/connected_celebration_screen.dart';
+import '../features/requests/presentation/screens/notification_permission_screen.dart';
 import '../features/projects/data/project_repository.dart';
 import '../features/projects/models/project_model.dart';
 import '../features/projects/screens/project_details_screen.dart';
 import '../features/projects/screens/projects_shell.dart';
+import '../features/notifications/presentation/screens/notifications_screen.dart';
 import '../features/shell/home_shell_screen.dart';
 import '../features/shell/settings_screen.dart';
 import '../features/shell/stub_screen.dart';
@@ -138,69 +146,104 @@ class _DevSyncAppState extends State<DevSyncApp> {
         );
       },
       initialRoute: AppRoutes.intro,
-      routes: {
-        AppRoutes.intro: (_) => const AuthGate(),
-        AppRoutes.welcome: (_) => const WelcomeScreen(),
-        AppRoutes.login: (_) => const LoginScreen(),
-        AppRoutes.register: (_) => const RegisterScreen(),
-        AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
-        AppRoutes.codeSignIn: (_) => const CodeSignInScreen(),
-        AppRoutes.emailLinkSent: (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          final email = args is Map ? args['email'] as String? : null;
-          return EmailLinkSentScreen(email: email);
-        },
-        AppRoutes.verifyCode: (_) => const VerifyCodeScreen(),
-        AppRoutes.verifyEmail: (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          final email = args is Map ? args['email'] as String? : null;
-          return VerifyEmailScreen(email: email);
-        },
-        AppRoutes.settings: (_) => const SettingsScreen(),
-        AppRoutes.home: (_) => const HomeShellScreen(),
-        AppRoutes.feed: (_) => const MatchFeedScreen(),
-        AppRoutes.analytics: (_) => const AiAnalyticsScreen(),
-        AppRoutes.aiStudio: (_) => const AiMatchingStudioScreen(),
-        AppRoutes.projects: (_) => const ProjectsShell(),
-        AppRoutes.projectDetail: (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          if (args is matching_details.ProjectDetailsArguments) {
-            return matching_details.ProjectDetailsScreen(arguments: args);
-          }
-          if (args is ProjectModel) {
-            return ProjectDetailsScreen(
-              project: args,
-              stats: ProjectRepository.statsFor(args.id),
-            );
-          }
-          return const StubScreen(
-            title: 'Project detail',
-            owner: 'Bishay',
-            description:
-                'Open a project from Discover, Matches, or My projects.',
-          );
-        },
-        AppRoutes.profile: (_) => const ProfileScreen(),
-        AppRoutes.requests: (_) => const RequestsScreen(),
-        AppRoutes.discover: (_) => const ProjectsShell(),
-        AppRoutes.tasks: (_) => const StubScreen(
-          title: 'Task board',
-          owner: 'Donia',
-          description: 'If-time board for collaboration tasks.',
-        ),
-        AppRoutes.aiInsights: (_) => const AiAnalyticsScreen(),
-        AppRoutes.insights: (_) => const InsightsScreen(),
-        AppRoutes.community: (_) => const StubScreen(
-          title: 'Community',
-          owner: 'If time',
-          description: 'Community screen is planned after the core freeze.',
-        ),
-        AppRoutes.notifications: (_) => const StubScreen(
-          title: 'Notifications',
-          owner: 'Yousef',
-          description: 'Alerts for requests, matches, and tasks.',
-        ),
-      },
+      onGenerateRoute: _onGenerateRoute,
+    );
+  }
+
+  /// Named pushes use [DsFadePageRoute] (proto `motion-enter` feel).
+  static Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
+    final name = settings.name;
+    if (name == null) return null;
+
+    final Widget? page = switch (name) {
+      AppRoutes.intro => const AuthGate(),
+      AppRoutes.welcome => const WelcomeScreen(),
+      AppRoutes.login => const LoginScreen(),
+      AppRoutes.register => const RegisterScreen(),
+      AppRoutes.forgotPassword => const ForgotPasswordScreen(),
+      AppRoutes.codeSignIn => const CodeSignInScreen(),
+      AppRoutes.emailLinkSent => EmailLinkSentScreen(
+        email: _emailArg(settings.arguments),
+      ),
+      AppRoutes.verifyCode => const VerifyCodeScreen(),
+      AppRoutes.verifyEmail => VerifyEmailScreen(
+        email: _emailArg(settings.arguments),
+      ),
+      AppRoutes.settings => const SettingsScreen(),
+      AppRoutes.home => HomeShellScreen(
+        initialIndex: settings.arguments is int
+            ? settings.arguments! as int
+            : 0,
+      ),
+      AppRoutes.feed => const MatchFeedScreen(),
+      AppRoutes.likedMatches => const LikedMatchesScreen(),
+      AppRoutes.connectGithub => const ConnectGithubScreen(),
+      AppRoutes.editProfile => EditProfileScreen(
+        data: ProfileData.sample(),
+        asOnboarding: true,
+      ),
+      AppRoutes.analytics => const AiAnalyticsScreen(),
+      AppRoutes.aiStudio => const AiMatchingStudioScreen(),
+      AppRoutes.projects => const ProjectsShell(initialTab: 1),
+      AppRoutes.projectDetail => _projectDetailPage(settings.arguments),
+      AppRoutes.profile => const ProfileScreen(),
+      AppRoutes.requests => const RequestsScreen(),
+      AppRoutes.notificationPermission => NotificationPermissionScreen(
+        args: settings.arguments is NotificationPermissionArgs
+            ? settings.arguments! as NotificationPermissionArgs
+            : const NotificationPermissionArgs(
+                maintainerName: 'Karim',
+                projectName: 'flutter-oss/charts',
+              ),
+      ),
+      AppRoutes.connected => ConnectedCelebrationScreen(
+        args: settings.arguments is ConnectedCelebrationArgs
+            ? settings.arguments! as ConnectedCelebrationArgs
+            : const ConnectedCelebrationArgs(
+                collaboratorName: 'Sara',
+                collaboratorInitials: 'SA',
+                projectName: 'devsync-api',
+              ),
+      ),
+      AppRoutes.discover => const ProjectsShell(initialTab: 0),
+      AppRoutes.tasks => const StubScreen(
+        title: 'Task board',
+        owner: 'Donia',
+        description: 'If-time board for collaboration tasks.',
+      ),
+      AppRoutes.aiInsights => const AiAnalyticsScreen(),
+      AppRoutes.insights => const InsightsScreen(),
+      AppRoutes.community => const StubScreen(
+        title: 'Community',
+        owner: 'If time',
+        description: 'Community screen is planned after the core freeze.',
+      ),
+      AppRoutes.notifications => const NotificationsScreen(),
+      _ => null,
+    };
+
+    if (page == null) return null;
+    return DsFadePageRoute<dynamic>(settings: settings, builder: (_) => page);
+  }
+
+  static String? _emailArg(Object? args) {
+    return args is Map ? args['email'] as String? : null;
+  }
+
+  static Widget _projectDetailPage(Object? args) {
+    if (args is matching_details.ProjectDetailsArguments) {
+      return matching_details.ProjectDetailsScreen(arguments: args);
+    }
+    if (args is ProjectModel) {
+      return ProjectDetailsScreen(
+        project: args,
+        stats: ProjectRepository.statsFor(args.id),
+      );
+    }
+    return const StubScreen(
+      title: 'Project detail',
+      owner: 'Bishay',
+      description: 'Open a project from Discover, Matches, or My projects.',
     );
   }
 }

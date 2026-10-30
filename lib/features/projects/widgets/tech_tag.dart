@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 
 class TechTag extends StatelessWidget {
@@ -42,7 +43,7 @@ class TechTag extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (showCheck) ...[
-            Icon(Icons.check_rounded, size: 14, color: foreground),
+            Icon(AppIcons.success, size: 14, color: foreground),
             const SizedBox(width: 5),
           ],
           Text(

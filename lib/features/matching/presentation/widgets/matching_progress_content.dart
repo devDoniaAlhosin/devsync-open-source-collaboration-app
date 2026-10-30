@@ -4,6 +4,7 @@ import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_icon.dart';
+import 'match_card_skeleton.dart';
 
 /// Reusable loading content whose phase comes from the caller's operation.
 class MatchingProgressContent extends StatelessWidget {
@@ -92,7 +93,7 @@ class MatchingProgressContent extends StatelessWidget {
           ),
           if (!isComplete) ...[
             const SizedBox(height: AppSpacing.lg),
-            const _ProgressMatchSkeleton(),
+            const MatchCardSkeleton(),
           ],
         ],
       ),
@@ -105,63 +106,6 @@ enum MatchingProgressPhase {
   compareProjects,
   writeReasons,
   complete,
-}
-
-class _Placeholder extends StatelessWidget {
-  final double height;
-
-  final double? width;
-  final double radius;
-  const _Placeholder({required this.height, this.width, this.radius = 8});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: width,
-    height: height,
-    decoration: BoxDecoration(
-      color: context.ds.border.withValues(alpha: 0.75),
-      borderRadius: BorderRadius.circular(radius),
-    ),
-  );
-}
-
-class _ProgressMatchSkeleton extends StatelessWidget {
-  const _ProgressMatchSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return ExcludeSemantics(
-      child: _ProgressSurface(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Row(
-                children: [
-                  _Placeholder(width: 48, height: 48, radius: 16),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(child: _Placeholder(height: 18)),
-                  SizedBox(width: AppSpacing.md),
-                  _Placeholder(width: 48, height: 48, radius: 24),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              const _Placeholder(height: 48, radius: 16),
-              const SizedBox(height: AppSpacing.md),
-              const _Placeholder(height: 10),
-              const SizedBox(height: AppSpacing.md),
-              const FractionallySizedBox(
-                widthFactor: 0.7,
-                alignment: Alignment.centerLeft,
-                child: _Placeholder(height: 10),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _ProgressStep extends StatelessWidget {

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/app_routes.dart';
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/ds_app_bar.dart';
 import '../../../core/widgets/ds_icon_button.dart';
+import '../../../core/widgets/ds_page_fade.dart';
+import '../../requests/presentation/collaboration_request_flow.dart';
 import '../models/project_model.dart';
 import '../models/project_stats.dart';
 import '../project_layout.dart';
@@ -14,7 +19,6 @@ import '../widgets/project_background.dart';
 import '../widgets/project_identity.dart';
 import '../widgets/skill_alignment_bar.dart';
 import '../widgets/tech_tag.dart';
-import '../widgets/workspace_header.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   const ProjectDetailsScreen({
@@ -33,18 +37,16 @@ class ProjectDetailsScreen extends StatefulWidget {
 class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   bool _requested = false;
 
-  void _requestCollaboration() {
+  Future<void> _requestCollaboration() async {
+    final sent = await presentCollaborationRequestFlow(
+      context,
+      projectName: widget.project.title,
+      maintainerName: widget.stats.ownerName,
+      initials: initialsFromTitle(widget.project.title),
+      matchPercent: widget.project.matchPercentage,
+    );
+    if (!mounted || !sent) return;
     setState(() => _requested = true);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            'Request sent to ${widget.stats.ownerName}. They usually reply '
-            'within a day.',
-          ),
-        ),
-      );
   }
 
   void _previewWorkspace() {
@@ -61,85 +63,77 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
+      appBar: DsAppBar(
+        title: 'Project details',
+        eyebrow: 'WORKSPACE',
+        onNotifications: () {
+          Navigator.of(context).pushNamed(AppRoutes.notifications);
+        },
+      ),
       body: ProjectBackground(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              WorkspaceHeader(
-                title: 'Project details',
-                maxContentWidth: ProjectLayout.detailsWidth,
-                onBack: () => Navigator.of(context).maybePop(),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final gutter = ProjectLayout.gutterFor(
-                      constraints.maxWidth,
-                    );
-                    return SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(gutter, 20, gutter, 28),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: ProjectLayout.detailsWidth,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ProjectIdentity(
-                                project: widget.project,
-                                stats: widget.stats,
+        child: DsPageFade(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(gutter, 20, gutter, 28),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: ProjectLayout.detailsWidth,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ProjectIdentity(
+                          project: widget.project,
+                          stats: widget.stats,
+                        ),
+                        const SizedBox(height: 20),
+                      _buildMatchCard(),
+                      const SizedBox(height: 26),
+                      _SectionHeading(
+                        title: 'About',
+                        trailing: Text(
+                          'Open source',
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: AppColors.teal,
+                                fontSize: 11,
+                                letterSpacing: 0,
                               ),
-                              const SizedBox(height: 20),
-                              _buildMatchCard(),
-                              const SizedBox(height: 26),
-                              _SectionHeading(
-                                title: 'About',
-                                trailing: Text(
-                                  'Open source',
-                                  style: Theme.of(context).textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: AppColors.teal,
-                                        fontSize: 11,
-                                        letterSpacing: 0,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                widget.project.description,
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: context.ds.textPrimary.withValues(
-                                        alpha: 0.87,
-                                      ),
-                                      height: 1.65,
-                                      fontSize: 14.5,
-                                    ),
-                              ),
-                              const SizedBox(height: 26),
-                              _buildSkills(),
-                              const SizedBox(height: 24),
-                              _buildRepoMetrics(),
-                              const SizedBox(height: 20),
-                              _buildOwnerCard(),
-                              const SizedBox(height: 18),
-                              ProjectActionButton(
-                                label: 'Preview project workspace',
-                                trailingIcon: Icons.arrow_forward_rounded,
-                                variant: ProjectActionButtonVariant.secondary,
-                                onPressed: _previewWorkspace,
-                              ),
-                            ],
-                          ),
                         ),
                       ),
-                    );
-                  },
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.project.description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: context.ds.textPrimary.withValues(
+                            alpha: 0.87,
+                          ),
+                          height: 1.65,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      _buildSkills(),
+                      const SizedBox(height: 24),
+                      _buildRepoMetrics(),
+                      const SizedBox(height: 20),
+                      _buildOwnerCard(),
+                      const SizedBox(height: 18),
+                      ProjectActionButton(
+                        label: 'Preview project workspace',
+                        trailingIcon: AppIcons.forward,
+                        variant: ProjectActionButtonVariant.secondary,
+                        onPressed: _previewWorkspace,
+                      ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -316,7 +310,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Icon(Icons.schedule_rounded, size: 19, color: context.ds.textMuted),
+          Icon(AppIcons.clock, size: 19, color: context.ds.textMuted),
         ],
       ),
     );
@@ -370,43 +364,37 @@ class _DetailsActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.ds.surface.withValues(alpha: 0.97),
-        border: Border(top: BorderSide(color: context.ds.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        minimum: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        child: SizedBox(
-          height: 56,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: ProjectLayout.detailsWidth,
-              ),
-              child: Row(
-                children: [
-                  DsIconButton(
-                    icon: Icons.close_rounded,
-                    onPressed: onClose,
-                    tooltip: 'Close project',
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: SizedBox(
+        height: 56,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: ProjectLayout.detailsWidth,
+            ),
+            child: Row(
+              children: [
+                DsIconButton(
+                  icon: AppIcons.close,
+                  onPressed: onClose,
+                  tooltip: 'Close project',
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ProjectActionButton(
+                    label: requested
+                        ? 'Request sent'
+                        : 'Request to collaborate',
+                    icon: requested ? AppIcons.success : null,
+                    variant: requested
+                        ? ProjectActionButtonVariant.secondary
+                        : ProjectActionButtonVariant.primary,
+                    onPressed: requested ? null : onRequest,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ProjectActionButton(
-                      label: requested
-                          ? 'Request sent'
-                          : 'Request to collaborate',
-                      icon: requested ? Icons.check_rounded : null,
-                      variant: requested
-                          ? ProjectActionButtonVariant.secondary
-                          : ProjectActionButtonVariant.primary,
-                      onPressed: requested ? null : onRequest,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

@@ -11,6 +11,7 @@ import '../../../../core/widgets/ds_chip.dart';
 import '../../../../core/widgets/ds_logo.dart';
 import '../../../../core/widgets/ds_merge_mark.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../../../core/widgets/ds_wordmark.dart';
 import '../widgets/auth_social_buttons.dart';
 
@@ -140,29 +141,34 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_slides.length, (i) {
-                  final on = i == _index;
-                  return AnimatedContainer(
-                    duration: AppAnimations.normal,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: on ? 22 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: on ? AppColors.teal : ds.border,
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.radiusPill,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              DsButton(
-                label: isLast ? 'Get started' : 'Next',
-                icon: AppIcons.forward,
-                onPressed: _next,
+              DsStagger(
+                mainAxisSize: MainAxisSize.min,
+                spacing: AppSpacing.xl,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(_slides.length, (i) {
+                      final on = i == _index;
+                      return AnimatedContainer(
+                        duration: AppAnimations.normal,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: on ? 22 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: on ? AppColors.teal : ds.border,
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusPill,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  DsButton(
+                    label: isLast ? 'Get started' : 'Next',
+                    icon: AppIcons.forward,
+                    onPressed: _next,
+                  ),
+                ],
               ),
             ],
           ),

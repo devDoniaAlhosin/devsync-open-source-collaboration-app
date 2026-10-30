@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/ds_icon_button.dart';
+import '../../../../core/widgets/ds_app_bar.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../data/datasources/matching_local_data_source.dart';
 import '../../data/datasources/matching_remote_data_source.dart';
 import '../../data/repositories/matching_repository_impl.dart';
@@ -35,37 +35,11 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
     final ds = context.ds;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(
-            left: AppSpacing.lg,
-            bottom: AppSpacing.sm,
-            top: AppSpacing.sm,
-          ),
-          child: DsIconButton(
-            icon: AppIcons.back,
-            tooltip: 'Back',
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'DEVSYNC',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: ds.textMuted,
-                letterSpacing: 1.4,
-              ),
-            ),
-            Text(
-              'AI Analytics',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ],
-        ),
+      appBar: DsAppBar(
+        title: 'AI Analytics',
+        eyebrow: 'DEVSYNC',
+        showBack: true,
+        onBack: () => Navigator.of(context).maybePop(),
       ),
       body: SafeArea(
         child: Center(
@@ -78,8 +52,8 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(AppSpacing.screenPadding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: DsStagger(
+                    spacing: AppSpacing.lg,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,15 +76,13 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                                   letterSpacing: -0.3,
                                 ),
                           ),
+                          Text(
+                            'Understand your feedback and matching trends.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: ds.textMuted),
+                          ),
                         ],
                       ),
-                      Text(
-                        'Understand your feedback and matching trends.',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
                       Row(
                         children: [
                           Expanded(
@@ -135,18 +107,15 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.lg),
                       AiAnalyticsTrendChart(
                         trendValues: analytics.relevanceTrend,
                       ),
-                      const SizedBox(height: AppSpacing.lg),
                       AiAnalyticsTuningCard(
                         selectedPriority: _selectedPriority,
                         onPrioritySelected: (p) =>
                             setState(() => _selectedPriority = p),
                         onRefinePrompt: _handleRefinePrompt,
                       ),
-                      const SizedBox(height: AppSpacing.lg),
                       const AiAnalyticsTransparencyCard(),
                     ],
                   ),

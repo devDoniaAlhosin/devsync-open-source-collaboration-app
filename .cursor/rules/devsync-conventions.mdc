@@ -1,0 +1,106 @@
+---
+description: DevSync team conventions — architecture + design system
+alwaysApply: true
+---
+
+# DevSync conventions
+
+This repo is a team project. Every feature must follow the same architecture and UI patterns. Do not invent a second style.
+
+## Clean architecture
+
+### Layers
+
+```text
+Presentation (screens, widgets, Cubit) → Domain (entities, use cases, contracts) → Data (impl, models, sources) → Firebase
+```
+
+Domain must not import Flutter UI, Cubit, GetIt, Firebase, or Data.
+
+### Feature layout
+
+Canonical tree for every feature:
+
+```text
+lib/features/<feature>/
+  presentation/
+    screens/     # route-level *Screen widgets (*_screen.dart)
+    widgets/
+    cubit/       # when the feature has app state
+  domain/        # when talking to Firestore/API
+  data/
+```
+
+- Folder name is **`screens`**, file/class is `*_screen.dart` / `*Screen`. Never use `pages/` with `*_screen.dart`.
+- Auth is the Firestore template: domain → data → presentation with Cubit + `Result`/`Failure` + GetIt in `lib/core/di/injection.dart`.
+- Skip Domain/Data for tiny local-only UI; still keep screens under `presentation/screens/`.
+- Feature DI helpers are OK if invoked from `configureDependencies()` (one composition root).
+
+### Convergence (do when touching that feature)
+
+- **Projects** — move `screens/` and `widgets/` under `projects/presentation/`; add domain + `Result` repos when Firestore-backed.
+- **Matching** — migrate `MatchingController` → Cubit(s) registered via `injection.dart`.
+- **Profile / requests** — when leaving dummy data, copy auth’s domain/data/Cubit pattern.
+- **Shell** — optional `shell/presentation/screens/` (navigation host only; low priority).
+- Disambiguate duplicate names across features (e.g. two `ProjectDetailsScreen`s).
+
+### Shared vs feature-owned
+
+Promote to `lib/core/` when **another feature will use it**. Do not hide shared contracts inside auth.
+
+| Shared in `core/` | Stays in the feature |
+|---|---|
+| `Result<T>`, `Failure` and the standard failure types | Firebase / API mapping (`mapAuthError`) |
+| GetIt composition root, `UseCase`, `FirestoreCollections` | Entities, use cases, Cubits, screens |
+| `Ds*` widgets, theme, icons | Feature widgets (`AuthScaffold`) |
+
+### Errors (normalized)
+
+All repositories return `Result<T>` from `lib/core/result/result.dart`.
+
+Map errors at the repository boundary to types in `lib/core/error/failures.dart`:
+
+- `NetworkFailure`
+- `NotFoundFailure`
+- `PermissionFailure`
+- `ValidationFailure`
+- `AuthFailure` (session / credentials — any feature)
+- `CancelledFailure` (user dismissed Google/GitHub)
+- `UnexpectedFailure` (never pass raw exception text to the UI)
+
+Add a **feature-only** `Failure` subclass (example: `EmailNotVerifiedFailure`) only when no other feature will need that type.
+
+Do not add dartz. Do not throw `FirebaseAuthException` into Cubits or widgets.
+
+### State
+
+Cubit first (`flutter_bloc`). GetIt for DI. Screens render states; they do not call Firebase.
+
+Copy `lib/features/auth/` when a feature talks to Firestore. Skip Domain/Data for tiny local-only UI.
+
+## Typography / page headers
+
+Headings and type roles are **app-wide**. Do not invent feature-local heading widgets.
+
+### Source of truth
+
+- Fonts, weights, sizes → `Theme.of(context).textTheme` from `lib/core/theme/app_typography.dart`
+- Page intro composition → `DsPageHeader` in `lib/core/widgets/ds_page_header.dart`
+- Shared widgets live in `lib/core/`; do not add `features/*/widgets/*_heading.dart` for the same pattern
+
+### Page headers
+
+| Need | Use |
+|---|---|
+| Auth / marketing intro (teal uppercase eyebrow) | `DsPageHeader` default / `DsPageHeaderStyle.brand` |
+| List / feature page title (muted meta like `2 listed` + large title) | `DsPageHeader(style: DsPageHeaderStyle.page, …)` |
+| Top chrome (menu, back, actions) | `DsAppBar` only — compact title |
+
+- `displaySmall` is the canonical in-body page title (~30 / w800). Prefer the theme role over ad-hoc `copyWith(fontSize: …)` for page titles.
+- When the body already has `DsPageHeader` (`page`), do not duplicate that large title in `DsAppBar`.
+
+### Anti-patterns
+
+- One-off `ProjectsPageHeading` / `*PageHeading` per feature
+- Hardcoding heading font sizes/weights that already exist as `TextTheme` roles
+- Using `DsAppBar` as the primary large page title on list screens

@@ -3,17 +3,22 @@ import 'package:flutter/material.dart';
 import '../theme/app_animations.dart';
 import '../theme/app_colors.dart';
 import 'ds_icon.dart';
+import 'ds_logo.dart';
 
 class DsBottomNavItem {
   const DsBottomNavItem({
-    required this.icon,
+    this.icon,
     required this.label,
+    this.brandMark = false,
     this.prominent = false,
     this.showBadge = false,
-  });
+  }) : assert(icon != null || brandMark, 'Provide an icon or brandMark');
 
-  final IconData icon;
+  final IconData? icon;
   final String label;
+
+  /// Shows the DevSync icon mark instead of [icon].
+  final bool brandMark;
   final bool prominent;
   final bool showBadge;
 }
@@ -31,6 +36,16 @@ class DsBottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
 
+  /// Pill height inside the floating chrome.
+  static const double pillHeight = 70;
+
+  /// Bottom inset under the pill (outside [SafeArea]).
+  static const double outerBottom = 12;
+
+  /// Extra bottom space body content needs when [Scaffold.extendBody] is true
+  /// (pill + outer padding; safe-area is still applied via [MediaQuery]).
+  static const double bodyClearance = pillHeight + outerBottom;
+
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
@@ -38,7 +53,7 @@ class DsBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, outerBottom),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: ds.surface,
@@ -53,7 +68,7 @@ class DsBottomNav extends StatelessWidget {
             ],
           ),
           child: SizedBox(
-            height: 70,
+            height: pillHeight,
             child: Padding(
               padding: const EdgeInsets.all(5),
               child: Row(
@@ -195,6 +210,17 @@ class _Icon extends StatelessWidget {
   final bool selected;
   final Color color;
 
+  Widget _glyph({required double size, required Color color}) {
+    if (item.brandMark) {
+      return DsLogo(
+        variant: DsLogoVariant.icon,
+        height: size,
+        color: color,
+      );
+    }
+    return DsIcon(item.icon!, size: size, color: color);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
@@ -220,7 +246,7 @@ class _Icon extends StatelessWidget {
           ],
         ),
         alignment: Alignment.center,
-        child: DsIcon(item.icon, size: 18, color: AppColors.onTeal),
+        child: _glyph(size: 18, color: AppColors.onTeal),
       );
     } else {
       icon = AnimatedSlide(
@@ -229,7 +255,7 @@ class _Icon extends StatelessWidget {
         offset: selected ? const Offset(0, -0.08) : Offset.zero,
         child: SizedBox(
           height: 24,
-          child: DsIcon(item.icon, size: 20, color: color),
+          child: _glyph(size: 20, color: color),
         ),
       );
     }

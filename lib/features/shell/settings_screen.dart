@@ -14,7 +14,9 @@ import '../../core/widgets/ds_button.dart';
 import '../../core/widgets/ds_card.dart';
 import '../../core/widgets/ds_icon.dart';
 import '../../core/widgets/ds_info_row.dart';
+import '../../core/widgets/ds_page_fade.dart';
 import '../../core/widgets/ds_segmented_control.dart';
+import '../../core/widgets/ds_staggered_entrance.dart';
 import '../../core/widgets/ds_text_field.dart';
 import '../../core/widgets/ds_toggle.dart';
 import '../auth/presentation/cubit/auth_cubit.dart';
@@ -113,174 +115,209 @@ class _SettingsScreenState extends State<SettingsScreen> {
           eyebrow: 'WORKSPACE',
           onThemeToggle: DevSyncApp.toggleTheme,
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          children: [
-            const _Sec('Appearance'),
-            const SizedBox(height: AppSpacing.sm),
-            DsSegmentedControl(
-              labels: const ['System', 'Dark', 'Light'],
-              index: _themeIndex,
-              onChanged: (i) {
-                DevSyncApp.setThemeMode(switch (i) {
-                  0 => ThemeMode.system,
-                  1 => ThemeMode.dark,
-                  _ => ThemeMode.light,
-                });
-                setState(() {});
-              },
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            const _Sec('Notifications'),
-            const SizedBox(height: AppSpacing.sm),
-            DsCard(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
+        body: DsPageFade(
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            children: [
+              DsStagger(
+                spacing: AppSpacing.xl,
                 children: [
-                  DsInfoRow(
-                    icon: AppIcons.users,
-                    title: 'Requests and replies',
-                    showDivider: true,
-                    trailing: DsToggle(
-                      value: _notifyRequests,
-                      semanticLabel: 'Requests',
-                      onChanged: (v) => setState(() => _notifyRequests = v),
-                    ),
-                  ),
-                  DsInfoRow(
-                    icon: AppIcons.zap,
-                    title: 'New matches',
-                    showDivider: true,
-                    trailing: DsToggle(
-                      value: _notifyMatches,
-                      semanticLabel: 'Matches',
-                      onChanged: (v) => setState(() => _notifyMatches = v),
-                    ),
-                  ),
-                  DsInfoRow(
-                    icon: AppIcons.success,
-                    title: 'Task changes',
-                    trailing: DsToggle(
-                      value: _notifyTasks,
-                      semanticLabel: 'Tasks',
-                      onChanged: (v) => setState(() => _notifyTasks = v),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            const _Sec('App build'),
-            const SizedBox(height: AppSpacing.sm),
-            DsCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          _isPro ? AppAssets.appIcon : AppAssets.appIconTeal,
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.cover,
-                          semanticLabel: _isPro
-                              ? 'DevSync Pro'
-                              : 'DevSync Free',
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _isPro ? 'DevSync Pro' : 'DevSync Free',
-                              style: textTheme.titleMedium,
-                            ),
-                            Text(
-                              _isPro
-                                  ? 'Teal card, dark icon'
-                                  : 'Dark card, teal icon',
-                              style: textTheme.bodySmall?.copyWith(
-                                color: ds.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  DsSegmentedControl(
-                    labels: const ['Free', 'Pro'],
-                    index: _flavor,
-                    onChanged: (i) => setState(() => _flavor = i),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            DsCard(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                children: [
-                  DsInfoRow(
-                    icon: AppIcons.chart,
-                    title: 'Prompt quality',
-                    subtitle: 'Relevance by version',
-                    showDivider: true,
-                    trailing: DsIcon(
-                      AppIcons.chevronRight,
-                      color: ds.textMuted,
+                      const _Sec('Appearance'),
+                    const SizedBox(height: AppSpacing.sm),
+                    DsSegmentedControl(
+                      labels: const ['System', 'Dark', 'Light'],
+                      index: _themeIndex,
+                      onChanged: (i) {
+                        DevSyncApp.setThemeMode(switch (i) {
+                          0 => ThemeMode.system,
+                          1 => ThemeMode.dark,
+                          _ => ThemeMode.light,
+                        });
+                        setState(() {});
+                      },
                     ),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Prompt quality is an if-time screen'),
-                        ),
-                      );
-                    },
-                  ),
-                  DsInfoRow(
-                    icon: AppIcons.shield,
-                    title: 'Privacy',
-                    subtitle: 'Public GitHub data only',
-                    trailing: DsIcon(
-                      AppIcons.chevronRight,
-                      color: ds.textMuted,
-                    ),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'We only use public GitHub activity to suggest projects.',
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _Sec('Notifications'),
+                    const SizedBox(height: AppSpacing.sm),
+                    DsCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
+                      child: Column(
+                        children: [
+                          DsInfoRow(
+                            icon: AppIcons.users,
+                            title: 'Requests and replies',
+                            showDivider: true,
+                            trailing: DsToggle(
+                              value: _notifyRequests,
+                              semanticLabel: 'Requests',
+                              onChanged: (v) =>
+                                  setState(() => _notifyRequests = v),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            DsButton(
-              label: 'Sign out',
-              icon: AppIcons.signOut,
-              variant: DsButtonVariant.quiet,
-              isLoading: _sessionAction == _SessionAction.signingOut,
-              onPressed: _sessionBusy ? null : _signOut,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            DsButton(
-              label: 'Delete account and data',
-              icon: AppIcons.trash,
-              variant: DsButtonVariant.danger,
-              isLoading: _sessionAction == _SessionAction.deleting,
-              onPressed: _sessionBusy ? null : _confirmDelete,
+                          DsInfoRow(
+                            icon: AppIcons.zap,
+                            title: 'New matches',
+                            showDivider: true,
+                            trailing: DsToggle(
+                              value: _notifyMatches,
+                              semanticLabel: 'Matches',
+                              onChanged: (v) =>
+                                  setState(() => _notifyMatches = v),
+                            ),
+                          ),
+                          DsInfoRow(
+                            icon: AppIcons.success,
+                            title: 'Task changes',
+                            trailing: DsToggle(
+                              value: _notifyTasks,
+                              semanticLabel: 'Tasks',
+                              onChanged: (v) =>
+                                  setState(() => _notifyTasks = v),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _Sec('App build'),
+                    const SizedBox(height: AppSpacing.sm),
+                    DsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.asset(
+                                  _isPro
+                                      ? AppAssets.appIcon
+                                      : AppAssets.appIconTeal,
+                                  width: 64,
+                                  height: 64,
+                                  fit: BoxFit.cover,
+                                  semanticLabel: _isPro
+                                      ? 'DevSync Pro'
+                                      : 'DevSync Free',
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _isPro ? 'DevSync Pro' : 'DevSync Free',
+                                      style: textTheme.titleMedium,
+                                    ),
+                                    Text(
+                                      _isPro
+                                          ? 'Teal card, dark icon'
+                                          : 'Dark card, teal icon',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: ds.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          DsSegmentedControl(
+                            labels: const ['Free', 'Pro'],
+                            index: _flavor,
+                            onChanged: (i) => setState(() => _flavor = i),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    DsCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
+                      child: Column(
+                        children: [
+                          DsInfoRow(
+                            icon: AppIcons.chart,
+                            title: 'Prompt quality',
+                            subtitle: 'Relevance by version',
+                            showDivider: true,
+                            trailing: DsIcon(
+                              AppIcons.chevronRight,
+                              color: ds.textMuted,
+                            ),
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Prompt quality is an if-time screen',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          DsInfoRow(
+                            icon: AppIcons.shield,
+                            title: 'Privacy',
+                            subtitle: 'Public GitHub data only',
+                            trailing: DsIcon(
+                              AppIcons.chevronRight,
+                              color: ds.textMuted,
+                            ),
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'We only use public GitHub activity to suggest projects.',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DsButton(
+                      label: 'Sign out',
+                      icon: AppIcons.signOut,
+                      variant: DsButtonVariant.quiet,
+                      isLoading: _sessionAction == _SessionAction.signingOut,
+                      onPressed: _sessionBusy ? null : _signOut,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    DsButton(
+                      label: 'Delete account and data',
+                      icon: AppIcons.trash,
+                      variant: DsButtonVariant.danger,
+                      isLoading: _sessionAction == _SessionAction.deleting,
+                      onPressed: _sessionBusy ? null : _confirmDelete,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
+        ),
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/ds_page_fade.dart';
 import '../models/project_model.dart';
 import '../project_layout.dart';
 import '../widgets/project_action_button.dart';
@@ -206,16 +208,17 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: ProjectBackground(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              WorkspaceHeader(
-                title: 'Add or edit project',
-                maxContentWidth: ProjectLayout.formWidth,
-                onBack: () => Navigator.of(context).maybePop(),
-              ),
-              Expanded(
+        child: DsPageFade(
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                WorkspaceHeader(
+                  title: 'Add or edit project',
+                  maxContentWidth: ProjectLayout.formWidth,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final gutter = ProjectLayout.gutterFor(
@@ -262,6 +265,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
       bottomNavigationBar: _SaveBar(
@@ -344,7 +348,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
             hint: 'github.com/devsync/api',
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.done,
-            suffixIcon: Icons.code_rounded,
+            suffixIcon: AppIcons.code,
             validator: _validateGithub,
           ),
           const SizedBox(height: 22),
@@ -369,23 +373,17 @@ class _SaveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.ds.surface.withValues(alpha: 0.96),
-        border: Border(top: BorderSide(color: context.ds.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        minimum: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        child: SizedBox(
-          height: 56,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: ProjectLayout.formWidth,
-              ),
-              child: ProjectActionButton(label: label, onPressed: onPressed),
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: SizedBox(
+        height: 56,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: ProjectLayout.formWidth,
             ),
+            child: ProjectActionButton(label: label, onPressed: onPressed),
           ),
         ),
       ),

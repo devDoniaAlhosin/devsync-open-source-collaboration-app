@@ -1,10 +1,12 @@
 import 'dart:developer';
 
+import 'package:devsync_open_source_collaboration_app/app/app_routes.dart';
 import 'package:devsync_open_source_collaboration_app/core/theme/app_animations.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_avatar.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_fade_switch.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/domain/entities/collaboration_request.dart';
+import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/connected_celebration_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_details.dart';
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_join_sheet.dart';
 import 'package:flutter/material.dart';
 
 class ExpandedRequestCard extends StatefulWidget {
@@ -133,7 +135,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
                   label: 'Accept',
                   background: colors.primary,
                   foreground: colors.onPrimary,
-                  onTap: () => _showJoinRequestSheet(context, widget.item),
+                  onTap: () => _acceptAndCelebrate(context, widget.item),
                 ),
               ),
             ],
@@ -143,10 +145,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
             label: 'Open task board',
             background: colors.primary,
             foreground: colors.onPrimary,
-            // onTap: () => log('Open task board'),
-            onTap: () => ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Open task board'))),
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.tasks),
           )
         else if (_status == RequestStatus.declined)
           _ActionButton(
@@ -168,24 +167,36 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
 
   Future<void> _openDetails() async {
     final status = await Navigator.of(context).push<RequestStatus>(
-      MaterialPageRoute(
+      DsFadePageRoute(
         builder: (_) => RequestDetailsScreen(item: widget.item),
       ),
     );
     if (!mounted || status == null) return;
     setState(() => _statusOverride = status);
+    if (status == RequestStatus.accepted) {
+      await _pushConnected(widget.item);
+    }
   }
 
-  Future<void> _showJoinRequestSheet(
+  Future<void> _acceptAndCelebrate(
     BuildContext context,
     RequestItem item,
   ) async {
-    final message = await showRequestJoinSheet(context, item);
-    if (!context.mounted || message == null) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Request sent')));
+    setState(() => _statusOverride = RequestStatus.accepted);
+    await _pushConnected(item);
   }
+
+  Future<void> _pushConnected(RequestItem item) {
+    return Navigator.of(context).pushNamed(
+      AppRoutes.connected,
+      arguments: ConnectedCelebrationArgs(
+        collaboratorName: item.displayName,
+        collaboratorInitials: item.initials,
+        projectName: item.targetName.isEmpty ? 'your project' : item.targetName,
+      ),
+    );
+  }
+
 }
 
 class _ActionButton extends StatelessWidget {

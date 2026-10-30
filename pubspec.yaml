@@ -21,6 +21,7 @@ dependencies:
   flutter_bloc: ^9.1.1
   get_it: ^8.2.0
   equatable: ^2.0.7
+  flutter_svg: ^2.3.2
 
 dev_dependencies:
   flutter_test:
@@ -51,3 +52,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/brand/png/
+    - assets/brand/svg/

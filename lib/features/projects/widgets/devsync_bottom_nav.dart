@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 
 class DevSyncBottomNav extends StatelessWidget {
@@ -13,10 +14,10 @@ class DevSyncBottomNav extends StatelessWidget {
   final ValueChanged<int> onSelected;
 
   static const _items = [
-    (icon: Icons.auto_awesome_outlined, label: 'Discover'),
-    (icon: Icons.folder_outlined, label: 'My projects'),
-    (icon: Icons.inbox_outlined, label: 'Inbox'),
-    (icon: Icons.person_outline_rounded, label: 'Profile'),
+    (icon: AppIcons.sparkle, label: 'Discover'),
+    (icon: AppIcons.projects, label: 'My projects'),
+    (icon: AppIcons.inbox, label: 'Inbox'),
+    (icon: AppIcons.profile, label: 'Profile'),
   ];
 
   @override

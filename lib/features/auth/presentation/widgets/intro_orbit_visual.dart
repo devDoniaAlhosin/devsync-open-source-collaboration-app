@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/icons/app_icons.dart';
-import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/ds_icon.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
 
 /// Prototype `#intro` hero: rotating dashed rings + floating Build/Match chips.
 class IntroOrbitVisual extends StatefulWidget {
@@ -262,6 +262,8 @@ class _DashedRingPainter extends CustomPainter {
 }
 
 /// Fade + rise entrance used to stagger intro sections.
+///
+/// Thin wrapper over shared [DsStaggeredEntrance].
 class IntroEntrance extends StatelessWidget {
   const IntroEntrance({
     super.key,
@@ -278,22 +280,12 @@ class IntroEntrance extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (MediaQuery.disableAnimationsOf(context)) return child;
-
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Interval(begin, end, curve: AppAnimations.emphasized),
-    );
-
-    return FadeTransition(
-      opacity: curved,
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.08),
-          end: Offset.zero,
-        ).animate(curved),
-        child: child,
-      ),
+    return DsStaggeredEntrance(
+      animation: animation,
+      begin: begin,
+      end: end,
+      slide: 0.08,
+      child: child,
     );
   }
 }

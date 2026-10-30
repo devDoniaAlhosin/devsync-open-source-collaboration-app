@@ -32,6 +32,8 @@ abstract final class AppIcons {
   static const IconData profile = LucideIcons.user;
   static const IconData tasks = LucideIcons.squareKanban;
   static const IconData notifications = LucideIcons.bell;
+  static const IconData bookmark = LucideIcons.bookmark;
+  static const IconData externalLink = LucideIcons.arrowUpRight;
   static const IconData settings = LucideIcons.settings;
   static const IconData users = LucideIcons.users;
   static const IconData zap = LucideIcons.zap;
@@ -58,4 +60,6 @@ abstract final class AppIcons {
   static const IconData refresh = LucideIcons.refreshCw;
   static const IconData moon = LucideIcons.moon;
   static const IconData sun = LucideIcons.sun;
+  static const IconData clock = LucideIcons.clock;
+  static const IconData atSign = LucideIcons.atSign;
 }

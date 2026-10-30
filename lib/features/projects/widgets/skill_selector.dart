@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import 'tech_tag.dart';
 
@@ -91,7 +92,7 @@ class _AddSkillChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_rounded, size: 14, color: context.ds.textMuted),
+              Icon(AppIcons.plus, size: 14, color: context.ds.textMuted),
               const SizedBox(width: 5),
               Text(
                 'Add',

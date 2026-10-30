@@ -1,80 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../app/app_routes.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
-import '../../../../core/widgets/ds_icon_button.dart';
+import '../../../../core/widgets/ds_icon.dart';
+import '../../../projects/models/project_model.dart';
+import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/match_item.dart';
 
-class ProjectDetailsBackButton extends StatelessWidget {
-  const ProjectDetailsBackButton({super.key, required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) =>
-      DsIconButton(icon: AppIcons.back, tooltip: 'Back', onPressed: onPressed);
-}
-
-class ProjectDetailsHeader extends StatelessWidget {
-  const ProjectDetailsHeader({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'WORKSPACE',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: context.ds.accentText,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.5,
-          ),
-        ),
-        Text(
-          'Project details',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-        ),
-      ],
-    );
-  }
-}
-
 class CollaborationAction extends StatelessWidget {
-  const CollaborationAction({super.key, required this.match});
+  const CollaborationAction({
+    super.key,
+    required this.match,
+    this.maintainerName = 'Karim',
+  });
 
   final MatchItem match;
+  final String maintainerName;
+
+  Future<void> _requestToCollaborate(BuildContext context) {
+    return presentCollaborationRequestFlow(
+      context,
+      projectName: match.projectName,
+      maintainerName: maintainerName,
+      initials: initialsFromTitle(match.projectName),
+      matchPercent: match.score.round(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.ds.background,
-        border: Border(top: BorderSide(color: context.ds.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl,
-            AppSpacing.md,
-            AppSpacing.xl,
-            AppSpacing.lg,
-          ),
-          child: DsButton(
-            label: 'Request to collaborate',
-            icon: AppIcons.requests,
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed(AppRoutes.requests, arguments: match),
-          ),
+    final ds = context.ds;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.lg,
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: AppSpacing.buttonHeight,
+              height: AppSpacing.buttonHeight,
+              child: Material(
+                color: ds.surfaceAlt,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                ),
+                child: InkWell(
+                  onTap: () => Navigator.of(context).pop(),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  child: const Center(
+                    child: DsIcon(AppIcons.close, size: 22),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: DsButton(
+                label: 'Request to collaborate',
+                icon: AppIcons.requests,
+                onPressed: () => _requestToCollaborate(context),
+              ),
+            ),
+          ],
         ),
       ),
     );

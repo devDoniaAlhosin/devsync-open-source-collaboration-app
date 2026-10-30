@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/ds_item_enter.dart';
+import '../../../core/widgets/ds_page_fade.dart';
+import '../../../core/widgets/ds_page_header.dart';
 import '../data/project_repository.dart';
 import '../models/project_model.dart';
 import '../project_layout.dart';
@@ -34,39 +38,31 @@ class MyProjectsScreen extends StatelessWidget {
       (sum, project) => sum + project.requestsCount,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
-        return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            gutter,
-            18,
-            gutter,
-            ProjectLayout.bottomNavSpace,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: ProjectLayout.maxWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${owned.length} listed',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: context.ds.textMuted,
-                      fontSize: 11.5,
+    return DsPageFade(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              gutter,
+              18,
+              gutter,
+              ProjectLayout.bottomNavSpace,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: ProjectLayout.maxWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DsPageHeader(
+                      style: DsPageHeaderStyle.page,
+                      title: 'My projects',
+                      eyebrow: '${owned.length} listed',
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'My projects',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.displaySmall?.copyWith(fontSize: 30),
-                  ),
-                  const SizedBox(height: 18),
+                    const SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(
@@ -110,23 +106,26 @@ class MyProjectsScreen extends StatelessWidget {
                         }
                         return Column(
                           children: [
-                            for (final project in owned) ...[
-                              _card(project),
-                              if (project != owned.last)
-                                const SizedBox(height: 14),
+                            for (var i = 0; i < owned.length; i++) ...[
+                              if (i > 0) const SizedBox(height: 14),
+                              DsItemEnter(
+                                index: i,
+                                child: _card(owned[i]),
+                              ),
                             ],
                           ],
                         );
                       },
                     ),
-                  const SizedBox(height: 18),
-                  const _CommunityCallout(),
-                ],
+                    const SizedBox(height: 18),
+                    const _CommunityCallout(),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -157,7 +156,7 @@ class _EmptyOwnedState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.folder_open_rounded, size: 36, color: AppColors.teal),
+          const Icon(AppIcons.projects, size: 36, color: AppColors.teal),
           const SizedBox(height: 12),
           Text(
             'Your workspace is quiet',
@@ -174,7 +173,7 @@ class _EmptyOwnedState extends StatelessWidget {
           const SizedBox(height: 18),
           ProjectActionButton(
             label: 'List a project',
-            icon: Icons.add_rounded,
+            icon: AppIcons.plus,
             expand: false,
             compact: true,
             onPressed: onCreate,
@@ -221,7 +220,7 @@ class _CommunityCallout extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.diversity_3_rounded,
+                  AppIcons.users,
                   color: AppColors.teal,
                   size: 18,
                 ),
@@ -236,7 +235,7 @@ class _CommunityCallout extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.arrow_forward_rounded,
+                AppIcons.forward,
                 size: 17,
                 color: context.ds.textMuted,
               ),

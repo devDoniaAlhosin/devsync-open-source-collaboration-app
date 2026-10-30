@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
 
 class ExploreDevSyncItem {
   final String title;
@@ -16,14 +18,38 @@ class ExploreDevSyncItem {
 }
 
 /// Horizontal carousel highlighting DevSync core capabilities.
-class ExploreDevSyncSection extends StatelessWidget {
+class ExploreDevSyncSection extends StatefulWidget {
   final List<ExploreDevSyncItem> items;
 
   const ExploreDevSyncSection({super.key, required this.items});
 
   @override
+  State<ExploreDevSyncSection> createState() => _ExploreDevSyncSectionState();
+}
+
+class _ExploreDevSyncSectionState extends State<ExploreDevSyncSection>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entrance;
+
+  @override
+  void initState() {
+    super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: AppAnimations.rise,
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _entrance.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ds = context.ds;
+    final items = widget.items;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -39,7 +65,7 @@ class ExploreDevSyncSection extends StatelessWidget {
                   fontSize: 17,
                 ),
               ),
-              SizedBox(width: 60),
+              const SizedBox(width: 60),
               Text(
                 'FEATURES',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -61,8 +87,16 @@ class ExploreDevSyncSection extends StatelessWidget {
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, index) {
-              final item = items[index];
-              return _FeatureCard(item: item);
+              final (begin, end) = DsStaggerTiming.interval(
+                index,
+                items.length,
+              );
+              return DsStaggeredEntrance(
+                animation: _entrance,
+                begin: begin,
+                end: end,
+                child: _FeatureCard(item: items[index]),
+              );
             },
           ),
         ),

@@ -11,6 +11,7 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     this.eyebrow,
+    this.brand,
     this.showBack,
     this.showMenu = false,
     this.onBack,
@@ -26,6 +27,9 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Small caps line above [title].
   final String? eyebrow;
+
+  /// Optional brand mark before the title block (e.g. [DsBrandIcon]).
+  final Widget? brand;
 
   /// Defaults to `Navigator.canPop` when [showMenu] is false.
   final bool? showBack;
@@ -84,6 +88,10 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onPressed: onBack ?? () => Navigator.of(context).maybePop(),
                 ),
                 const SizedBox(width: 12),
+              ],
+              if (brand != null) ...[
+                brand!,
+                const SizedBox(width: 10),
               ],
               Expanded(
                 child: Column(

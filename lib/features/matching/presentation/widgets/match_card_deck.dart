@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/ds_avatar.dart';
-import '../../../../core/widgets/ds_card.dart';
-import '../../../../core/widgets/ds_score_meter.dart';
 import '../../domain/entities/match_item.dart';
 import 'draggable_match_card.dart';
 
@@ -23,18 +21,25 @@ class MatchCardDeck extends StatelessWidget {
   final VoidCallback? onTap;
   final Key? cardKey;
 
+  static const int _maxPeekLayers = 2;
+
   @override
   Widget build(BuildContext context) {
-    final previewMatches = nextMatches.take(2).toList().reversed.toList();
+    // Prefer real upcoming matches; pad with blank silhouettes so the
+    // stack affordance stays visible whenever more cards exist.
+    final upcoming = nextMatches.take(_maxPeekLayers).toList();
+    final peekCount = upcoming.isEmpty ? 0 : _maxPeekLayers;
+    final bottomPad = peekCount == 0 ? 0.0 : peekCount * _DeckPeek.offsetStep + 4;
+
     return Padding(
-      padding: EdgeInsets.only(bottom: previewMatches.isEmpty ? 0 : 28),
+      padding: EdgeInsets.only(bottom: bottomPad),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          for (var index = 0; index < previewMatches.length; index++)
-            _DeckPreview(
-              match: previewMatches[index],
-              depth: previewMatches.length - index,
+          for (var depth = peekCount; depth >= 1; depth--)
+            _DeckPeek(
+              depth: depth,
+              match: depth <= upcoming.length ? upcoming[depth - 1] : null,
             ),
           DraggableMatchCard(
             key: cardKey,
@@ -48,57 +53,75 @@ class MatchCardDeck extends StatelessWidget {
   }
 }
 
-class _DeckPreview extends StatelessWidget {
-  const _DeckPreview({required this.match, required this.depth});
+/// Full-size card silhouette behind the active match so the deck reads as
+/// a swipeable stack (edges peek below / beside the front card).
+class _DeckPeek extends StatelessWidget {
+  const _DeckPeek({required this.depth, this.match});
 
-  final MatchItem match;
+  static const double offsetStep = 14;
+
   final int depth;
+  final MatchItem? match;
 
   @override
   Widget build(BuildContext context) {
-    final offset = depth * 12.0;
-    final scale = 1 - depth * .035;
-    return Positioned.fill(
+    final palette = context.ds;
+    final offset = depth * offsetStep;
+    final scale = 1 - depth * .045;
+    final inset = depth * 10.0;
+    final peekMatch = match;
+
+    return Positioned(
+      left: inset,
+      right: inset,
       top: offset,
       bottom: -offset,
       child: IgnorePointer(
         child: Opacity(
-          opacity: 1 - depth * .15,
+          opacity: (1 - depth * .22).clamp(0.45, 1),
           child: Transform.scale(
             scale: scale,
             alignment: Alignment.topCenter,
-            child: SizedBox.expand(
-              child: DsCard(
-                borderRadius: AppSpacing.radiusMatch,
-                child: Row(
-                  children: [
-                    DsProjectAvatar(label: _initialsFor(match.projectName)),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        match.projectName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.surface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMatch),
+                border: Border.all(color: palette.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: palette.textPrimary.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: peekMatch == null
+                  ? const SizedBox.expand()
+                  : Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.cardPadding,
+                          AppSpacing.cardPadding,
+                          AppSpacing.cardPadding,
+                          0,
+                        ),
+                        child: Text(
+                          peekMatch.projectName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: palette.textMuted,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    DsScoreRing(score: match.score, size: 50),
-                  ],
-                ),
-              ),
             ),
           ),
         ),
       ),
     );
   }
-
-  String _initialsFor(String projectName) => projectName
-      .split(RegExp(r'[/\s-]'))
-      .where((part) => part.isNotEmpty)
-      .take(2)
-      .map((part) => part[0])
-      .join();
 }

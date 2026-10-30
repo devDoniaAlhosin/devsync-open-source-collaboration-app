@@ -148,7 +148,7 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | Backend logic | Firebase Cloud Functions | FCM triggers; secure LLM API calls (keys never in the app) |
 | Developer data | GitHub API | Public profiles, repositories, and activity |
 | AI matching | Gemini Flash-Lite (via Cloud Function) | Fit scores and short explanations; prompt versioning; evaluate one hosted open-source model (Llama / Qwen / gpt-oss) on the eval set |
-| State | flutter_bloc (Cubit first) | Presentation state; pages render Cubit states |
+| State | flutter_bloc (Cubit first) | Presentation state; screens render Cubit states |
 | DI | get_it | Composition root in `lib/core/di/injection.dart` |
 | Errors | `Result<T>` + typed `Failure` | Mapped at the repository boundary |
 | Version control | Git & GitHub | Branches, pull requests, optional Releases for install builds |
@@ -176,7 +176,7 @@ The app uses **feature-first Clean Architecture** (BLoC/Cubit + GetIt + Firebase
 ```mermaid
 flowchart TB
   subgraph Presentation["Presentation"]
-    Pages["Pages / Widgets"]
+    Screens["Screens / Widgets"]
     Cubits["Cubit / BLoC"]
   end
 
@@ -201,7 +201,7 @@ flowchart TB
     LLM["Gemini Flash-Lite"]
   end
 
-  Pages --> Cubits
+  Screens --> Cubits
   Cubits --> UseCases
   UseCases --> Contracts
   Repos --> Contracts
@@ -547,7 +547,7 @@ Auth layout helpers (also for reuse): `AuthScaffold`, `AuthInlineHeading`, `Auth
 
 Preview: run the app → Home → **Settings**.
 
-### Auth screens (`lib/features/auth/presentation/pages/`) — matches `docs/index.html`
+### Auth screens (`lib/features/auth/presentation/screens/`) — matches `docs/index.html`
 
 | Screen | Route | Notes |
 |---|---|---|

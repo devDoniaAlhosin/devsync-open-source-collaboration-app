@@ -30,6 +30,14 @@ abstract final class AppTypography {
         height: 1.1,
         color: base,
       ),
+      /// Canonical in-body page title (Discover, My projects, list screens).
+      displaySmall: heading(
+        fontSize: 30,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.8,
+        height: 1.15,
+        color: base,
+      ),
       headlineLarge: heading(
         fontSize: 28,
         fontWeight: FontWeight.w700,

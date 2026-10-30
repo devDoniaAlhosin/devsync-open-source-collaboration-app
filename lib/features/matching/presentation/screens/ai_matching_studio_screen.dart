@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/icons/app_icons.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/ds_icon_button.dart';
+import '../../../../core/widgets/ds_app_bar.dart';
+import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../domain/entities/match_item.dart';
 import '../../matching_dependencies.dart';
 import '../controllers/matching_controller.dart';
@@ -18,7 +16,7 @@ import 'project_details_screen.dart';
 /// deep-link into [AiAnalyticsScreen].
 ///
 /// Navigation:
-/// - Push via [AppRoutes.aiStudio] or `MaterialPageRoute(builder: (_) => AiMatchingStudioScreen(...))`
+/// - Push via [AppRoutes.aiStudio] or `DsFadePageRoute(builder: (_) => AiMatchingStudioScreen(...))`
 /// - Bidirectional: "Explore AI quality analytics" button navigates to
 ///   [AiAnalyticsScreen]; that screen pops `true` when the prompt is refined,
 ///   triggering [_controller.loadInitialData] to refresh the match list.
@@ -40,7 +38,12 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _StudioAppBar(onBack: () => Navigator.of(context).maybePop()),
+      appBar: DsAppBar(
+        title: 'AI Studio',
+        eyebrow: 'DEVSYNC',
+        showBack: true,
+        onBack: () => Navigator.of(context).maybePop(),
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -97,7 +100,7 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
 
   void _navigateToProjectDetails(MatchItem match) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      DsFadePageRoute<void>(
         builder: (_) => ProjectDetailsScreen(
           arguments: ProjectDetailsArguments(
             match: match,
@@ -118,61 +121,12 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
 
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
+      DsFadePageRoute<bool>(
         builder: (_) => AiAnalyticsScreen(controller: _controller),
       ),
     );
     if (refreshNeeded == true && mounted) {
       await _controller.loadInitialData();
     }
-  }
-}
-
-/// Compact app-bar for the AI Studio screen.
-///
-/// Shows "DEVSYNC / AI Studio" branding consistent with the match feed's
-/// top chrome.
-class _StudioAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final VoidCallback onBack;
-
-  const _StudioAppBar({required this.onBack});
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      leading: Padding(
-        padding: const EdgeInsets.only(
-          left: AppSpacing.lg,
-          bottom: AppSpacing.sm,
-          top: AppSpacing.sm,
-        ),
-        child: DsIconButton(
-          icon: AppIcons.back,
-          tooltip: 'Back',
-          onPressed: onBack,
-        ),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'DEVSYNC',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: context.ds.textMuted,
-              letterSpacing: 1.4,
-            ),
-          ),
-          Text(
-            'AI Studio',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
   }
 }

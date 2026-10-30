@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/ds_item_enter.dart';
+import '../../../core/widgets/ds_page_fade.dart';
+import '../../../core/widgets/ds_page_header.dart';
+import '../../requests/presentation/collaboration_request_flow.dart';
 import '../models/project_model.dart';
 import '../project_layout.dart';
 import '../widgets/discover_project_card.dart';
@@ -69,49 +74,42 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
     return projects;
   }
 
-  void _requestToJoin(ProjectModel project) {
+  Future<void> _requestToJoin(ProjectModel project) async {
+    final sent = await presentCollaborationRequestFlow(
+      context,
+      projectName: project.title,
+      maintainerName: 'Karim',
+      initials: project.initials,
+      matchPercent: project.matchPercentage,
+    );
+    if (!mounted || !sent) return;
     setState(() => _requested.add(project.id));
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('Request sent to ${project.title}.'),
-          action: SnackBarAction(
-            label: 'Undo',
-            textColor: AppColors.teal,
-            onPressed: () {
-              if (mounted) {
-                setState(() => _requested.remove(project.id));
-              }
-            },
-          ),
-        ),
-      );
   }
 
   @override
   Widget build(BuildContext context) {
     final projects = _visibleProjects;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
-        return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            gutter,
-            18,
-            gutter,
-            ProjectLayout.bottomNavSpace,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: ProjectLayout.maxWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ProjectSearchField(
+    return DsPageFade(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              gutter,
+              18,
+              gutter,
+              ProjectLayout.bottomNavSpace,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: ProjectLayout.maxWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ProjectSearchField(
                     controller: _searchController,
                     onChanged: (value) => setState(() => _query = value),
                   ),
@@ -121,65 +119,41 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
                     onSelected: (filter) => setState(() => _filter = filter),
                   ),
                   const SizedBox(height: 28),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${projects.length} listed',
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    color: context.ds.textMuted,
-                                    fontSize: 11.5,
-                                  ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _filter == ProjectFilter.forYou
-                                  ? 'Projects for you'
-                                  : _filter.label,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.displaySmall?.copyWith(fontSize: 28),
-                            ),
-                          ],
-                        ),
+                  DsPageHeader(
+                    style: DsPageHeaderStyle.page,
+                    title: 'Discover',
+                    eyebrow: '${projects.length} listed',
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 7,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.ds.surface.withValues(alpha: 0.58),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: context.ds.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.auto_awesome_rounded,
-                              size: 13,
-                              color: AppColors.teal,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              'Smart match',
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    fontSize: 11,
-                                    color: context.ds.textPrimary,
-                                    letterSpacing: 0,
-                                  ),
-                            ),
-                          ],
-                        ),
+                      decoration: BoxDecoration(
+                        color: context.ds.surface.withValues(alpha: 0.58),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: context.ds.border),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            AppIcons.sparkle,
+                            size: 13,
+                            color: AppColors.teal,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Smart match',
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  fontSize: 11,
+                                  color: context.ds.textPrimary,
+                                  letterSpacing: 0,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   if (projects.isEmpty)
@@ -212,21 +186,24 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
                         }
                         return Column(
                           children: [
-                            for (final project in projects) ...[
-                              _card(project),
-                              if (project != projects.last)
-                                const SizedBox(height: 14),
+                            for (var i = 0; i < projects.length; i++) ...[
+                              if (i > 0) const SizedBox(height: 14),
+                              DsItemEnter(
+                                index: i,
+                                child: _card(projects[i]),
+                              ),
                             ],
                           ],
                         );
                       },
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -267,7 +244,7 @@ class _EmptyDiscoverState extends StatelessWidget {
               border: Border.all(color: context.ds.border),
             ),
             child: const Icon(
-              Icons.travel_explore_rounded,
+              AppIcons.search,
               color: AppColors.teal,
             ),
           ),
@@ -289,9 +266,11 @@ class _EmptyDiscoverState extends StatelessWidget {
           const SizedBox(height: 18),
           TextButton(
             onPressed: onReset,
-            child: const Text(
+            child: Text(
               'Clear filters',
-              style: TextStyle(color: AppColors.teal),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.teal,
+              ),
             ),
           ),
         ],

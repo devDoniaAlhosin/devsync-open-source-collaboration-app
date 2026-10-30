@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ds_icon_button.dart';
 import '../project_layout.dart';
@@ -35,7 +36,7 @@ class WorkspaceHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     DsIconButton(
-                      icon: Icons.arrow_back_ios_new_rounded,
+                      icon: AppIcons.back,
                       onPressed: onBack,
                       tooltip: 'Back',
                     ),

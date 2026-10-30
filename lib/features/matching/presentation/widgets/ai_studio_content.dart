@@ -3,6 +3,7 @@ import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_icon.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/matching_preferences.dart';
 import 'ai_studio_preferences_card.dart';
@@ -80,12 +81,10 @@ class _AiStudioContentState extends State<AiStudioContent> {
         AppSpacing.lg,
         AppSpacing.xxl,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: DsStagger(
+        spacing: AppSpacing.md,
         children: [
           const _IntelligenceBanner(),
-          const SizedBox(height: AppSpacing.md),
-
           AiStudioPreferencesCard(
             promptController: _promptController,
             selectedTags: widget.preferences.selectedTags,
@@ -93,14 +92,10 @@ class _AiStudioContentState extends State<AiStudioContent> {
             isGenerating: widget.isGenerating,
             onGenerateMatches: widget.onGenerateMatches,
           ),
-          const SizedBox(height: AppSpacing.md),
-
           AiStudioSuggestedMatchesCard(
             matches: widget.matches,
             onViewProjectDetails: widget.onViewProjectDetails,
           ),
-          const SizedBox(height: AppSpacing.md),
-
           AiStudioScoringCard(
             breakdown: widget.scoringBreakdown,
             onExploreAnalytics: widget.onExploreAnalytics,

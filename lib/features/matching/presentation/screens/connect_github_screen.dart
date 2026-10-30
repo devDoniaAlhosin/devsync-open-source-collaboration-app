@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:devsync_open_source_collaboration_app/app/app_routes.dart';
 import 'package:devsync_open_source_collaboration_app/app/devsync_app.dart';
 import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
 import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
@@ -87,7 +88,12 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
   void _continue() {
     final result = _result;
     if (result == null) return;
-    widget.onContinue?.call(result);
+    if (widget.onContinue != null) {
+      widget.onContinue!(result);
+      return;
+    }
+    // Default onboarding: step 3 edit profile / skills → home feed.
+    Navigator.of(context).pushReplacementNamed(AppRoutes.editProfile);
   }
 
   @override

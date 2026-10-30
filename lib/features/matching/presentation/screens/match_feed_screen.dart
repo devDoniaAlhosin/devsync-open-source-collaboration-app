@@ -3,9 +3,16 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/navigation/open_host_drawer.dart';
+import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
+import '../../../../core/widgets/ds_fade_switch.dart';
+import '../../../../core/widgets/ds_icon_button.dart';
+import '../../../../core/widgets/ds_page_fade.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../domain/entities/match_item.dart';
 import '../../matching_dependencies.dart';
 import '../controllers/matching_controller.dart';
@@ -13,7 +20,6 @@ import '../widgets/ai_studio_content.dart';
 import '../widgets/draggable_match_card.dart';
 import '../widgets/explore_devsync_section.dart';
 import '../widgets/match_card_skeleton.dart';
-import '../widgets/match_feed_app_bar.dart';
 import '../widgets/match_feed_deck_view.dart';
 import '../widgets/match_feed_empty_state.dart';
 import '../widgets/match_feed_greeting.dart';
@@ -31,8 +37,14 @@ import 'prompt_quality_screen.dart';
 class MatchFeedScreen extends StatefulWidget {
   final MatchingController? controller;
   final MatchingViewMode? initialViewMode;
+  final VoidCallback? onMenuPressed;
 
-  const MatchFeedScreen({super.key, this.controller, this.initialViewMode});
+  const MatchFeedScreen({
+    super.key,
+    this.controller,
+    this.initialViewMode,
+    this.onMenuPressed,
+  });
 
   @override
   State<MatchFeedScreen> createState() => _MatchFeedScreenState();
@@ -48,15 +60,48 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final page = SafeArea(
-      child: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, _) => _buildPageContent(),
-      ),
-    );
     return ScaffoldMessenger(
       key: _scaffoldMessengerKey,
-      child: Scaffold(body: page),
+      child: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) {
+          final isEmptyFeed =
+              !_controller.isLoading &&
+              _controller.errorMessage == null &&
+              _controller.viewMode == MatchingViewMode.deck &&
+              _controller.currentDeckMatch == null;
+          return Scaffold(
+            appBar: DsAppBar(
+              title: isEmptyFeed ? 'Your matches' : 'For you',
+              eyebrow: 'DEVSYNC',
+              showMenu: true,
+              onMenu: () {
+                if (widget.onMenuPressed != null) {
+                  widget.onMenuPressed!();
+                  return;
+                }
+                openHostDrawer(context);
+              },
+              onNotifications: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.notifications),
+              notificationBadge: true,
+              actions: [
+                DsIconButton(
+                  icon: AppIcons.bookmark,
+                  tooltip: 'Liked matches',
+                  onPressed: () {
+                    Navigator.of(context).pushNamed(AppRoutes.likedMatches);
+                  },
+                ),
+              ],
+            ),
+            body: SafeArea(
+              top: false,
+              child: DsPageFade(child: _buildPageContent()),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -80,7 +125,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   }
 
   Widget _buildContent() {
-    if (_controller.isLoading) return const Center(child: MatchCardSkeleton());
+    if (_controller.isLoading) return _buildLoadingSkeleton();
     final error = _controller.errorMessage;
     if (error != null) {
       return DsEmptyState(
@@ -95,6 +140,17 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       MatchingViewMode.studio => _buildStudioView(),
       MatchingViewMode.deck => _buildDeckView(),
     };
+  }
+
+  /// Top-aligned content placeholder while matches load.
+  Widget _buildLoadingSkeleton() {
+    return const Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: MatchCardSkeleton(),
+      ),
+    );
   }
 
   Widget _buildDeckView() {
@@ -125,7 +181,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         title: 'AI Studio',
         subtitle: 'Tune your match\nprompts',
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
+          DsFadePageRoute<void>(
             builder: (_) => AiMatchingStudioScreen(controller: _controller),
           ),
         ),
@@ -134,7 +190,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         title: 'Task board',
         subtitle: 'Plan your next\nsprint',
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<bool>(builder: (_) => MatchingProgressScreen()),
+          DsFadePageRoute<bool>(builder: (_) => MatchingProgressScreen()),
         ),
       ),
       ExploreDevSyncItem(
@@ -147,39 +203,73 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         subtitle: 'Work with your\nteam',
         onTap: () => Navigator.of(
           context,
-        ).push(MaterialPageRoute<bool>(builder: (_) => PromptQualityScreen())),
+        ).push(DsFadePageRoute<bool>(builder: (_) => PromptQualityScreen())),
       ),
     ];
   }
 
   Widget _buildPageContent() {
-    final isEmptyFeed =
-        !_controller.isLoading &&
-        _controller.errorMessage == null &&
-        _controller.viewMode == MatchingViewMode.deck &&
-        _controller.currentDeckMatch == null;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 540),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            MatchFeedAppBar(
-              title: isEmptyFeed ? 'Your matches' : 'For you',
-              showBookmark: !isEmptyFeed,
-              onMenuPressed: () => _notify('DevSync menu opened'),
-              onBookmarkPressed: () => _notify('Saved matches'),
-              onNotificationsPressed: () => _notify('No new notifications'),
+            const SizedBox(height: AppSpacing.lg),
+            DsStagger(
+              mainAxisSize: MainAxisSize.min,
+              spacing: AppSpacing.sm,
+              children: [
+                const MatchFeedGreeting(userName: 'Nour'),
+                ExploreDevSyncSection(items: _buildExploreItems()),
+              ],
             ),
-
-            Divider(height: 1, color: context.ds.border),
-            SizedBox(height: AppSpacing.lg),
-            const MatchFeedGreeting(userName: 'Nour'),
-            const SizedBox(height: AppSpacing.sm),
-            ExploreDevSyncSection(items: _buildExploreItems()),
             const SizedBox(height: AppSpacing.xs),
-
-            Expanded(child: _buildContent()),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: AppAnimations.slow,
+                switchInCurve: AppAnimations.emphasized,
+                switchOutCurve: Curves.easeOut,
+                transitionBuilder: (child, animation) {
+                  final fade = CurvedAnimation(
+                    parent: animation,
+                    curve: AppAnimations.emphasized,
+                  );
+                  return FadeTransition(
+                    opacity: fade,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.03),
+                        end: Offset.zero,
+                      ).animate(fade),
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.985, end: 1).animate(fade),
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+                layoutBuilder: (currentChild, previousChildren) {
+                  return Stack(
+                    alignment: Alignment.topCenter,
+                    children: <Widget>[
+                      ...previousChildren,
+                      ?currentChild,
+                    ],
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey<String>(
+                    _controller.isLoading
+                        ? 'loading'
+                        : _controller.errorMessage != null
+                        ? 'error'
+                        : _controller.viewMode.name,
+                  ),
+                  child: _buildContent(),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -237,7 +327,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
+      DsFadePageRoute<bool>(
         builder: (_) => AiAnalyticsScreen(controller: _controller),
       ),
     );

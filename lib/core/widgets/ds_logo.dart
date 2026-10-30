@@ -11,10 +11,14 @@ class DsLogo extends StatelessWidget {
     super.key,
     this.variant = DsLogoVariant.wordmarkTeal,
     this.height = 40,
+    this.color,
   });
 
   final DsLogoVariant variant;
   final double height;
+
+  /// When set, tints the asset (useful for the monochrome [DsLogoVariant.icon] mark).
+  final Color? color;
 
   String get _asset => switch (variant) {
         DsLogoVariant.wordmarkTeal => AppAssets.logoTeal,
@@ -27,12 +31,13 @@ class DsLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mark = variant == DsLogoVariant.icon;
+    final tint = color ?? (mark ? AppColors.teal : null);
     return Image.asset(
       _asset,
       height: height,
       fit: BoxFit.contain,
-      color: mark ? AppColors.teal : null,
-      colorBlendMode: mark ? BlendMode.srcIn : null,
+      color: tint,
+      colorBlendMode: tint != null ? BlendMode.srcIn : null,
       filterQuality: FilterQuality.high,
       semanticLabel: 'DevSync',
     );

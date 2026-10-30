@@ -26,9 +26,15 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        ndk {
-            // Match exactly the platforms Flutter builds for debug
-            abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86_64")
+    }
+
+    // AGP 8+/9 can omit jni from the APK unless legacy packaging is used.
+    // Without this, the device crashes with MissingLibraryException: libflutter.so.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            // Huge debug-only Vulkan layer — skip to save disk/APK size.
+            excludes += setOf("**/libVkLayer_khronos_validation.so")
         }
     }
 
@@ -39,12 +45,6 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-}
-
-// Workaround: disable stripDebugDebugSymbols — AGP 9.x tries to strip .so files
-// before mergeDebugNativeLibs has written them, causing "No such file" errors.
-afterEvaluate {
-    project.tasks.findByName("stripDebugDebugSymbols")?.enabled = false
 }
 
 kotlin {

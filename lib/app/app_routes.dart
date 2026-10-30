@@ -11,12 +11,17 @@ abstract final class AppRoutes {
   static const String home = '/home';
   static const String settings = '/settings';
   static const String feed = '/feed';
+  static const String likedMatches = '/liked-matches';
+  static const String connectGithub = '/connect-github';
+  static const String editProfile = '/edit-profile';
   static const String discover = '/discover';
   static const String analytics = '/analytics';
   static const String projects = '/projects';
   static const String projectDetail = '/projects/detail';
   static const String profile = '/profile';
   static const String requests = '/requests';
+  static const String notificationPermission = '/notification-permission';
+  static const String connected = '/connected';
   static const String tasks = '/tasks';
   static const String aiStudio = '/ai-studio';
   static const String aiInsights = '/ai-insights';

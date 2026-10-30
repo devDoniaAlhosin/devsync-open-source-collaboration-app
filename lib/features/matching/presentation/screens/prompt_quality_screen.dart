@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_card.dart';
-import '../../../../core/widgets/ds_icon_button.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../models/prompt_quality_metrics.dart';
 import '../widgets/prompt_quality_trend.dart';
 
@@ -19,61 +19,59 @@ class PromptQualityScreen extends StatelessWidget {
     final data = metrics ?? PromptQualityMetrics.demo;
     return Scaffold(
       backgroundColor: context.ds.background,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 540),
-            child: Column(
-              children: [
-                const _QualityHeader(),
-                Divider(height: 1, color: context.ds.border),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(AppSpacing.screenPadding),
-                    children: [
-                      _RelevanceCard(metrics: data),
-                      const SizedBox(height: AppSpacing.md),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final stacked =
-                              constraints.maxWidth < 280 ||
-                              MediaQuery.textScalerOf(context).scale(14) > 21;
-                          final cards = [
-                            _QualityMetric(
-                              value:
-                                  '${_formatSeconds(data.averageMatchTime)}s',
-                              label: 'Avg match time',
-                            ),
-                            _QualityMetric(
-                              value: '${data.timelyAlertsPercentage.round()}%',
-                              label: 'Alerts within 10 s',
-                            ),
-                          ];
-                          return stacked
-                              ? Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    cards.first,
-                                    const SizedBox(height: AppSpacing.md),
-                                    cards.last,
-                                  ],
-                                )
-                              : Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(child: cards.first),
-                                    const SizedBox(width: AppSpacing.md),
-                                    Expanded(child: cards.last),
-                                  ],
-                                );
-                        },
-                      ),
-                    ],
+      appBar: DsAppBar(
+        title: 'Prompt quality',
+        eyebrow: 'WORKSPACE',
+        showBack: true,
+        onBack: () => Navigator.of(context).maybePop(),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            children: [
+              DsStagger(
+                spacing: AppSpacing.md,
+                children: [
+                  _RelevanceCard(metrics: data),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final stacked =
+                          constraints.maxWidth < 280 ||
+                          MediaQuery.textScalerOf(context).scale(14) > 21;
+                      final cards = [
+                        _QualityMetric(
+                          value: '${_formatSeconds(data.averageMatchTime)}s',
+                          label: 'Avg match time',
+                        ),
+                        _QualityMetric(
+                          value: '${data.timelyAlertsPercentage.round()}%',
+                          label: 'Alerts within 10 s',
+                        ),
+                      ];
+                      return stacked
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                cards.first,
+                                const SizedBox(height: AppSpacing.md),
+                                cards.last,
+                              ],
+                            )
+                          : Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: cards.first),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(child: cards.last),
+                              ],
+                            );
+                    },
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -86,51 +84,6 @@ class PromptQualityScreen extends StatelessWidget {
         ? seconds.toStringAsFixed(0)
         : seconds.toStringAsFixed(1);
   }
-}
-
-class _QualityHeader extends StatelessWidget {
-  const _QualityHeader();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(AppSpacing.lg),
-    child: Row(
-      children: [
-        SizedBox(
-          width: AppSpacing.minTouchTarget,
-          height: AppSpacing.minTouchTarget,
-          child: DsIconButton(
-            icon: AppIcons.back,
-            tooltip: 'Back',
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'WORKSPACE',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: context.ds.textMuted,
-                  letterSpacing: 1.4,
-                  fontSize: 10,
-                ),
-              ),
-              Text(
-                'Prompt quality',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: context.ds.textPrimary,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 class _QualityMetric extends StatelessWidget {

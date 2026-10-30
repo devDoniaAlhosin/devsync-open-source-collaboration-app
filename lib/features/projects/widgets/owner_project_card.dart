@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ds_icon_button.dart';
 import '../models/project_model.dart';
@@ -101,7 +102,7 @@ class _OwnerProjectCardState extends State<OwnerProjectCard> {
                       ),
                       const SizedBox(width: 8),
                       DsIconButton(
-                        icon: Icons.edit_outlined,
+                        icon: AppIcons.edit,
                         tooltip: 'Edit project',
                         onPressed: widget.onEdit,
                       ),

@@ -7,17 +7,17 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../shell/home_shell_screen.dart';
 import '../cubit/auth_cubit.dart';
-import '../pages/verify_email_screen.dart';
-import '../pages/welcome_screen.dart';
+import '../screens/intro_screen.dart';
+import '../screens/verify_email_screen.dart';
 
-/// Routes to Home when signed in + verified, otherwise Welcome / verify email.
+/// Routes to Home when signed in + verified, otherwise Intro / verify email.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
   @override
   Widget build(BuildContext context) {
     if (Firebase.apps.isEmpty || !getIt.isRegistered<AuthCubit>()) {
-      return const WelcomeScreen();
+      return const IntroScreen();
     }
 
     return BlocProvider.value(
@@ -34,7 +34,7 @@ class AuthGate extends StatelessWidget {
                 ),
               ),
             ),
-            AuthSignedOut() => const WelcomeScreen(),
+            AuthSignedOut() => const IntroScreen(),
             AuthNeedsVerification(:final user) => VerifyEmailScreen(
               email: user.email,
             ),
@@ -51,4 +51,11 @@ void navigateToHome(BuildContext context) {
   Navigator.of(
     context,
   ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+}
+
+/// First-time setup: Connect GitHub (5) → Edit profile (20) → Home / Matches.
+void navigateToOnboarding(BuildContext context) {
+  Navigator.of(
+    context,
+  ).pushNamedAndRemoveUntil(AppRoutes.connectGithub, (route) => false);
 }

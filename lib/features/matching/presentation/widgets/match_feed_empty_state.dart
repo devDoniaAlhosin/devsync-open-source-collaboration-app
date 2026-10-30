@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_brand_icon.dart';
 import '../../../../core/widgets/ds_button.dart';
 
 /// Profile setup prompts for a feed with no recommendations.
@@ -40,11 +41,7 @@ class MatchFeedEmptyState extends StatelessWidget {
                           color: context.ds.surface,
                           borderRadius: BorderRadius.circular(40),
                         ),
-                        child: Image.asset(
-                          'assets/brand/png/devsync-icon-forest.png',
-                          color: context.ds.textPrimary,
-                          excludeFromSemantics: true,
-                        ),
+                        child: const DsBrandIcon(size: 64),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),

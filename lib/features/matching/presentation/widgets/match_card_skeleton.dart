@@ -2,76 +2,89 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/ds_card.dart';
 
+/// Shared content lazy-loading card: avatar, title lines, circle, hero bar, text.
 class MatchCardSkeleton extends StatelessWidget {
   const MatchCardSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return DsCard(
-      borderRadius: AppSpacing.radiusMatch,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              _placeholder(context, 44, 44, isCircle: true),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return Semantics(
+      label: 'Loading matches',
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.ds.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
-                    _placeholder(context, double.infinity, 16),
-                    const SizedBox(height: 6),
-                    _placeholder(context, 120, 12),
+                    const _Bone(width: 48, height: 48, radius: 16),
+                    const SizedBox(width: AppSpacing.md),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _Bone(height: 14),
+                          SizedBox(height: AppSpacing.sm),
+                          FractionallySizedBox(
+                            widthFactor: 0.55,
+                            alignment: Alignment.centerLeft,
+                            child: _Bone(height: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    const _Bone(width: 48, height: 48, radius: 24),
                   ],
                 ),
-              ),
-              _placeholder(context, 48, 28),
-            ],
+                const SizedBox(height: AppSpacing.md),
+                const _Bone(height: 48, radius: 16),
+                const SizedBox(height: AppSpacing.md),
+                const _Bone(height: 10),
+                const SizedBox(height: AppSpacing.md),
+                const FractionallySizedBox(
+                  widthFactor: 0.7,
+                  alignment: Alignment.centerLeft,
+                  child: _Bone(height: 10),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          _placeholder(context, double.infinity, 8),
-          const SizedBox(height: AppSpacing.md),
-          _placeholder(context, double.infinity, 56),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              _placeholder(context, 60, 26),
-              const SizedBox(width: 7),
-              _placeholder(context, 50, 26),
-              const SizedBox(width: 7),
-              _placeholder(context, 70, 26),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              Expanded(child: _placeholder(context, double.infinity, 44)),
-              const SizedBox(width: 10),
-              Expanded(child: _placeholder(context, double.infinity, 44)),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  Widget _placeholder(
-    BuildContext context,
-    double width,
-    double height, {
-    bool isCircle = false,
-  }) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: context.ds.surfaceAlt.withValues(alpha: 0.5),
-        borderRadius: isCircle ? null : BorderRadius.circular(8),
-        shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-      ),
-    );
-  }
+class _Bone extends StatelessWidget {
+  const _Bone({
+    this.width,
+    this.height = 12,
+    this.radius = 8,
+  });
+
+  final double? width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: context.ds.border.withValues(alpha: 0.75),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      );
 }

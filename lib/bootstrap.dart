@@ -10,7 +10,16 @@ import 'firebase_options.dart';
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Android auto-inits Firebase via google-services.json before Dart runs.
+  // Dart often still sees apps as empty, then initializeApp throws
+  // [core/duplicate-app] and never reaches runApp → stuck on splash.
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
+  }
   await configureDependencies();
 
   SystemChrome.setSystemUIOverlayStyle(

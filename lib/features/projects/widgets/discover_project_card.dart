@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/project_model.dart';
 import '../project_layout.dart';
@@ -88,7 +89,7 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                             Row(
                               children: [
                                 Icon(
-                                  Icons.alternate_email_rounded,
+                                  AppIcons.atSign,
                                   size: 12,
                                   color: context.ds.textMuted,
                                 ),
@@ -144,7 +145,7 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                           label: widget.requested
                               ? 'Request sent'
                               : 'Request to join',
-                          icon: widget.requested ? Icons.check_rounded : null,
+                          icon: widget.requested ? AppIcons.success : null,
                           variant: widget.requested
                               ? ProjectActionButtonVariant.secondary
                               : ProjectActionButtonVariant.primary,
@@ -157,7 +158,7 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.group_outlined,
+                            AppIcons.users,
                             size: 16,
                             color: context.ds.textMuted,
                           ),
@@ -190,7 +191,7 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                                     ? 'Request sent'
                                     : 'Request to join',
                                 icon: widget.requested
-                                    ? Icons.check_rounded
+                                    ? AppIcons.success
                                     : null,
                                 variant: widget.requested
                                     ? ProjectActionButtonVariant.secondary

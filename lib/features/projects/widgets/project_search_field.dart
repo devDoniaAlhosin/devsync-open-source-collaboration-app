@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/app_icons.dart';
 import '../../../core/theme/app_colors.dart';
 
 class ProjectSearchField extends StatelessWidget {
@@ -26,7 +27,7 @@ class ProjectSearchField extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 16),
-          Icon(Icons.search_rounded, size: 21, color: context.ds.textMuted),
+          Icon(AppIcons.search, size: 21, color: context.ds.textMuted),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -64,7 +65,7 @@ class ProjectSearchField extends StatelessWidget {
                   onChanged('');
                 },
                 icon: Icon(
-                  Icons.close_rounded,
+                  AppIcons.close,
                   size: 18,
                   color: context.ds.textMuted,
                 ),

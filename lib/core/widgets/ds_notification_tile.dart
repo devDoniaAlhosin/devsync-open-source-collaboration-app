@@ -25,24 +25,24 @@ class DsNotificationTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final ds = context.ds;
 
+    final radius = BorderRadius.circular(AppSpacing.radiusLg);
+
     return Material(
       color: ds.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        side: BorderSide(color: ds.border),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: radius),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        borderRadius: radius,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 10,
                 height: 10,
-                margin: const EdgeInsets.only(top: 7),
+                margin: const EdgeInsets.only(top: 6),
                 decoration: BoxDecoration(
                   color: unread ? AppColors.teal : ds.border,
                   shape: BoxShape.circle,
@@ -59,7 +59,7 @@ class DsNotificationTile extends StatelessWidget {
                         color: ds.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: textTheme.bodySmall?.copyWith(color: ds.textMuted),

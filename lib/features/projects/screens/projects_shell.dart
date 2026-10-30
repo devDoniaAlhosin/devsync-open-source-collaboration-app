@@ -1,22 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/app_routes.dart';
+import '../../../core/navigation/open_host_drawer.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/icons/app_icons.dart';
+import '../../../core/widgets/ds_app_bar.dart';
+import '../../../core/widgets/ds_fade_switch.dart';
 import '../../../core/widgets/ds_icon_button.dart';
+import '../../../core/widgets/ds_tab_switcher.dart';
 import '../data/project_repository.dart';
 import '../models/project_model.dart';
 import '../widgets/devsync_bottom_nav.dart';
 import '../widgets/project_background.dart';
-import '../widgets/project_top_bar.dart';
 import 'add_or_edit_project_screen.dart';
 import 'discover_projects_screen.dart';
 import 'my_projects_screen.dart';
 
 class ProjectsShell extends StatefulWidget {
-  const ProjectsShell({super.key, this.showBottomNav = true});
+  const ProjectsShell({
+    super.key,
+    this.showBottomNav = true,
+    this.initialTab = 0,
+    this.onMenuPressed,
+  });
 
   /// When embedded in [HomeShellScreen], hide the feature-local bottom nav.
   final bool showBottomNav;
+
+  /// 0 = Discover, 1 = My projects. Driven by home bottom nav when embedded.
+  final int initialTab;
+
+  /// Opens the host [AppDrawer]. When null, falls back to [openHostDrawer]
+  /// then a local bottom sheet (standalone `/projects` route).
+  final VoidCallback? onMenuPressed;
 
   @override
   State<ProjectsShell> createState() => _ProjectsShellState();
@@ -24,12 +40,37 @@ class ProjectsShell extends StatefulWidget {
 
 class _ProjectsShellState extends State<ProjectsShell> {
   final List<ProjectModel> _projects = ProjectRepository.projects();
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = _clampTab(widget.initialTab);
+  }
+
+  @override
+  void didUpdateWidget(covariant ProjectsShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab != widget.initialTab) {
+      final next = _clampTab(widget.initialTab);
+      if (next != _selectedIndex) {
+        setState(() => _selectedIndex = next);
+      }
+    }
+  }
+
+  /// When embedded, only Discover / My projects are valid.
+  int _clampTab(int tab) {
+    if (!widget.showBottomNav) {
+      return tab == 1 ? 1 : 0;
+    }
+    return tab.clamp(0, 3);
+  }
 
   String get _title {
     switch (_selectedIndex) {
       case 0:
-        return 'Projects';
+        return 'Discover';
       case 1:
         return 'My projects';
       case 2:
@@ -48,7 +89,7 @@ class _ProjectsShellState extends State<ProjectsShell> {
   Future<void> _openEditor([ProjectModel? initialProject]) async {
     final wasEditing = initialProject != null;
     final result = await Navigator.of(context).push<ProjectModel>(
-      MaterialPageRoute<ProjectModel>(
+      DsFadePageRoute<ProjectModel>(
         builder: (context) =>
             AddOrEditProjectScreen(initialProject: initialProject),
       ),
@@ -82,6 +123,16 @@ class _ProjectsShellState extends State<ProjectsShell> {
   }
 
   void _showMenu() {
+    if (widget.onMenuPressed != null) {
+      widget.onMenuPressed!();
+      return;
+    }
+    if (openHostDrawer(context)) return;
+    _showStandaloneMenuSheet();
+  }
+
+  /// Fallback when [ProjectsShell] is opened outside the home shell.
+  void _showStandaloneMenuSheet() {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -107,7 +158,7 @@ class _ProjectsShellState extends State<ProjectsShell> {
                           border: Border.all(color: context.ds.border),
                         ),
                         child: const Icon(
-                          Icons.terminal_rounded,
+                          AppIcons.code,
                           color: AppColors.teal,
                           size: 20,
                         ),
@@ -131,7 +182,7 @@ class _ProjectsShellState extends State<ProjectsShell> {
                   ),
                 ),
                 _MenuTile(
-                  icon: Icons.auto_awesome_outlined,
+                  icon: AppIcons.sparkle,
                   label: 'Discover projects',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
@@ -139,7 +190,7 @@ class _ProjectsShellState extends State<ProjectsShell> {
                   },
                 ),
                 _MenuTile(
-                  icon: Icons.folder_outlined,
+                  icon: AppIcons.projects,
                   label: 'My projects',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
@@ -147,7 +198,7 @@ class _ProjectsShellState extends State<ProjectsShell> {
                   },
                 ),
                 _MenuTile(
-                  icon: Icons.add_rounded,
+                  icon: AppIcons.plus,
                   label: 'List a project',
                   accent: true,
                   onTap: () {
@@ -173,43 +224,44 @@ class _ProjectsShellState extends State<ProjectsShell> {
     );
   }
 
-  void _showNotifications() {
-    _showSnackBar('You are all caught up.');
-  }
-
   @override
   Widget build(BuildContext context) {
-    final topBarActions = [
-      DsIconButton(
-        icon: Icons.notifications_none_rounded,
-        tooltip: 'Notifications',
-        onPressed: _showNotifications,
-      ),
-      DsIconButton(
-        icon: Icons.arrow_outward_rounded,
-        tooltip: 'List a project',
-        active: true,
-        onPressed: _openEditor,
-      ),
-    ];
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBody: true,
       body: ProjectBackground(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
+        child: Column(
             children: [
-              ProjectTopBar(
+              DsAppBar(
+                // Brand eyebrow stays global. Page titles for Discover /
+                // My projects live in the body (DsPageHeader.page).
+                title: _selectedIndex <= 1 ? '' : _title,
                 eyebrow: 'DEVSYNC',
-                title: _title,
-                onLeadingPressed: _showMenu,
-                actions: topBarActions,
+                showMenu: true,
+                onMenu: _showMenu,
+                actions: [
+                  DsIconButton(
+                    icon: AppIcons.notifications,
+                    tooltip: 'Notifications',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(AppRoutes.notifications);
+                    },
+                  ),
+                  DsIconButton(
+                    icon: AppIcons.externalLink,
+                    tooltip: 'List a project',
+                    active: true,
+                    onPressed: _openEditor,
+                  ),
+                ],
               ),
               Expanded(
-                child: IndexedStack(
-                  index: _selectedIndex,
+                child: DsTabSwitcher(
+                  // Embedded in home: only Discover / My projects.
+                  // Standalone route may still show local nav placeholders.
+                  index: widget.showBottomNav
+                      ? _selectedIndex.clamp(0, 3)
+                      : _selectedIndex.clamp(0, 1),
                   children: [
                     DiscoverProjectsScreen(
                       projects: _projects,
@@ -221,28 +273,29 @@ class _ProjectsShellState extends State<ProjectsShell> {
                       onEditProject: (project) => _openEditor(project),
                       onCreateProject: _openEditor,
                     ),
-                    const _PlaceholderTab(
-                      icon: Icons.inbox_outlined,
-                      eyebrow: 'WORKSPACE',
-                      title: 'Your inbox is clear',
-                      description:
-                          'Collaboration requests and project invites will '
-                          'appear here.',
-                    ),
-                    const _PlaceholderTab(
-                      icon: Icons.person_outline_rounded,
-                      eyebrow: 'DEVELOPER PROFILE',
-                      title: 'Build your signal',
-                      description:
-                          'Showcase your skills, contributions and the '
-                          'projects you care about.',
-                    ),
+                    if (widget.showBottomNav) ...[
+                      const _PlaceholderTab(
+                        icon: AppIcons.inbox,
+                        eyebrow: 'WORKSPACE',
+                        title: 'Your inbox is clear',
+                        description:
+                            'Collaboration requests and project invites will '
+                            'appear here.',
+                      ),
+                      const _PlaceholderTab(
+                        icon: AppIcons.profile,
+                        eyebrow: 'DEVELOPER PROFILE',
+                        title: 'Build your signal',
+                        description:
+                            'Showcase your skills, contributions and the '
+                            'projects you care about.',
+                      ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-        ),
       ),
       bottomNavigationBar: widget.showBottomNav
           ? DevSyncBottomNav(
@@ -293,7 +346,7 @@ class _MenuTile extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.chevron_right_rounded,
+                AppIcons.chevronRight,
                 size: 18,
                 color: accent
                     ? AppColors.teal

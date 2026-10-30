@@ -9,6 +9,7 @@ import '../../domain/repositories/matching_repository.dart';
 import '../../domain/usecases/generate_matches_usecase.dart';
 import '../../domain/usecases/get_matching_analytics_usecase.dart';
 import '../../domain/usecases/get_ranked_matches_usecase.dart';
+import '../liked_matches_store.dart';
 import '../widgets/draggable_match_card.dart';
 
 class MatchActionRecord {
@@ -143,6 +144,9 @@ class MatchingController extends ChangeNotifier {
     _actionHistory.add(
       MatchActionRecord(index: _currentDeckIndex, action: action, match: match),
     );
+    if (action == MatchSwipeAction.request) {
+      LikedMatchesStore.instance.add(match);
+    }
     _currentDeckIndex++;
     notifyListeners();
   }

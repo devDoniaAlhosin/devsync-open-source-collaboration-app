@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_chip.dart';
+import '../../../../core/widgets/ds_icon.dart';
 import '../../domain/entities/match_item.dart';
 import '../../../../core/utils/project_details_utils.dart';
 
@@ -71,11 +73,9 @@ class ProjectSkills extends StatelessWidget {
           runSpacing: AppSpacing.sm,
           children: [
             for (final skill in skills)
-              DsChip(
-                label: skill,
-                variant: userSkills.contains(skill.trim().toLowerCase())
-                    ? DsChipVariant.selected
-                    : DsChipVariant.muted,
+              _skillChip(
+                skill,
+                matched: userSkills.contains(skill.trim().toLowerCase()),
               ),
           ],
         ),
@@ -89,6 +89,20 @@ class ProjectSkills extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _skillChip(String skill, {required bool matched}) {
+    return DsChip(
+      label: skill,
+      variant: matched ? DsChipVariant.selected : DsChipVariant.muted,
+      leading: matched
+          ? const DsIcon(
+              AppIcons.success,
+              size: 14,
+              color: AppColors.onTeal,
+            )
+          : null,
     );
   }
 }

@@ -39,6 +39,7 @@ class MatchFeedDeckView extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 460),
                 child: SingleChildScrollView(
+                  clipBehavior: Clip.none,
                   child: MatchCardDeck(
                     cardKey: cardKey,
                     match: match,
