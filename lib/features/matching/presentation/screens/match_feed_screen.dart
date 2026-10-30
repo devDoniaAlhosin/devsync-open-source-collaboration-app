@@ -39,11 +39,15 @@ class MatchFeedScreen extends StatefulWidget {
   final MatchingViewMode? initialViewMode;
   final VoidCallback? onMenuPressed;
 
+  /// Switches the host shell to the Profile tab (keeps the drawer).
+  final VoidCallback? onOpenProfile;
+
   const MatchFeedScreen({
     super.key,
     this.controller,
     this.initialViewMode,
     this.onMenuPressed,
+    this.onOpenProfile,
   });
 
   @override
@@ -157,9 +161,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     final match = _controller.currentDeckMatch;
     if (match == null) {
       return MatchFeedEmptyState(
-        onAddSkills: () => Navigator.of(context).pushNamed(AppRoutes.profile),
+        onAddSkills: () {
+          if (widget.onOpenProfile != null) {
+            widget.onOpenProfile!();
+            return;
+          }
+          Navigator.of(context).pushNamed(AppRoutes.profile);
+        },
         onConnectGitHub: () =>
-            _notify('GitHub connection is not available yet.'),
+            Navigator.of(context).pushNamed(AppRoutes.connectGithub),
       );
     }
 

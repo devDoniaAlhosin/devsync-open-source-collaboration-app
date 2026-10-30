@@ -33,43 +33,48 @@ class CollaborationAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.md,
-          AppSpacing.xl,
-          AppSpacing.lg,
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: AppSpacing.buttonHeight,
-              height: AppSpacing.buttonHeight,
-              child: Material(
-                color: ds.surfaceAlt,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                ),
-                child: InkWell(
-                  onTap: () => Navigator.of(context).pop(),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                  child: const Center(
-                    child: DsIcon(AppIcons.close, size: 22),
+    // Opaque fill required: with [Scaffold.extendBody] a transparent bar
+    // shows the Android window (black) behind the route.
+    return Material(
+      color: ds.background,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.md,
+            AppSpacing.xl,
+            AppSpacing.lg,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: AppSpacing.buttonHeight,
+                height: AppSpacing.buttonHeight,
+                child: Material(
+                  color: ds.surfaceAlt,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  ),
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                    child: const Center(
+                      child: DsIcon(AppIcons.close, size: 22),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: DsButton(
-                label: 'Request to collaborate',
-                icon: AppIcons.requests,
-                onPressed: () => _requestToCollaborate(context),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: DsButton(
+                  label: 'Request to collaborate',
+                  icon: AppIcons.requests,
+                  onPressed: () => _requestToCollaborate(context),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

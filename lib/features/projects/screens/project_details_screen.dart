@@ -364,37 +364,42 @@ class _DetailsActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: SizedBox(
-        height: 56,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: ProjectLayout.detailsWidth,
-            ),
-            child: Row(
-              children: [
-                DsIconButton(
-                  icon: AppIcons.close,
-                  onPressed: onClose,
-                  tooltip: 'Close project',
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ProjectActionButton(
-                    label: requested
-                        ? 'Request sent'
-                        : 'Request to collaborate',
-                    icon: requested ? AppIcons.success : null,
-                    variant: requested
-                        ? ProjectActionButtonVariant.secondary
-                        : ProjectActionButtonVariant.primary,
-                    onPressed: requested ? null : onRequest,
+    // Scaffold uses a transparent background for [ProjectBackground]; without
+    // an opaque bar fill the Android window (black) shows through here.
+    return Material(
+      color: context.ds.background,
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: SizedBox(
+          height: 56,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: ProjectLayout.detailsWidth,
+              ),
+              child: Row(
+                children: [
+                  DsIconButton(
+                    icon: AppIcons.close,
+                    onPressed: onClose,
+                    tooltip: 'Close project',
                   ),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ProjectActionButton(
+                      label: requested
+                          ? 'Request sent'
+                          : 'Request to collaborate',
+                      icon: requested ? AppIcons.success : null,
+                      variant: requested
+                          ? ProjectActionButtonVariant.secondary
+                          : ProjectActionButtonVariant.primary,
+                      onPressed: requested ? null : onRequest,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

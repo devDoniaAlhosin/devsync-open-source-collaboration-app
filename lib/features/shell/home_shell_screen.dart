@@ -127,7 +127,10 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
         child: DsTabSwitcher(
           index: _paneIndex,
           children: [
-            MatchFeedScreen(onMenuPressed: _openDrawer),
+            MatchFeedScreen(
+              onMenuPressed: _openDrawer,
+              onOpenProfile: () => setState(() => _index = 4),
+            ),
             ProjectsShell(
               showBottomNav: false,
               initialTab: _index == 2 ? 1 : 0,

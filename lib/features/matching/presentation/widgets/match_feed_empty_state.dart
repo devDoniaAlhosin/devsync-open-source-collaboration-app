@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_brand_icon.dart';
 import '../../../../core/widgets/ds_button.dart';
+import '../../../../core/widgets/ds_github_icon.dart';
 
 /// Profile setup prompts for a feed with no recommendations.
 class MatchFeedEmptyState extends StatelessWidget {
@@ -68,7 +68,10 @@ class MatchFeedEmptyState extends StatelessWidget {
                     const SizedBox(height: AppSpacing.md),
                     DsButton(
                       label: 'Connect GitHub',
-                      icon: AppIcons.github,
+                      leading: DsGithubIcon(
+                        size: 18,
+                        color: context.ds.textPrimary,
+                      ),
                       variant: DsButtonVariant.quiet,
                       onPressed: onConnectGitHub,
                     ),
