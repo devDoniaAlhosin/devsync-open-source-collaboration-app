@@ -25,6 +25,31 @@ import '../../features/auth/presentation/cubit/forgot_password_cubit.dart';
 import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/auth/presentation/cubit/register_cubit.dart';
 import '../../features/auth/presentation/cubit/verify_email_cubit.dart';
+import '../../features/matching/domain/repositories/matching_repository.dart';
+import '../../features/matching/domain/usecases/generate_matches_usecase.dart';
+import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
+import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
+import '../../features/matching/matching_dependencies.dart';
+import '../../features/matching/presentation/cubit/matching_cubit.dart';
+import '../../features/profile/data/datasources/profile_local_data_source.dart';
+import '../../features/profile/data/repositories/profile_repository_impl.dart';
+import '../../features/profile/domain/repositories/profile_repository.dart';
+import '../../features/profile/domain/usecases/get_profile.dart';
+import '../../features/profile/domain/usecases/update_profile.dart';
+import '../../features/profile/presentation/cubit/profile_cubit.dart';
+import '../../features/projects/data/datasources/projects_local_data_source.dart';
+import '../../features/projects/data/repositories/projects_repository_impl.dart';
+import '../../features/projects/domain/repositories/projects_repository.dart';
+import '../../features/projects/domain/usecases/get_project_stats.dart';
+import '../../features/projects/domain/usecases/get_projects.dart';
+import '../../features/projects/domain/usecases/upsert_project.dart';
+import '../../features/projects/presentation/cubit/projects_cubit.dart';
+import '../../features/requests/data/datasources/requests_local_data_source.dart';
+import '../../features/requests/data/repositories/requests_repository_impl.dart';
+import '../../features/requests/domain/repositories/requests_repository.dart';
+import '../../features/requests/domain/usecases/get_requests.dart';
+import '../../features/requests/domain/usecases/update_request_status.dart';
+import '../../features/requests/presentation/cubit/requests_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -96,6 +121,80 @@ Future<void> configureDependencies() async {
         reloadEmailVerification: getIt(),
         signOut: getIt(),
         authRepository: getIt(),
+      ),
+    );
+
+  _registerMatching();
+  _registerProfile();
+  _registerProjects();
+  _registerRequests();
+}
+
+void _registerMatching() {
+  if (getIt.isRegistered<MatchingRepository>()) return;
+
+  getIt
+    ..registerLazySingleton<MatchingRepository>(createDemoMatchingRepository)
+    ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
+    ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
+    ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
+    ..registerFactory(
+      () => MatchingCubit(repository: getIt<MatchingRepository>()),
+    );
+}
+
+void _registerProfile() {
+  if (getIt.isRegistered<ProfileRepository>()) return;
+
+  getIt
+    ..registerLazySingleton(ProfileLocalDataSource.new)
+    ..registerLazySingleton<ProfileRepository>(
+      () => ProfileRepositoryImpl(localDataSource: getIt()),
+    )
+    ..registerLazySingleton(() => GetProfile(getIt()))
+    ..registerLazySingleton(() => UpdateProfile(getIt()))
+    ..registerFactory(
+      () => ProfileCubit(
+        getProfile: getIt(),
+        updateProfile: getIt(),
+      ),
+    );
+}
+
+void _registerProjects() {
+  if (getIt.isRegistered<ProjectsRepository>()) return;
+
+  getIt
+    ..registerLazySingleton(ProjectsLocalDataSource.new)
+    ..registerLazySingleton<ProjectsRepository>(
+      () => ProjectsRepositoryImpl(localDataSource: getIt()),
+    )
+    ..registerLazySingleton(() => GetProjects(getIt()))
+    ..registerLazySingleton(() => GetProjectStats(getIt()))
+    ..registerLazySingleton(() => UpsertProject(getIt()))
+    ..registerFactory(
+      () => ProjectsCubit(
+        getProjects: getIt(),
+        getProjectStats: getIt(),
+        upsertProject: getIt(),
+      ),
+    );
+}
+
+void _registerRequests() {
+  if (getIt.isRegistered<RequestsRepository>()) return;
+
+  getIt
+    ..registerLazySingleton(RequestsLocalDataSource.new)
+    ..registerLazySingleton<RequestsRepository>(
+      () => RequestsRepositoryImpl(localDataSource: getIt()),
+    )
+    ..registerLazySingleton(() => GetRequests(getIt()))
+    ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
+    ..registerFactory(
+      () => RequestsCubit(
+        getRequests: getIt(),
+        updateRequestStatus: getIt(),
       ),
     );
 }

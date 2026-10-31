@@ -2,7 +2,7 @@ import 'package:devsync_open_source_collaboration_app/features/matching/data/dat
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/matching_priority.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/presentation/controllers/matching_controller.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/ai_analytics_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/ai_analytics_stat_card.dart';
@@ -15,112 +15,112 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('MatchingController Clean Architecture & State Management', () {
+  group('MatchingCubit Clean Architecture & State Management', () {
     late MatchingRepositoryImpl repository;
-    late MatchingController controller;
+    late MatchingCubit cubit;
 
     setUp(() {
       repository = MatchingRepositoryImpl(
         remoteDataSource: MockMatchingRemoteDataSource(),
         localDataSource: InMemoryMatchingLocalDataSource(),
       );
-      controller = MatchingController(repository: repository);
+      cubit = MatchingCubit(repository: repository);
     });
 
-    tearDown(() {
-      controller.dispose();
+    tearDown(() async {
+      await cubit.close();
     });
 
     test('loadInitialData populates matches and analytics', () async {
-      expect(controller.matches, isEmpty);
-      await controller.loadInitialData();
+      expect(cubit.state.matches, isEmpty);
+      await cubit.loadInitialData();
 
-      expect(controller.matches, isNotEmpty);
-      expect(controller.analytics.matchesRated, 18);
-      expect(controller.analytics.positiveSignalsPercentage, 83);
-      expect(controller.analytics.skillsMatchedCount, 4);
+      expect(cubit.state.matches, isNotEmpty);
+      expect(cubit.state.analytics.matchesRated, 18);
+      expect(cubit.state.analytics.positiveSignalsPercentage, 83);
+      expect(cubit.state.analytics.skillsMatchedCount, 4);
     });
 
     test('generateMatches creates prompt-based recommendations', () async {
-      await controller.loadInitialData();
-      controller.updatePrompt('beginner-friendly testing tasks');
-      await controller.generateMatches();
+      await cubit.loadInitialData();
+      cubit.updatePrompt('beginner-friendly testing tasks');
+      await cubit.generateMatches();
 
       expect(
-        controller.matches.any((m) => m.projectName == 'nova-tools/cli'),
+        cubit.state.matches.any((m) => m.projectName == 'nova-tools/cli'),
         isTrue,
       );
     });
 
     test('toggleTag updates active tags', () {
       expect(
-        controller.preferences.selectedTags.contains('Flutter UI'),
+        cubit.state.preferences.selectedTags.contains('Flutter UI'),
         isTrue,
       );
-      controller.toggleTag('Flutter UI');
+      cubit.toggleTag('Flutter UI');
       expect(
-        controller.preferences.selectedTags.contains('Flutter UI'),
+        cubit.state.preferences.selectedTags.contains('Flutter UI'),
         isFalse,
       );
-      controller.toggleTag('Flutter UI');
+      cubit.toggleTag('Flutter UI');
       expect(
-        controller.preferences.selectedTags.contains('Flutter UI'),
+        cubit.state.preferences.selectedTags.contains('Flutter UI'),
         isTrue,
       );
     });
 
     test('refinePromptWithPriority sets template prompt and priority', () {
-      controller.refinePromptWithPriority(MatchingPriority.beginnerFriendly);
+      cubit.refinePromptWithPriority(MatchingPriority.beginnerFriendly);
 
       expect(
-        controller.preferences.priority,
+        cubit.state.preferences.priority,
         MatchingPriority.beginnerFriendly,
       );
-      expect(controller.preferences.prompt, contains('beginner-friendly'));
+      expect(cubit.state.preferences.prompt, contains('beginner-friendly'));
     });
 
     test('deck actions and undo work correctly', () async {
-      await controller.loadInitialData();
-      final firstMatch = controller.currentDeckMatch!;
-      expect(controller.canUndo, isFalse);
+      await cubit.loadInitialData();
+      final firstMatch = cubit.state.currentDeckMatch!;
+      expect(cubit.state.canUndo, isFalse);
 
-      controller.performDeckAction(firstMatch, MatchSwipeAction.request);
-      expect(controller.canUndo, isTrue);
-      expect(controller.currentDeckIndex, 1);
+      cubit.performDeckAction(firstMatch, MatchSwipeAction.request);
+      expect(cubit.state.canUndo, isTrue);
+      expect(cubit.state.currentDeckIndex, 1);
 
-      controller.undoLastDeckAction();
-      expect(controller.canUndo, isFalse);
-      expect(controller.currentDeckIndex, 0);
+      cubit.undoLastDeckAction();
+      expect(cubit.state.canUndo, isFalse);
+      expect(cubit.state.currentDeckIndex, 0);
     });
   });
 
   group('Matching UI Components & Screens', () {
     late MatchingRepositoryImpl repository;
-    late MatchingController controller;
+    late MatchingCubit cubit;
 
     setUp(() {
       repository = MatchingRepositoryImpl(
         remoteDataSource: MockMatchingRemoteDataSource(),
         localDataSource: InMemoryMatchingLocalDataSource(),
       );
-      controller = MatchingController(repository: repository);
+      cubit = MatchingCubit(repository: repository);
     });
 
-    tearDown(() {
-      controller.dispose();
+    tearDown(() async {
+      await cubit.close();
     });
 
     testWidgets(
       'MatchFeedScreen in studio mode renders all cards and elements',
       (tester) async {
         await tester.runAsync(() async {
-          await controller.loadInitialData();
+          await cubit.loadInitialData();
         });
 
         await tester.pumpWidget(
           MaterialApp(
             home: MatchFeedScreen(
-              controller: controller,
+              cubit: cubit,
               initialViewMode: MatchingViewMode.studio,
             ),
           ),
@@ -140,11 +140,11 @@ void main() {
       'AiAnalyticsScreen renders KPI metrics, trend chart and tuning',
       (tester) async {
         await tester.runAsync(() async {
-          await controller.loadInitialData();
+          await cubit.loadInitialData();
         });
 
         await tester.pumpWidget(
-          MaterialApp(home: AiAnalyticsScreen(controller: controller)),
+          MaterialApp(home: AiAnalyticsScreen(cubit: cubit)),
         );
         await tester.pump();
 

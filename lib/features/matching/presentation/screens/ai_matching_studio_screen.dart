@@ -1,56 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../domain/entities/match_item.dart';
-import '../../matching_dependencies.dart';
-import '../controllers/matching_controller.dart';
+import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
 import 'ai_analytics_screen.dart';
 import 'project_details_screen.dart';
 
 /// Standalone full-screen view of the AI Matching Studio.
-///
-/// Presents the "DEVSYNC INTELLIGENCE / BETA" banner, the preferences &
-/// prompt card, a ranked suggestions list, and the scoring breakdown with a
-/// deep-link into [AiAnalyticsScreen].
-///
-/// Navigation:
-/// - Push via [AppRoutes.aiStudio] or `DsFadePageRoute(builder: (_) => AiMatchingStudioScreen(...))`
-/// - Bidirectional: "Explore AI quality analytics" button navigates to
-///   [AiAnalyticsScreen]; that screen pops `true` when the prompt is refined,
-///   triggering [_controller.loadInitialData] to refresh the match list.
 class AiMatchingStudioScreen extends StatefulWidget {
-  /// Provide a shared [MatchingController] so this screen stays in sync with
-  /// the parent feed. When `null`, the screen owns an isolated controller.
-  final MatchingController? controller;
+  /// Shared [MatchingCubit] from the parent feed. When `null`, owns one from GetIt.
+  final MatchingCubit? cubit;
 
-  const AiMatchingStudioScreen({super.key, this.controller});
+  const AiMatchingStudioScreen({super.key, this.cubit});
 
   @override
   State<AiMatchingStudioScreen> createState() => _AiMatchingStudioScreenState();
 }
 
 class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
-  late final MatchingController _controller;
-  late final bool _ownsController;
+  late final MatchingCubit _cubit;
+  late final bool _ownsCubit;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: DsAppBar(
-        title: 'AI Studio',
-        eyebrow: 'DEVSYNC',
-        showBack: true,
-        onBack: () => Navigator.of(context).maybePop(),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 540),
-            child: ListenableBuilder(
-              listenable: _controller,
-              builder: (context, _) => _buildBody(context),
+    return BlocProvider.value(
+      value: _cubit,
+      child: Scaffold(
+        appBar: DsAppBar(
+          title: 'AI Studio',
+          eyebrow: 'DEVSYNC',
+          showBack: true,
+          onBack: () => Navigator.of(context).maybePop(),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 540),
+              child: BlocBuilder<MatchingCubit, MatchingState>(
+                builder: (context, state) => _buildBody(context, state),
+              ),
             ),
           ),
         ),
@@ -60,8 +52,8 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
 
   @override
   void dispose() {
-    if (_ownsController) {
-      _controller.dispose();
+    if (_ownsCubit) {
+      _cubit.close();
     }
     super.dispose();
   }
@@ -69,42 +61,41 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
   @override
   void initState() {
     super.initState();
-
-    _ownsController = widget.controller == null;
-    _controller = widget.controller ?? createDemoMatchingController();
-    if (_ownsController) _controller.loadInitialData();
+    _ownsCubit = widget.cubit == null;
+    _cubit = widget.cubit ?? getIt<MatchingCubit>();
+    if (_ownsCubit) _cubit.loadInitialData();
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, MatchingState state) {
     return AiStudioContent(
-      onPromptChanged: _controller.updatePrompt,
-      preferences: _controller.preferences,
-      matches: _controller.matches,
-      scoringBreakdown: _controller.analytics.scoringBreakdown,
-      isGenerating: _controller.isGenerating,
-      onTagToggled: _controller.toggleTag,
+      onPromptChanged: _cubit.updatePrompt,
+      preferences: state.preferences,
+      matches: state.matches,
+      scoringBreakdown: state.analytics.scoringBreakdown,
+      isGenerating: state.isGenerating,
+      onTagToggled: _cubit.toggleTag,
       onGenerateMatches: _generateMatches,
-      onViewProjectDetails: _navigateToProjectDetails,
+      onViewProjectDetails: (match) => _navigateToProjectDetails(match, state),
       onExploreAnalytics: _openAnalytics,
     );
   }
 
   Future<void> _generateMatches() async {
-    await _controller.generateMatches();
+    await _cubit.generateMatches();
     if (!mounted) return;
+    final state = _cubit.state;
     _notify(
-      _controller.errorMessage ??
-          '${_controller.matches.length} matches generated',
+      state.errorMessage ?? '${state.matches.length} matches generated',
     );
   }
 
-  void _navigateToProjectDetails(MatchItem match) {
+  void _navigateToProjectDetails(MatchItem match, MatchingState state) {
     Navigator.of(context).push(
       DsFadePageRoute<void>(
         builder: (_) => ProjectDetailsScreen(
           arguments: ProjectDetailsArguments(
             match: match,
-            currentUserSkills: _controller.profile.declaredSkills,
+            currentUserSkills: state.profile.declaredSkills,
           ),
         ),
       ),
@@ -122,11 +113,11 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
       DsFadePageRoute<bool>(
-        builder: (_) => AiAnalyticsScreen(controller: _controller),
+        builder: (_) => AiAnalyticsScreen(cubit: _cubit),
       ),
     );
     if (refreshNeeded == true && mounted) {
-      await _controller.loadInitialData();
+      await _cubit.loadInitialData();
     }
   }
 }

@@ -1,12 +1,15 @@
 import 'data/datasources/matching_local_data_source.dart';
 import 'data/datasources/matching_remote_data_source.dart';
 import 'data/repositories/matching_repository_impl.dart';
-import 'presentation/controllers/matching_controller.dart';
+import 'domain/repositories/matching_repository.dart';
+import 'presentation/cubit/matching_cubit.dart';
 
-/// Default demo composition. Screens can receive a controller from the caller.
-MatchingController createDemoMatchingController() => MatchingController(
-  repository: MatchingRepositoryImpl(
-    remoteDataSource: MockMatchingRemoteDataSource(),
-    localDataSource: InMemoryMatchingLocalDataSource(),
-  ),
+/// Builds the demo [MatchingRepository] (mock remote + in-memory cache).
+MatchingRepository createDemoMatchingRepository() => MatchingRepositoryImpl(
+  remoteDataSource: MockMatchingRemoteDataSource(),
+  localDataSource: InMemoryMatchingLocalDataSource(),
 );
+
+/// Default demo composition when a screen is not given a shared cubit.
+MatchingCubit createDemoMatchingCubit() =>
+    MatchingCubit(repository: createDemoMatchingRepository());

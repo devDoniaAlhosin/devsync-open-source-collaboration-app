@@ -7,7 +7,7 @@ import '../../core/widgets/ds_bottom_nav.dart';
 import '../../core/widgets/ds_tab_switcher.dart';
 import '../matching/presentation/screens/match_feed_screen.dart';
 import '../profile/presentation/screens/profile_screen.dart';
-import '../projects/screens/projects_shell.dart';
+import '../projects/presentation/screens/projects_shell.dart';
 import '../requests/presentation/screens/requests_screen.dart';
 import 'app_drawer.dart';
 

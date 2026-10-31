@@ -30,10 +30,9 @@ import '../features/profile/data/models/profile_data.dart';
 import '../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../features/requests/presentation/screens/connected_celebration_screen.dart';
 import '../features/requests/presentation/screens/notification_permission_screen.dart';
-import '../features/projects/data/project_repository.dart';
-import '../features/projects/models/project_model.dart';
-import '../features/projects/screens/project_details_screen.dart';
-import '../features/projects/screens/projects_shell.dart';
+import '../features/projects/domain/entities/project.dart';
+import '../features/projects/presentation/screens/project_details_screen.dart';
+import '../features/projects/presentation/screens/projects_shell.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
 import '../features/shell/home_shell_screen.dart';
 import '../features/shell/settings_screen.dart';
@@ -234,11 +233,8 @@ class _DevSyncAppState extends State<DevSyncApp> {
     if (args is matching_details.ProjectDetailsArguments) {
       return matching_details.ProjectDetailsScreen(arguments: args);
     }
-    if (args is ProjectModel) {
-      return ProjectDetailsScreen(
-        project: args,
-        stats: ProjectRepository.statsFor(args.id),
-      );
+    if (args is Project) {
+      return ProjectDetailsScreen(project: args);
     }
     return const StubScreen(
       title: 'Project detail',

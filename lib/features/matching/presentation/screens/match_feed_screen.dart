@@ -1,7 +1,9 @@
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/matching_progress_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/app_routes.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/navigation/open_host_drawer.dart';
 import '../../../../core/theme/app_animations.dart';
@@ -14,8 +16,7 @@ import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../domain/entities/match_item.dart';
-import '../../matching_dependencies.dart';
-import '../controllers/matching_controller.dart';
+import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
 import '../widgets/draggable_match_card.dart';
 import '../widgets/explore_devsync_section.dart';
@@ -30,12 +31,8 @@ import 'project_details_screen.dart';
 import 'prompt_quality_screen.dart';
 
 /// Screen hosting the AI recommendations and interactive match feed.
-///
-/// Follows Clean Architecture and SOLID standards by delegating state and
-/// business logic to [MatchingController] and separating presentation into
-/// focused reusable widgets.
 class MatchFeedScreen extends StatefulWidget {
-  final MatchingController? controller;
+  final MatchingCubit? cubit;
   final MatchingViewMode? initialViewMode;
   final VoidCallback? onMenuPressed;
 
@@ -44,7 +41,7 @@ class MatchFeedScreen extends StatefulWidget {
 
   const MatchFeedScreen({
     super.key,
-    this.controller,
+    this.cubit,
     this.initialViewMode,
     this.onMenuPressed,
     this.onOpenProfile,
@@ -55,8 +52,8 @@ class MatchFeedScreen extends StatefulWidget {
 }
 
 class _MatchFeedScreenState extends State<MatchFeedScreen> {
-  late final MatchingController _controller;
-  late final bool _ownsController;
+  late final MatchingCubit _cubit;
+  late final bool _ownsCubit;
   final GlobalKey<DraggableMatchCardState> _cardKey =
       GlobalKey<DraggableMatchCardState>();
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
@@ -64,55 +61,57 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldMessenger(
-      key: _scaffoldMessengerKey,
-      child: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, _) {
-          final isEmptyFeed =
-              !_controller.isLoading &&
-              _controller.errorMessage == null &&
-              _controller.viewMode == MatchingViewMode.deck &&
-              _controller.currentDeckMatch == null;
-          return Scaffold(
-            appBar: DsAppBar(
-              title: isEmptyFeed ? 'Your matches' : 'For you',
-              eyebrow: 'DEVSYNC',
-              showMenu: true,
-              onMenu: () {
-                if (widget.onMenuPressed != null) {
-                  widget.onMenuPressed!();
-                  return;
-                }
-                openHostDrawer(context);
-              },
-              onNotifications: () =>
-                  Navigator.of(context).pushNamed(AppRoutes.notifications),
-              notificationBadge: true,
-              actions: [
-                DsIconButton(
-                  icon: AppIcons.bookmark,
-                  tooltip: 'Liked matches',
-                  onPressed: () {
-                    Navigator.of(context).pushNamed(AppRoutes.likedMatches);
-                  },
-                ),
-              ],
-            ),
-            body: SafeArea(
-              top: false,
-              child: DsPageFade(child: _buildPageContent()),
-            ),
-          );
-        },
+    return BlocProvider.value(
+      value: _cubit,
+      child: ScaffoldMessenger(
+        key: _scaffoldMessengerKey,
+        child: BlocBuilder<MatchingCubit, MatchingState>(
+          builder: (context, state) {
+            final isEmptyFeed =
+                !state.isLoading &&
+                state.errorMessage == null &&
+                state.viewMode == MatchingViewMode.deck &&
+                state.currentDeckMatch == null;
+            return Scaffold(
+              appBar: DsAppBar(
+                title: isEmptyFeed ? 'Your matches' : 'For you',
+                eyebrow: 'DEVSYNC',
+                showMenu: true,
+                onMenu: () {
+                  if (widget.onMenuPressed != null) {
+                    widget.onMenuPressed!();
+                    return;
+                  }
+                  openHostDrawer(context);
+                },
+                onNotifications: () =>
+                    Navigator.of(context).pushNamed(AppRoutes.notifications),
+                notificationBadge: true,
+                actions: [
+                  DsIconButton(
+                    icon: AppIcons.bookmark,
+                    tooltip: 'Liked matches',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(AppRoutes.likedMatches);
+                    },
+                  ),
+                ],
+              ),
+              body: SafeArea(
+                top: false,
+                child: DsPageFade(child: _buildPageContent(state)),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
   @override
   void dispose() {
-    if (_ownsController) {
-      _controller.dispose();
+    if (_ownsCubit) {
+      _cubit.close();
     }
     super.dispose();
   }
@@ -120,33 +119,32 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   @override
   void initState() {
     super.initState();
-    _ownsController = widget.controller == null;
-    _controller = widget.controller ?? createDemoMatchingController();
-    if (_ownsController) _controller.loadInitialData();
+    _ownsCubit = widget.cubit == null;
+    _cubit = widget.cubit ?? getIt<MatchingCubit>();
+    if (_ownsCubit) _cubit.loadInitialData();
 
     final initialMode = widget.initialViewMode ?? MatchingViewMode.deck;
-    _controller.setViewMode(initialMode);
+    _cubit.setViewMode(initialMode);
   }
 
-  Widget _buildContent() {
-    if (_controller.isLoading) return _buildLoadingSkeleton();
-    final error = _controller.errorMessage;
+  Widget _buildContent(MatchingState state) {
+    if (state.isLoading) return _buildLoadingSkeleton();
+    final error = state.errorMessage;
     if (error != null) {
       return DsEmptyState(
         icon: AppIcons.error,
         title: 'Something went wrong',
         message: error,
         actionLabel: 'Retry',
-        onAction: _controller.loadInitialData,
+        onAction: _cubit.loadInitialData,
       );
     }
-    return switch (_controller.viewMode) {
-      MatchingViewMode.studio => _buildStudioView(),
-      MatchingViewMode.deck => _buildDeckView(),
+    return switch (state.viewMode) {
+      MatchingViewMode.studio => _buildStudioView(state),
+      MatchingViewMode.deck => _buildDeckView(state),
     };
   }
 
-  /// Top-aligned content placeholder while matches load.
   Widget _buildLoadingSkeleton() {
     return const Align(
       alignment: Alignment.topCenter,
@@ -157,8 +155,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  Widget _buildDeckView() {
-    final match = _controller.currentDeckMatch;
+  Widget _buildDeckView(MatchingState state) {
+    final match = state.currentDeckMatch;
     if (match == null) {
       return MatchFeedEmptyState(
         onAddSkills: () {
@@ -176,10 +174,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     return MatchFeedDeckView(
       cardKey: _cardKey,
       match: match,
-      nextMatches: _controller.nextDeckMatches,
-      canUndo: _controller.canUndo,
-      onUndo: _controller.undoLastDeckAction,
-      onTap: () => _navigateToProjectDetails(match),
+      nextMatches: state.nextDeckMatches,
+      canUndo: state.canUndo,
+      onUndo: _cubit.undoLastDeckAction,
+      onTap: () => _navigateToProjectDetails(match, state),
       onAction: (action) => _handleDeckAction(match, action),
       onInfo: () => _showMatchInfo(match),
     );
@@ -192,7 +190,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         subtitle: 'Tune your match\nprompts',
         onTap: () => Navigator.of(context).push(
           DsFadePageRoute<void>(
-            builder: (_) => AiMatchingStudioScreen(controller: _controller),
+            builder: (_) => AiMatchingStudioScreen(cubit: _cubit),
           ),
         ),
       ),
@@ -218,7 +216,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     ];
   }
 
-  Widget _buildPageContent() {
+  Widget _buildPageContent(MatchingState state) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 540),
@@ -270,13 +268,13 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 },
                 child: KeyedSubtree(
                   key: ValueKey<String>(
-                    _controller.isLoading
+                    state.isLoading
                         ? 'loading'
-                        : _controller.errorMessage != null
+                        : state.errorMessage != null
                         ? 'error'
-                        : _controller.viewMode.name,
+                        : state.viewMode.name,
                   ),
-                  child: _buildContent(),
+                  child: _buildContent(state),
                 ),
               ),
             ),
@@ -286,41 +284,41 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  Widget _buildStudioView() {
+  Widget _buildStudioView(MatchingState state) {
     return AiStudioContent(
-      onPromptChanged: _controller.updatePrompt,
-      preferences: _controller.preferences,
-      matches: _controller.matches,
-      scoringBreakdown: _controller.analytics.scoringBreakdown,
-      isGenerating: _controller.isGenerating,
-      onTagToggled: _controller.toggleTag,
+      onPromptChanged: _cubit.updatePrompt,
+      preferences: state.preferences,
+      matches: state.matches,
+      scoringBreakdown: state.analytics.scoringBreakdown,
+      isGenerating: state.isGenerating,
+      onTagToggled: _cubit.toggleTag,
       onGenerateMatches: _generateMatches,
-      onViewProjectDetails: _navigateToProjectDetails,
+      onViewProjectDetails: (match) => _navigateToProjectDetails(match, state),
       onExploreAnalytics: _openAnalytics,
     );
   }
 
   Future<void> _generateMatches() async {
-    await _controller.generateMatches();
+    await _cubit.generateMatches();
     if (!mounted) return;
+    final state = _cubit.state;
     _notify(
-      _controller.errorMessage ??
-          '${_controller.matches.length} matches generated',
+      state.errorMessage ?? '${state.matches.length} matches generated',
     );
   }
 
   void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
-    _controller.performDeckAction(match, action);
+    _cubit.performDeckAction(match, action);
     final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
     _notify('${match.projectName} $verb');
   }
 
-  void _navigateToProjectDetails(MatchItem match) {
+  void _navigateToProjectDetails(MatchItem match, MatchingState state) {
     Navigator.of(context).pushNamed(
       AppRoutes.projectDetail,
       arguments: ProjectDetailsArguments(
         match: match,
-        currentUserSkills: _controller.profile.declaredSkills,
+        currentUserSkills: state.profile.declaredSkills,
       ),
     );
   }
@@ -338,11 +336,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
       DsFadePageRoute<bool>(
-        builder: (_) => AiAnalyticsScreen(controller: _controller),
+        builder: (_) => AiAnalyticsScreen(cubit: _cubit),
       ),
     );
     if (refreshNeeded == true && mounted) {
-      await _controller.loadInitialData();
+      await _cubit.loadInitialData();
     }
   }
 

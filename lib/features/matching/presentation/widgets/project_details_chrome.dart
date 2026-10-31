@@ -6,7 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_icon.dart';
-import '../../../projects/models/project_model.dart';
+import '../../../projects/domain/entities/project.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/match_item.dart';
 

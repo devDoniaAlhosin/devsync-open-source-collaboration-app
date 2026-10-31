@@ -45,7 +45,9 @@ class LanguageBreakdown extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: FractionallySizedBox(
                             widthFactor: t,
-                            child: Container(color: languages[i].color),
+                            child: Container(
+                              color: Color(languages[i].colorArgb),
+                            ),
                           ),
                         ),
                       ),
@@ -68,7 +70,7 @@ class LanguageBreakdown extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: l.color,
+                        color: Color(l.colorArgb),
                         shape: BoxShape.circle,
                       ),
                     ),

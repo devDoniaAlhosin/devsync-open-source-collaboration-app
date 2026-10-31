@@ -1,11 +1,32 @@
-import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/match_card_deck.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_item.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/match_card_deck.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  late MatchingCubit cubit;
+
+  setUp(() async {
+    cubit = MatchingCubit(
+      repository: MatchingRepositoryImpl(
+        remoteDataSource: MockMatchingRemoteDataSource(),
+        localDataSource: InMemoryMatchingLocalDataSource(),
+      ),
+    );
+    await cubit.loadInitialData();
+    cubit.setViewMode(MatchingViewMode.deck);
+  });
+
+  tearDown(() async {
+    await cubit.close();
+  });
+
   testWidgets('a left swipe completes a match as a skip', (tester) async {
     MatchSwipeAction? action;
     const match = MatchItem(
@@ -45,8 +66,11 @@ void main() {
   testWidgets('swiping the feed card advances to the next ranked project', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: MatchFeedScreen()));
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpWidget(
+      MaterialApp(home: MatchFeedScreen(cubit: cubit)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('flutter/packages'), findsOneWidget);
 
@@ -75,8 +99,11 @@ void main() {
   testWidgets('the feed stacks upcoming matches behind the draggable card', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: MatchFeedScreen()));
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpWidget(
+      MaterialApp(home: MatchFeedScreen(cubit: cubit)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(MatchCardDeck), findsOneWidget);
     expect(find.text('flutter/packages'), findsOneWidget);

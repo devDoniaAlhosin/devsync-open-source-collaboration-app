@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/app_routes.dart';
-import '../../projects/models/project_model.dart';
+import '../../projects/domain/entities/project.dart';
 import '../domain/entities/collaboration_request.dart';
 import 'screens/notification_permission_screen.dart';
 import 'widgets/request_join_sheet.dart';

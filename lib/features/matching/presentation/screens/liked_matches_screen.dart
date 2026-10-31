@@ -15,7 +15,7 @@ import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_page_header.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
-import '../../../projects/models/project_model.dart';
+import '../../../projects/domain/entities/project.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/match_item.dart';
 import '../liked_matches_store.dart';
