@@ -21,10 +21,8 @@ migrate_working_dir/
 # Cursor IDE (local agent rules / settings)
 .cursor/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code / Cursor workspace settings (local only)
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
