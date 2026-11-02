@@ -79,38 +79,54 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> sendSignInLinkToEmail(String email) {
-    return _guard(() => _remote.sendSignInLinkToEmail(email));
+  Future<Result<void>> sendEmailOtp(
+    String email, {
+    String purpose = 'verify',
+  }) {
+    return _guard(() => _remote.sendEmailOtp(email, purpose: purpose));
   }
 
   @override
-  Future<Result<void>> completeSignInWithEmailLink(String link) {
-    return _guard(() async {
-      await _remote.completeSignInWithEmailLink(link);
-    });
+  Future<Result<void>> verifyOtp({
+    required String email,
+    required String code,
+    String purpose = 'verify',
+  }) {
+    return _guard(
+      () => _remote.verifyOtp(email: email, code: code, purpose: purpose),
+    );
   }
 
   @override
-  bool isSignInWithEmailLink(String link) =>
-      _remote.isSignInWithEmailLink(link);
-
-  @override
-  Future<Result<void>> sendEmailVerification() {
-    return _guard(_remote.sendEmailVerification);
+  Future<Result<void>> resetPasswordWithOtp({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) {
+    return _guard(
+      () => _remote.resetPasswordWithOtp(
+        email: email,
+        code: code,
+        newPassword: newPassword,
+      ),
+    );
   }
 
   @override
-  Future<Result<bool>> reloadAndIsEmailVerified() async {
-    try {
-      final verified = await _remote.reloadAndIsEmailVerified();
-      return Success(verified);
-    } catch (error) {
-      return FailureResult(mapAuthError(error));
-    }
+  Future<Result<void>> confirmEmailWithOtp({
+    required String email,
+    required String code,
+  }) {
+    return _guard(() => _remote.confirmEmailWithOtp(email: email, code: code));
   }
 
   @override
-  Future<String?> pendingEmailLinkAddress() {
-    return _remote.pendingEmailLinkAddress();
+  Future<Result<void>> signInWithEmailOtp({
+    required String email,
+    required String code,
+  }) {
+    return _guard(
+      () => _remote.signInWithEmailOtp(email: email, code: code),
+    );
   }
 }

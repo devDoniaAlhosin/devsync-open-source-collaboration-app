@@ -4,17 +4,9 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'auth_email_api.dart';
 import 'user_remote_data_source.dart';
-
-const _emailLinkPrefKey = 'devsync_email_link_sign_in';
-
-/// Continue URL hosted on the Firebase project (must be an authorized domain).
-const kEmailLinkContinueUrl =
-    'https://devsync-36ef3.firebaseapp.com/finishSignIn';
-
-const kAndroidPackageName = 'com.example.devsync_open_source_collaboration_app';
 
 /// Thrown when the user dismisses a social sign-in flow.
 class AuthCancelledException implements Exception {
@@ -48,13 +40,16 @@ class AuthRemoteDataSource {
   AuthRemoteDataSource({
     FirebaseAuth? auth,
     UserRemoteDataSource? userRemoteDataSource,
+    AuthEmailApi? emailApi,
     GoogleSignIn? googleSignIn,
   }) : _authOverride = auth,
        _usersOverride = userRemoteDataSource,
+       _emailApi = emailApi ?? AuthEmailApi(),
        _googleSignInOverride = googleSignIn;
 
   final FirebaseAuth? _authOverride;
   final UserRemoteDataSource? _usersOverride;
+  final AuthEmailApi _emailApi;
   final GoogleSignIn? _googleSignInOverride;
 
   FirebaseAuth get _auth => _authOverride ?? FirebaseAuth.instance;
@@ -130,48 +125,15 @@ class AuthRemoteDataSource {
     final fresh = _auth.currentUser ?? user;
     if (fresh != null) {
       await _users.ensureUserDoc(fresh);
-      if (!fresh.emailVerified) {
-        await fresh.sendEmailVerification();
-      }
     }
     return credential;
   }
 
-  Future<void> sendEmailVerification() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw FirebaseAuthException(
-        code: 'no-current-user',
-        message: 'No signed-in user to verify',
-      );
-    }
-    await user.sendEmailVerification();
-  }
-
-  /// Reloads the user from Firebase and returns whether email is verified.
-  Future<bool> reloadAndIsEmailVerified() async {
-    final user = _auth.currentUser;
-    if (user == null) return false;
-    await user.reload();
-    return _auth.currentUser?.emailVerified ?? false;
-  }
-
-  ActionCodeSettings get _emailLinkSettings => ActionCodeSettings(
-    url: kEmailLinkContinueUrl,
-    handleCodeInApp: true,
-    androidPackageName: kAndroidPackageName,
-    androidMinimumVersion: '21',
-  );
-
-  /// Sends Firebase's hosted password-reset email.
+  /// Sends a 6-digit reset code via the external email API (not Firebase mail).
   ///
   /// Looks up sign-in methods first via Identity Toolkit. Google-only accounts
-  /// get [GoogleOnlyAccountException] (needs Email enumeration protection off
-  /// in Firebase Console). Empty methods fall through to send (user missing
-  /// or protection still on).
-  ///
-  /// [user-not-found] is ignored so the UI never reveals whether the address
-  /// has an account.
+  /// get [GoogleOnlyAccountException]. The API never reveals whether the
+  /// address has an account.
   Future<void> sendPasswordResetEmail(String email) async {
     final trimmed = email.trim();
     final methods = await _fetchSignInMethods(trimmed);
@@ -180,12 +142,61 @@ class AuthRemoteDataSource {
     if (hasGoogle && !hasPassword) {
       throw const GoogleOnlyAccountException();
     }
-    try {
-      await _auth.sendPasswordResetEmail(email: trimmed);
-    } on FirebaseAuthException catch (error) {
-      if (error.code == 'user-not-found') return;
-      rethrow;
-    }
+    await _emailApi.sendOtp(email: trimmed, purpose: 'reset');
+  }
+
+  Future<void> sendEmailOtp(
+    String email, {
+    String purpose = 'verify',
+  }) {
+    return _emailApi.sendOtp(email: email.trim(), purpose: purpose);
+  }
+
+  Future<void> verifyOtp({
+    required String email,
+    required String code,
+    String purpose = 'verify',
+  }) {
+    return _emailApi.verifyOtp(
+      email: email.trim(),
+      code: code,
+      purpose: purpose,
+    );
+  }
+
+  Future<void> resetPasswordWithOtp({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) {
+    return _emailApi.resetPassword(
+      email: email.trim(),
+      code: code,
+      newPassword: newPassword,
+    );
+  }
+
+  Future<void> confirmEmailWithOtp({
+    required String email,
+    required String code,
+  }) async {
+    await _emailApi.confirmEmail(email: email.trim(), code: code);
+    // Admin marked emailVerified; refresh the client token claim.
+    final user = _auth.currentUser;
+    if (user != null) await user.reload();
+  }
+
+  /// Passwordless sign-in: backend verifies OTP and returns a custom token.
+  Future<UserCredential> signInWithEmailOtp({
+    required String email,
+    required String code,
+  }) async {
+    final token = await _emailApi.createSession(
+      email: email.trim(),
+      code: code,
+    );
+    final credential = await _auth.signInWithCustomToken(token);
+    return _afterSignIn(credential);
   }
 
   /// Uses Identity Toolkit `createAuthUri` (replaces removed
@@ -217,52 +228,6 @@ class AuthRemoteDataSource {
     } finally {
       client.close(force: true);
     }
-  }
-
-  /// Sends a passwordless email-link sign-in message and remembers [email].
-  Future<void> sendSignInLinkToEmail(String email) async {
-    await _auth.sendSignInLinkToEmail(
-      email: email,
-      actionCodeSettings: _emailLinkSettings,
-    );
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_emailLinkPrefKey, email.trim());
-  }
-
-  Future<String?> pendingEmailLinkAddress() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_emailLinkPrefKey);
-  }
-
-  Future<void> clearPendingEmailLinkAddress() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_emailLinkPrefKey);
-  }
-
-  bool isSignInWithEmailLink(String link) => _auth.isSignInWithEmailLink(link);
-
-  /// Completes passwordless sign-in when the app opens an email link.
-  ///
-  /// Returns `null` if [link] is not an email sign-in link.
-  Future<UserCredential?> completeSignInWithEmailLink(String link) async {
-    if (!_auth.isSignInWithEmailLink(link)) return null;
-
-    final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString(_emailLinkPrefKey);
-    if (email == null || email.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'missing-email',
-        message:
-            'Open the link on the same device you requested it from, then try again.',
-      );
-    }
-
-    final credential = await _auth.signInWithEmailLink(
-      email: email,
-      emailLink: link,
-    );
-    await prefs.remove(_emailLinkPrefKey);
-    return _afterSignIn(credential);
   }
 
   /// Google Sign-In via the native account picker, with provider fallback.

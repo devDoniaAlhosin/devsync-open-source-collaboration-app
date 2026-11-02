@@ -65,22 +65,34 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> sendSignInLinkToEmail(String email) async =>
-      const Success(null);
+  Future<Result<void>> sendEmailOtp(
+    String email, {
+    String purpose = 'verify',
+  }) async => resetResult;
 
   @override
-  Future<Result<void>> completeSignInWithEmailLink(String link) async =>
-      const Success(null);
+  Future<Result<void>> verifyOtp({
+    required String email,
+    required String code,
+    String purpose = 'verify',
+  }) async => resetResult;
 
   @override
-  bool isSignInWithEmailLink(String link) => false;
+  Future<Result<void>> resetPasswordWithOtp({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async => resetResult;
 
   @override
-  Future<Result<void>> sendEmailVerification() async => const Success(null);
+  Future<Result<void>> confirmEmailWithOtp({
+    required String email,
+    required String code,
+  }) async => resetResult;
 
   @override
-  Future<Result<bool>> reloadAndIsEmailVerified() async => const Success(true);
-
-  @override
-  Future<String?> pendingEmailLinkAddress() async => null;
+  Future<Result<void>> signInWithEmailOtp({
+    required String email,
+    required String code,
+  }) async => signInResult;
 }

@@ -27,15 +27,30 @@ abstract class AuthRepository {
 
   Future<Result<void>> sendPasswordResetEmail(String email);
 
-  Future<Result<void>> sendSignInLinkToEmail(String email);
+  Future<Result<void>> sendEmailOtp(
+    String email, {
+    String purpose = 'verify',
+  });
 
-  Future<Result<void>> completeSignInWithEmailLink(String link);
+  Future<Result<void>> verifyOtp({
+    required String email,
+    required String code,
+    String purpose = 'verify',
+  });
 
-  bool isSignInWithEmailLink(String link);
+  Future<Result<void>> resetPasswordWithOtp({
+    required String email,
+    required String code,
+    required String newPassword,
+  });
 
-  Future<Result<void>> sendEmailVerification();
+  Future<Result<void>> confirmEmailWithOtp({
+    required String email,
+    required String code,
+  });
 
-  Future<Result<bool>> reloadAndIsEmailVerified();
-
-  Future<String?> pendingEmailLinkAddress();
+  Future<Result<void>> signInWithEmailOtp({
+    required String email,
+    required String code,
+  });
 }

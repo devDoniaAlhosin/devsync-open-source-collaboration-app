@@ -24,6 +24,23 @@ final class ForgotPasswordSent extends ForgotPasswordState {
   List<Object?> get props => [email];
 }
 
+final class ForgotPasswordCodeVerified extends ForgotPasswordState {
+  const ForgotPasswordCodeVerified({
+    required this.email,
+    required this.code,
+  });
+
+  final String email;
+  final String code;
+
+  @override
+  List<Object?> get props => [email, code];
+}
+
+final class ForgotPasswordResetDone extends ForgotPasswordState {
+  const ForgotPasswordResetDone();
+}
+
 final class ForgotPasswordFailure extends ForgotPasswordState {
   const ForgotPasswordFailure(this.message);
 

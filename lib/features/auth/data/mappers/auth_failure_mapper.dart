@@ -3,9 +3,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../domain/failures/auth_failures.dart';
+import '../datasources/auth_email_api.dart';
 import '../datasources/auth_remote_data_source.dart';
 
 Failure mapAuthError(Object error) {
+  if (error is AuthEmailApiException) {
+    if (error.statusCode == 0) return const NetworkFailure();
+    return AuthFailure(error.message);
+  }
   if (error is AuthCancelledException) {
     return const CancelledFailure();
   }
@@ -45,16 +50,7 @@ Failure mapAuthError(Object error) {
         );
       case 'operation-not-allowed':
         return const AuthFailure(
-          'Enable Email link (passwordless) in Firebase Console',
-        );
-      case 'invalid-action-code':
-        return const AuthFailure(
-          'This sign-in link is invalid or expired. Request a new one.',
-        );
-      case 'missing-email':
-        return AuthFailure(
-          error.message ??
-              'Open the link on the same device you requested it from.',
+          'This sign-in method is not enabled. Check Firebase Console.',
         );
       default:
         return AuthFailure(

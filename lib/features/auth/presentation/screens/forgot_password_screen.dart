@@ -8,8 +8,9 @@ import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
-import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_google_icon.dart';
+import '../../../../core/widgets/ds_icon.dart';
+import '../../../../core/widgets/ds_otp_field.dart';
 import '../../../../core/widgets/ds_text_field.dart';
 import '../cubit/forgot_password_cubit.dart';
 import '../cubit/login_cubit.dart';
@@ -18,7 +19,7 @@ import '../widgets/auth_gate.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/password_strength_meter.dart';
 
-enum _RecoverStep { form, askMethod, inbox }
+enum _RecoverStep { form, inbox, newPassword, success }
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -29,41 +30,44 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
   String? _error;
   String? _methodError;
+  String? _passwordError;
   String? _pendingEmail;
+  String _otp = '';
+  String? _verifiedCode;
   _RecoverStep _step = _RecoverStep.form;
 
   @override
   void dispose() {
     _email.dispose();
+    _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
-  void _askHowTheySignedUp() {
+  void _sendCode(ForgotPasswordCubit cubit) {
     final email = _email.text.trim();
+    if (!isValidEmail(email)) {
+      setState(() => _error = 'Enter a valid email address');
+      return;
+    }
     setState(() {
-      _error = isValidEmail(email) ? null : 'Enter a valid email address';
-      if (isValidEmail(email)) {
-        _pendingEmail = email;
-        _step = _RecoverStep.askMethod;
-      }
+      _error = null;
+      _pendingEmail = email;
     });
+    cubit.sendReset(email);
   }
 
   void _useDifferentEmail() {
     setState(() {
       _pendingEmail = null;
       _methodError = null;
+      _otp = '';
       _step = _RecoverStep.form;
     });
-  }
-
-  void _continueWithPassword(ForgotPasswordCubit cubit) {
-    final email = _pendingEmail;
-    if (email == null) return;
-    setState(() => _methodError = null);
-    cubit.sendReset(email);
   }
 
   void _resend(ForgotPasswordCubit cubit) {
@@ -87,17 +91,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 case ForgotPasswordSent(:final email):
                   setState(() {
                     _pendingEmail = email;
+                    _otp = '';
                     _step = _RecoverStep.inbox;
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Reset link sent')),
+                    const SnackBar(content: Text('Reset code sent')),
                   );
+                case ForgotPasswordCodeVerified(:final email, :final code):
+                  setState(() {
+                    _pendingEmail = email;
+                    _verifiedCode = code;
+                    _step = _RecoverStep.newPassword;
+                  });
+                case ForgotPasswordResetDone():
+                  setState(() => _step = _RecoverStep.success);
                 case ForgotPasswordFailure(:final message):
                   setState(() {
-                    if (_step == _RecoverStep.askMethod ||
-                        _step == _RecoverStep.inbox) {
+                    if (_step == _RecoverStep.form) {
+                      _error = message;
+                    } else if (_step == _RecoverStep.inbox) {
                       _methodError = message;
-                      _step = _RecoverStep.askMethod;
+                    } else if (_step == _RecoverStep.newPassword) {
+                      _passwordError = message;
                     }
                   });
                   ScaffoldMessenger.of(
@@ -141,9 +156,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 final email = _pendingEmail ?? _email.text.trim();
 
                 return AuthScaffold(
-                  title: _step == _RecoverStep.inbox
-                      ? 'Check your email'
-                      : 'Recover account',
+                  title: switch (_step) {
+                    _RecoverStep.inbox => 'Enter reset code',
+                    _RecoverStep.newPassword => 'New password',
+                    _RecoverStep.success => 'Password updated',
+                    _ => 'Recover account',
+                  },
                   onThemeToggle: DevSyncApp.toggleTheme,
                   body: switch (_step) {
                     _RecoverStep.form => _FormBody(
@@ -151,59 +169,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       error: _error,
                       busy: busy,
                       googleLoading: googleLoading,
+                      resetLoading: resetLoading,
                       onGoogle: loginCubit.signInWithGoogle,
                       onChanged: () {
                         if (_error != null) setState(() => _error = null);
                       },
-                      onContinue: () => _askHowTheySignedUp(),
+                      onContinue: () => _sendCode(resetCubit),
                       onBackToLogin: () => Navigator.of(
                         context,
                       ).pushReplacementNamed(AppRoutes.login),
-                    ),
-                    _RecoverStep.askMethod => Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const AuthInlineHeading(
-                          orbIcon: AppIcons.mail,
-                          eyebrow: 'Account recovery',
-                          title: 'Forgot your password?',
-                          body:
-                              'If you used the Google button, there is no password to reset.',
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        DsTextField(
-                          label: 'Email address',
-                          controller: _email,
-                          enabled: false,
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        _HowDidYouSignUpCard(
-                          googleLoading: googleLoading,
-                          resetLoading: resetLoading,
-                          busy: busy,
-                          errorText: _methodError,
-                          onGoogle: loginCubit.signInWithGoogle,
-                          onPassword: () => _continueWithPassword(resetCubit),
-                          onDifferentEmail: _useDifferentEmail,
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        DsButton(
-                          label: 'Back to sign in',
-                          variant: DsButtonVariant.quiet,
-                          onPressed: busy
-                              ? null
-                              : () => Navigator.of(
-                                  context,
-                                ).pushReplacementNamed(AppRoutes.login),
-                        ),
-                      ],
                     ),
                     _RecoverStep.inbox => _InboxBody(
                       email: email,
                       loading: resetLoading,
                       googleLoading: googleLoading,
                       busy: busy,
+                      errorText: _methodError,
+                      onOtpChanged: (value) => setState(() {
+                        _otp = value;
+                        _methodError = null;
+                      }),
+                      onVerify: busy
+                          ? null
+                          : () => resetCubit.verifyCode(
+                              email: email,
+                              code: _otp,
+                            ),
                       onGoogle: loginCubit.signInWithGoogle,
                       onResend: busy ? null : () => _resend(resetCubit),
                       onDifferentEmail: busy ? null : _useDifferentEmail,
@@ -212,6 +203,49 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           : () => Navigator.of(
                               context,
                             ).pushReplacementNamed(AppRoutes.login),
+                    ),
+                    _RecoverStep.newPassword => _NewPasswordBody(
+                      password: _password,
+                      confirm: _confirm,
+                      loading: resetLoading,
+                      busy: busy,
+                      errorText: _passwordError,
+                      onChanged: () => setState(() => _passwordError = null),
+                      onSubmit: busy || _verifiedCode == null
+                          ? null
+                          : () {
+                              final pass = _password.text;
+                              final confirm = _confirm.text;
+                              if (pass.length < 8) {
+                                setState(
+                                  () => _passwordError =
+                                      'Use at least 8 characters',
+                                );
+                                return;
+                              }
+                              if (pass != confirm) {
+                                setState(
+                                  () => _passwordError =
+                                      'Passwords do not match',
+                                );
+                                return;
+                              }
+                              resetCubit.resetPassword(
+                                email: email,
+                                code: _verifiedCode!,
+                                newPassword: pass,
+                              );
+                            },
+                      onBackToLogin: busy
+                          ? null
+                          : () => Navigator.of(
+                              context,
+                            ).pushReplacementNamed(AppRoutes.login),
+                    ),
+                    _RecoverStep.success => _SuccessBody(
+                      onBackToLogin: () => Navigator.of(
+                        context,
+                      ).pushReplacementNamed(AppRoutes.login),
                     ),
                   },
                 );
@@ -230,6 +264,7 @@ class _FormBody extends StatelessWidget {
     required this.error,
     required this.busy,
     required this.googleLoading,
+    required this.resetLoading,
     required this.onGoogle,
     required this.onChanged,
     required this.onContinue,
@@ -240,6 +275,7 @@ class _FormBody extends StatelessWidget {
   final String? error;
   final bool busy;
   final bool googleLoading;
+  final bool resetLoading;
   final VoidCallback onGoogle;
   final VoidCallback onChanged;
   final VoidCallback onContinue;
@@ -255,7 +291,7 @@ class _FormBody extends StatelessWidget {
           eyebrow: 'Account recovery',
           title: 'Forgot your password?',
           body:
-              "Enter your email and we'll guide you through resetting your password.",
+              "Enter your email and we'll send a 6-digit code to reset your password.",
         ),
         const SizedBox(height: AppSpacing.xl),
         const AuthNote(
@@ -283,15 +319,16 @@ class _FormBody extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         DsButton(
-          label: 'Continue',
+          label: 'Send code',
           icon: AppIcons.forward,
+          isLoading: resetLoading,
           onPressed: busy ? null : onContinue,
         ),
         const SizedBox(height: AppSpacing.md),
         const AuthNote(
           title: 'Secure recovery.',
           message:
-              'We email a reset link from Firebase. Open it to choose a new password, then sign in.',
+              'We email a 6-digit code. Enter it next, then choose a new password.',
         ),
         const SizedBox(height: AppSpacing.lg),
         DsButton(
@@ -310,16 +347,22 @@ class _InboxBody extends StatelessWidget {
     required this.loading,
     required this.googleLoading,
     required this.busy,
+    required this.onOtpChanged,
+    required this.onVerify,
     required this.onGoogle,
     required this.onResend,
     required this.onDifferentEmail,
     required this.onBackToLogin,
+    this.errorText,
   });
 
   final String email;
   final bool loading;
   final bool googleLoading;
   final bool busy;
+  final String? errorText;
+  final ValueChanged<String> onOtpChanged;
+  final VoidCallback? onVerify;
   final VoidCallback onGoogle;
   final VoidCallback? onResend;
   final VoidCallback? onDifferentEmail;
@@ -334,14 +377,37 @@ class _InboxBody extends StatelessWidget {
           orbIcon: AppIcons.mail,
           eyebrow: 'One last step',
           title: 'Check your inbox.',
-          body:
-              'We sent a password reset link to $email. Open it, choose a new password, then sign in.',
+          body: 'Enter the 6-digit code sent to $email.',
         ),
         const SizedBox(height: AppSpacing.xl),
-        const AuthNote(
-          title: 'Signed in with Google?',
-          message:
-              'There may be no password to reset. Use Google to get back in.',
+        DsOtpField(
+          onChanged: onOtpChanged,
+          onCompleted: (value) {
+            onOtpChanged(value);
+            onVerify?.call();
+          },
+        ),
+        if (errorText != null && errorText!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            errorText!,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: context.ds.danger),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        DsButton(
+          label: 'Verify code',
+          icon: AppIcons.forward,
+          isLoading: loading,
+          onPressed: onVerify,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        DsButton(
+          label: 'Resend code',
+          variant: DsButtonVariant.secondary,
+          onPressed: onResend,
         ),
         const SizedBox(height: AppSpacing.md),
         DsButton(
@@ -351,106 +417,164 @@ class _InboxBody extends StatelessWidget {
           isLoading: googleLoading,
           onPressed: busy ? null : onGoogle,
         ),
-        const SizedBox(height: AppSpacing.lg),
-        const AuthDivider(label: 'or'),
-        const SizedBox(height: AppSpacing.lg),
-        DsButton(
-          label: 'Resend reset link',
-          variant: DsButtonVariant.secondary,
-          isLoading: loading,
-          onPressed: onResend,
-        ),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.sm),
         DsButton(
           label: 'Use a different email',
           variant: DsButtonVariant.quiet,
           onPressed: onDifferentEmail,
         ),
-        const SizedBox(height: AppSpacing.sm),
         DsButton(
           label: 'Back to sign in',
           variant: DsButtonVariant.quiet,
           onPressed: onBackToLogin,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        const AuthNote(
-          title: 'Tip:',
-          message:
-              'Check spam if you do not see the email. The link expires after about an hour.',
         ),
       ],
     );
   }
 }
 
-class _HowDidYouSignUpCard extends StatelessWidget {
-  const _HowDidYouSignUpCard({
-    required this.googleLoading,
-    required this.resetLoading,
+class _NewPasswordBody extends StatefulWidget {
+  const _NewPasswordBody({
+    required this.password,
+    required this.confirm,
+    required this.loading,
     required this.busy,
-    required this.onGoogle,
-    required this.onPassword,
-    required this.onDifferentEmail,
+    required this.onChanged,
+    required this.onSubmit,
+    required this.onBackToLogin,
     this.errorText,
   });
 
-  final bool googleLoading;
-  final bool resetLoading;
+  final TextEditingController password;
+  final TextEditingController confirm;
+  final bool loading;
   final bool busy;
-  final VoidCallback onGoogle;
-  final VoidCallback onPassword;
-  final VoidCallback onDifferentEmail;
   final String? errorText;
+  final VoidCallback onChanged;
+  final VoidCallback? onSubmit;
+  final VoidCallback? onBackToLogin;
+
+  @override
+  State<_NewPasswordBody> createState() => _NewPasswordBodyState();
+}
+
+class _NewPasswordBodyState extends State<_NewPasswordBody> {
+  bool _obscure = true;
+  bool _obscureConfirm = true;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final ds = context.ds;
-    final hasError = errorText != null && errorText!.isNotEmpty;
-
-    return DsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'How did you create this account?',
-            style: textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'If you used the Google button, there is no password to reset.',
-            style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
-          ),
-          if (hasError) ...[
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              errorText!,
-              style: textTheme.bodySmall?.copyWith(color: ds.danger),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const AuthInlineHeading(
+          orbIcon: AppIcons.lock,
+          eyebrow: 'Account recovery',
+          title: 'Set a new password.',
+          body: 'Choose a strong password to protect your DevSync workspace.',
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        DsTextField(
+          label: 'New password',
+          controller: widget.password,
+          obscureText: _obscure,
+          autofillHints: const [AutofillHints.newPassword],
+          onChanged: (_) => widget.onChanged(),
+          suffix: IconButton(
+            tooltip: _obscure ? 'Show password' : 'Hide password',
+            onPressed: () => setState(() => _obscure = !_obscure),
+            icon: DsIcon(
+              _obscure ? AppIcons.eye : AppIcons.eyeOff,
+              color: context.ds.textMuted,
             ),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          DsButton(
-            label: 'Continue with Google',
-            leading: const DsGoogleIcon(size: 18),
-            variant: DsButtonVariant.quiet,
-            isLoading: googleLoading,
-            onPressed: busy ? null : onGoogle,
           ),
-          const SizedBox(height: AppSpacing.md),
-          DsButton(
-            label: 'I used email and password',
-            icon: AppIcons.forward,
-            isLoading: resetLoading,
-            onPressed: busy ? null : onPassword,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        PasswordStrengthMeter(password: widget.password.text),
+        const SizedBox(height: AppSpacing.md),
+        DsTextField(
+          label: 'Confirm password',
+          controller: widget.confirm,
+          obscureText: _obscureConfirm,
+          autofillHints: const [AutofillHints.newPassword],
+          errorText: widget.errorText,
+          onChanged: (_) => widget.onChanged(),
+          suffix: IconButton(
+            tooltip: _obscureConfirm ? 'Show password' : 'Hide password',
+            onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+            icon: DsIcon(
+              _obscureConfirm ? AppIcons.eye : AppIcons.eyeOff,
+              color: context.ds.textMuted,
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          DsButton(
-            label: 'Use a different email',
-            variant: DsButtonVariant.quiet,
-            onPressed: busy ? null : onDifferentEmail,
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        DsButton(
+          label: 'Update password',
+          icon: AppIcons.forward,
+          isLoading: widget.loading,
+          onPressed: widget.busy || widget.password.text.length < 8
+              ? null
+              : widget.onSubmit,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        DsButton(
+          label: 'Back to sign in',
+          variant: DsButtonVariant.quiet,
+          onPressed: widget.onBackToLogin,
+        ),
+      ],
     );
   }
 }
+
+class _SuccessBody extends StatelessWidget {
+  const _SuccessBody({required this.onBackToLogin});
+
+  final VoidCallback onBackToLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpacing.xl),
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.teal.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: const DsIcon(AppIcons.success, color: AppColors.teal, size: 36),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Text(
+          'Password updated.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          "You're all set. Sign in with your new password to get back to building.",
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: ds.textMuted,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        DsButton(
+          label: 'Back to sign in',
+          icon: AppIcons.forward,
+          onPressed: onBackToLogin,
+        ),
+      ],
+    );
+  }
+}
+

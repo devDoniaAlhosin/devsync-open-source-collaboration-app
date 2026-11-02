@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -5,15 +7,19 @@ import '../../../../app/app_routes.dart';
 import '../../../../app/devsync_app.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/usecase/usecase.dart';
 import '../../../../core/widgets/ds_button.dart';
+import '../../../../core/widgets/ds_otp_field.dart';
+import '../../domain/usecases/sign_out.dart';
 import '../cubit/auth_cubit.dart';
-import '../cubit/verify_email_cubit.dart';
+import '../cubit/verify_code_cubit.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/auth_social_buttons.dart';
 
-/// After email/password signup: wait until Firebase email link is confirmed.
+/// After email/password signup or unverified login: confirm with a 6-digit OTP.
 class VerifyEmailScreen extends StatelessWidget {
   const VerifyEmailScreen({super.key, this.email});
 
@@ -21,73 +27,102 @@ class VerifyEmailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final routeEmail = args is Map<String, dynamic>
+        ? args['email'] as String?
+        : null;
+
     return BlocProvider(
-      create: (_) => getIt<VerifyEmailCubit>(),
-      child: _VerifyEmailView(email: email),
+      create: (_) {
+        final cubit = getIt<VerifyCodeCubit>();
+        final target = (email ?? routeEmail)?.trim() ?? '';
+        if (target.isNotEmpty) {
+          cubit.sendCode(target, purpose: 'verify');
+        }
+        return cubit;
+      },
+      child: _VerifyEmailOtpView(email: email ?? routeEmail),
     );
   }
 }
 
-class _VerifyEmailView extends StatefulWidget {
-  const _VerifyEmailView({this.email});
+class _VerifyEmailOtpView extends StatefulWidget {
+  const _VerifyEmailOtpView({this.email});
 
   final String? email;
 
   @override
-  State<_VerifyEmailView> createState() => _VerifyEmailViewState();
+  State<_VerifyEmailOtpView> createState() => _VerifyEmailOtpViewState();
 }
 
-class _VerifyEmailViewState extends State<_VerifyEmailView>
-    with WidgetsBindingObserver {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<VerifyEmailCubit>().checkVerified(silent: true);
-      }
-    });
+class _VerifyEmailOtpViewState extends State<_VerifyEmailOtpView> {
+  static const _codeTtl = Duration(minutes: 10);
+
+  String _code = '';
+  late DateTime _expiresAt;
+  Timer? _ticker;
+  Duration _remaining = _codeTtl;
+
+  String get _email {
+    final fromWidget = widget.email?.trim();
+    if (fromWidget != null && fromWidget.isNotEmpty) return fromWidget;
+    final state = getIt<AuthCubit>().state;
+    if (state is AuthNeedsVerification) {
+      return state.user.email?.trim() ?? '';
+    }
+    return '';
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    _ticker?.cancel();
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted) {
-      context.read<VerifyEmailCubit>().checkVerified(silent: true);
-    }
+  void _startCountdown() {
+    _ticker?.cancel();
+    _expiresAt = DateTime.now().add(_codeTtl);
+    _remaining = _codeTtl;
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final left = _expiresAt.difference(DateTime.now());
+      setState(() {
+        _remaining = left.isNegative ? Duration.zero : left;
+      });
+      if (left.isNegative) _ticker?.cancel();
+    });
+  }
+
+  String get _countdownLabel {
+    final m = _remaining.inMinutes.clamp(0, 99);
+    final s = _remaining.inSeconds.remainder(60).clamp(0, 59);
+    return 'Expires in $m:${s.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _useAnotherAccount() async {
+    await getIt<SignOut>()(const NoParams());
+    if (!mounted) return;
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<VerifyEmailCubit, VerifyEmailState>(
+    final email = _email;
+
+    return BlocConsumer<VerifyCodeCubit, VerifyCodeState>(
       listener: (context, state) {
         switch (state) {
-          case VerifyEmailResent():
+          case VerifyCodeSent():
+            _startCountdown();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Verification email sent')),
+              const SnackBar(content: Text('Verification code sent')),
             );
-          case VerifyEmailVerified():
+          case VerifyCodeSuccess():
             getIt<AuthCubit>().refresh();
             navigateToOnboarding(context);
-          case VerifyEmailNotYet():
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Not verified yet. Open the link in your email first.',
-                ),
-              ),
-            );
-          case VerifyEmailSignedOut():
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
-          case VerifyEmailFailure(:final message):
+          case VerifyCodeFailure(:final message):
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(message)));
@@ -96,10 +131,9 @@ class _VerifyEmailViewState extends State<_VerifyEmailView>
         }
       },
       builder: (context, state) {
-        final cubit = context.read<VerifyEmailCubit>();
-        final displayEmail = widget.email ?? cubit.currentEmail ?? 'your email';
-        final loading = state is VerifyEmailChecking;
-        final resending = state is VerifyEmailResending;
+        final loading = state is VerifyCodeLoading;
+        final cubit = context.read<VerifyCodeCubit>();
+        final error = state is VerifyCodeFailure ? state.message : null;
 
         return AuthScaffold(
           title: 'Verify email',
@@ -111,36 +145,80 @@ class _VerifyEmailViewState extends State<_VerifyEmailView>
               AuthInlineHeading(
                 orbIcon: AppIcons.mail,
                 eyebrow: 'One last step',
-                title: 'Confirm your email.',
-                body:
-                    'We sent a verification link to $displayEmail. Open it, then come back and continue.',
+                title: 'Check your inbox.',
+                body: email.isEmpty
+                    ? 'Enter the 6-digit code we emailed you.'
+                    : 'Enter the 6-digit code sent to $email.',
               ),
               const SizedBox(height: AppSpacing.xl),
-              DsButton(
-                label: 'I verified — continue',
-                icon: AppIcons.forward,
-                isLoading: loading,
-                onPressed: loading ? null : cubit.checkVerified,
+              DsOtpField(
+                onChanged: (value) => setState(() => _code = value),
+                onCompleted: (value) {
+                  _code = value;
+                  if (email.isEmpty) return;
+                  cubit.confirm(
+                    email: email,
+                    code: value,
+                    purpose: 'verify',
+                  );
+                },
               ),
+              if (error != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  error,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: context.ds.danger),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
-              DsButton(
-                label: 'Resend verification email',
-                variant: DsButtonVariant.secondary,
-                isLoading: resending,
-                onPressed: resending ? null : cubit.resend,
+              Row(
+                children: [
+                  Text(
+                    _countdownLabel,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: _remaining == Duration.zero
+                          ? context.ds.danger
+                          : context.ds.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  AuthTextLink(
+                    label: 'Resend code',
+                    onPressed: () {
+                      if (loading || email.isEmpty) return;
+                      cubit.sendCode(email, purpose: 'verify');
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.lg),
+              DsButton(
+                label: 'Verify and continue',
+                icon: AppIcons.forward,
+                isLoading: loading,
+                onPressed: loading || email.isEmpty
+                    ? null
+                    : () => cubit.confirm(
+                        email: email,
+                        code: _code,
+                        purpose: 'verify',
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               Center(
                 child: AuthTextLink(
                   label: 'Use a different account',
-                  onPressed: cubit.useAnotherAccount,
+                  onPressed: _useAnotherAccount,
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
               const AuthNote(
-                title: 'Tip:',
+                title: 'Email code',
                 message:
-                    'Check spam if you do not see the email. The link expires after a while — tap Resend if needed.',
+                    'Codes expire in 10 minutes. Check spam if you do not see the email — tap Resend code if needed.',
               ),
             ],
           ),

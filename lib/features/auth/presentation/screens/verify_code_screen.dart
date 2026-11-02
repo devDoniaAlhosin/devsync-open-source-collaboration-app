@@ -1,17 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../app/devsync_app.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_otp_field.dart';
+import '../cubit/verify_code_cubit.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/auth_social_buttons.dart';
 
+/// Prototype 4b — enter the 6-digit email OTP.
+///
+/// [arguments]: `email`, `purpose` (`signin` | `verify`), `alreadySent`.
 class VerifyCodeScreen extends StatefulWidget {
   const VerifyCodeScreen({super.key});
 
@@ -23,23 +29,25 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
   static const _codeTtl = Duration(minutes: 10);
 
   String _code = '';
-  bool _loading = false;
-  String? _error;
   late DateTime _expiresAt;
   Timer? _ticker;
   Duration _remaining = _codeTtl;
+  bool _started = false;
 
   Map<String, dynamic> get _args {
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map<String, dynamic>) return args;
-    return const {'email': 'you@devsync.app', 'from': 'code'};
+    return const {'email': '', 'purpose': 'verify', 'alreadySent': false};
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _startCountdown();
+  String get _purpose {
+    final value = (_args['purpose'] as String?) ?? (_args['from'] as String?);
+    if (value == 'signin' || value == 'code') return 'signin';
+    return 'verify';
   }
+
+  String get _backRoute =>
+      _purpose == 'signin' ? AppRoutes.codeSignIn : AppRoutes.login;
 
   @override
   void dispose() {
@@ -67,113 +75,134 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     return 'Expires in $m:${s.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _verify() async {
-    if (_remaining == Duration.zero) {
-      setState(() => _error = 'Code expired. Tap Resend code.');
-      return;
-    }
-    if (_code.length != 6) {
-      setState(() => _error = 'Enter the 6-digit code');
-      return;
-    }
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    // Demo OTP until email OTP backend / Cloud Function lands.
-    if (_code != '123456') {
-      setState(() => _error = 'Invalid code. Demo code is 123456');
-      return;
-    }
-
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
-  }
-
-  void _resend() {
-    _startCountdown();
-    setState(() {
-      _code = '';
-      _error = null;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Demo: code resent (use 123456)')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final email = (_args['email'] as String?) ?? 'you@devsync.app';
+    final email = (_args['email'] as String?) ?? '';
+    final alreadySent = _args['alreadySent'] == true;
 
-    return AuthScaffold(
-      title: 'Verify email',
-      onThemeToggle: DevSyncApp.toggleTheme,
-      onBack: () =>
-          Navigator.of(context).pushReplacementNamed(AppRoutes.codeSignIn),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AuthInlineHeading(
-            orbIcon: AppIcons.mail,
-            eyebrow: 'One last step',
-            title: 'Check your inbox.',
-            body: 'Enter the 6-digit code sent to $email.',
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          DsOtpField(
-            onChanged: (v) => setState(() {
-              _code = v;
-              _error = null;
-            }),
-            onCompleted: (v) {
-              _code = v;
-              _verify();
-            },
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _error!,
-              style: Theme.of(
+    return BlocProvider(
+      create: (_) {
+        final cubit = getIt<VerifyCodeCubit>();
+        if (email.isNotEmpty && !alreadySent) {
+          cubit.sendCode(email, purpose: _purpose);
+        } else if (alreadySent) {
+          // Parent already sent; start timer on first frame.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || _started) return;
+            _started = true;
+            _startCountdown();
+          });
+        }
+        return cubit;
+      },
+      child: BlocConsumer<VerifyCodeCubit, VerifyCodeState>(
+        listener: (context, state) {
+          switch (state) {
+            case VerifyCodeSent():
+              _startCountdown();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Verification code sent')),
+              );
+            case VerifyCodeSuccess():
+              Navigator.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: context.ds.danger),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Text(
-                _countdownLabel,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _remaining == Duration.zero
-                      ? context.ds.danger
-                      : context.ds.textMuted,
-                  fontWeight: FontWeight.w600,
+              ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+            case VerifyCodeFailure(:final message):
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(message)));
+            default:
+              break;
+          }
+        },
+        builder: (context, state) {
+          final loading = state is VerifyCodeLoading;
+          final cubit = context.read<VerifyCodeCubit>();
+          final error = state is VerifyCodeFailure ? state.message : null;
+
+          return AuthScaffold(
+            title: 'Verify email',
+            onThemeToggle: DevSyncApp.toggleTheme,
+            onBack: () =>
+                Navigator.of(context).pushReplacementNamed(_backRoute),
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AuthInlineHeading(
+                  orbIcon: AppIcons.mail,
+                  eyebrow: 'One last step',
+                  title: 'Check your inbox.',
+                  body: email.isEmpty
+                      ? 'Enter the 6-digit code we emailed you.'
+                      : 'Enter the 6-digit code sent to $email.',
                 ),
-              ),
-              const Spacer(),
-              AuthTextLink(label: 'Resend code', onPressed: _resend),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          DsButton(
-            label: 'Verify and continue',
-            icon: AppIcons.forward,
-            isLoading: _loading,
-            onPressed: _loading ? null : _verify,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const AuthNote(
-            title: 'Interactive prototype:',
-            message: 'Enter 123456 to verify. No email is sent yet.',
-          ),
-        ],
+                const SizedBox(height: AppSpacing.xl),
+                DsOtpField(
+                  onChanged: (value) => setState(() => _code = value),
+                  onCompleted: (value) {
+                    _code = value;
+                    if (email.isEmpty) return;
+                    cubit.confirm(
+                      email: email,
+                      code: value,
+                      purpose: _purpose,
+                    );
+                  },
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    error,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: context.ds.danger),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Text(
+                      _countdownLabel,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: _remaining == Duration.zero
+                            ? context.ds.danger
+                            : context.ds.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    AuthTextLink(
+                      label: 'Resend code',
+                      onPressed: () {
+                        if (loading || email.isEmpty) return;
+                        cubit.sendCode(email, purpose: _purpose);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                DsButton(
+                  label: 'Verify and continue',
+                  icon: AppIcons.forward,
+                  isLoading: loading,
+                  onPressed: loading || email.isEmpty
+                      ? null
+                      : () => cubit.confirm(
+                          email: email,
+                          code: _code,
+                          purpose: _purpose,
+                        ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const AuthNote(
+                  title: 'Email code',
+                  message:
+                      'Codes expire in 10 minutes. Check spam if the email is slow.',
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

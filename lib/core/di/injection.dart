@@ -7,24 +7,24 @@ import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/datasources/user_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
-import '../../features/auth/domain/usecases/complete_email_link_sign_in.dart';
 import '../../features/auth/domain/usecases/delete_account.dart';
 import '../../features/auth/domain/usecases/register_with_email.dart';
-import '../../features/auth/domain/usecases/reload_email_verification.dart';
-import '../../features/auth/domain/usecases/send_email_verification.dart';
+import '../../features/auth/domain/usecases/confirm_email_with_otp.dart';
+import '../../features/auth/domain/usecases/reset_password_with_otp.dart';
+import '../../features/auth/domain/usecases/send_email_otp.dart';
 import '../../features/auth/domain/usecases/send_password_reset_email.dart';
-import '../../features/auth/domain/usecases/send_sign_in_link.dart';
+import '../../features/auth/domain/usecases/sign_in_with_email_otp.dart';
+import '../../features/auth/domain/usecases/verify_otp.dart';
 import '../../features/auth/domain/usecases/sign_in_with_email.dart';
 import '../../features/auth/domain/usecases/sign_in_with_github.dart';
 import '../../features/auth/domain/usecases/sign_in_with_google.dart';
 import '../../features/auth/domain/usecases/sign_out.dart';
 import '../../features/auth/domain/usecases/watch_auth_state.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
-import '../../features/auth/presentation/cubit/email_link_cubit.dart';
 import '../../features/auth/presentation/cubit/forgot_password_cubit.dart';
 import '../../features/auth/presentation/cubit/login_cubit.dart';
+import '../../features/auth/presentation/cubit/verify_code_cubit.dart';
 import '../../features/auth/presentation/cubit/register_cubit.dart';
-import '../../features/auth/presentation/cubit/verify_email_cubit.dart';
 import '../../features/matching/domain/repositories/matching_repository.dart';
 import '../../features/matching/domain/usecases/generate_matches_usecase.dart';
 import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
@@ -80,10 +80,11 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton(() => SignOut(getIt()))
     ..registerLazySingleton(() => DeleteAccount(getIt()))
     ..registerLazySingleton(() => SendPasswordResetEmail(getIt()))
-    ..registerLazySingleton(() => SendSignInLink(getIt()))
-    ..registerLazySingleton(() => CompleteEmailLinkSignIn(getIt()))
-    ..registerLazySingleton(() => SendEmailVerification(getIt()))
-    ..registerLazySingleton(() => ReloadEmailVerification(getIt()))
+    ..registerLazySingleton(() => SendEmailOtp(getIt()))
+    ..registerLazySingleton(() => VerifyOtp(getIt()))
+    ..registerLazySingleton(() => ResetPasswordWithOtp(getIt()))
+    ..registerLazySingleton(() => ConfirmEmailWithOtp(getIt()))
+    ..registerLazySingleton(() => SignInWithEmailOtp(getIt()))
     ..registerLazySingleton(
       () => AuthCubit(
         watchAuthState: getIt(),
@@ -106,21 +107,17 @@ Future<void> configureDependencies() async {
       ),
     )
     ..registerFactory(
-      () => ForgotPasswordCubit(sendPasswordResetEmail: getIt()),
-    )
-    ..registerFactory(
-      () => EmailLinkCubit(
-        sendSignInLink: getIt(),
-        completeEmailLinkSignIn: getIt(),
-        authRepository: getIt(),
+      () => ForgotPasswordCubit(
+        sendPasswordResetEmail: getIt(),
+        verifyOtp: getIt(),
+        resetPasswordWithOtp: getIt(),
       ),
     )
     ..registerFactory(
-      () => VerifyEmailCubit(
-        sendEmailVerification: getIt(),
-        reloadEmailVerification: getIt(),
-        signOut: getIt(),
-        authRepository: getIt(),
+      () => VerifyCodeCubit(
+        sendEmailOtp: getIt(),
+        confirmEmailWithOtp: getIt(),
+        signInWithEmailOtp: getIt(),
       ),
     );
 
@@ -211,10 +208,11 @@ void registerAuthUseCasesAndCubits() {
       ..registerLazySingleton(() => SignOut(getIt()))
       ..registerLazySingleton(() => DeleteAccount(getIt()))
       ..registerLazySingleton(() => SendPasswordResetEmail(getIt()))
-      ..registerLazySingleton(() => SendSignInLink(getIt()))
-      ..registerLazySingleton(() => CompleteEmailLinkSignIn(getIt()))
-      ..registerLazySingleton(() => SendEmailVerification(getIt()))
-      ..registerLazySingleton(() => ReloadEmailVerification(getIt()));
+      ..registerLazySingleton(() => SendEmailOtp(getIt()))
+      ..registerLazySingleton(() => VerifyOtp(getIt()))
+      ..registerLazySingleton(() => ResetPasswordWithOtp(getIt()))
+      ..registerLazySingleton(() => ConfirmEmailWithOtp(getIt()))
+      ..registerLazySingleton(() => SignInWithEmailOtp(getIt()));
   }
 
   if (!getIt.isRegistered<AuthCubit>()) {
@@ -243,21 +241,17 @@ void registerAuthUseCasesAndCubits() {
         ),
       )
       ..registerFactory(
-        () => ForgotPasswordCubit(sendPasswordResetEmail: getIt()),
-      )
-      ..registerFactory(
-        () => EmailLinkCubit(
-          sendSignInLink: getIt(),
-          completeEmailLinkSignIn: getIt(),
-          authRepository: getIt(),
+        () => ForgotPasswordCubit(
+          sendPasswordResetEmail: getIt(),
+          verifyOtp: getIt(),
+          resetPasswordWithOtp: getIt(),
         ),
       )
       ..registerFactory(
-        () => VerifyEmailCubit(
-          sendEmailVerification: getIt(),
-          reloadEmailVerification: getIt(),
-          signOut: getIt(),
-          authRepository: getIt(),
+        () => VerifyCodeCubit(
+          sendEmailOtp: getIt(),
+          confirmEmailWithOtp: getIt(),
+          signInWithEmailOtp: getIt(),
         ),
       );
   }

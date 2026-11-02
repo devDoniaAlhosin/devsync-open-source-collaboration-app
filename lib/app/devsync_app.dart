@@ -10,7 +10,6 @@ import '../core/theme/app_theme.dart';
 import '../core/widgets/ds_fade_switch.dart';
 import '../core/widgets/ds_splash.dart';
 import '../features/auth/presentation/screens/code_sign_in_screen.dart';
-import '../features/auth/presentation/screens/email_link_sent_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
@@ -18,7 +17,6 @@ import '../features/auth/presentation/screens/verify_code_screen.dart';
 import '../features/auth/presentation/screens/verify_email_screen.dart';
 import '../features/auth/presentation/screens/welcome_screen.dart';
 import '../features/auth/presentation/widgets/auth_gate.dart';
-import '../features/auth/presentation/widgets/email_link_listener.dart';
 import '../features/matching/presentation/screens/ai_analytics_screen.dart';
 import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
 import '../features/matching/presentation/screens/connect_github_screen.dart';
@@ -122,7 +120,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
       builder: (context, child) {
-        final app = EmailLinkListener(child: child ?? const SizedBox.shrink());
+        final app = child ?? const SizedBox.shrink();
         if (!widget.showSplash) return app;
         if (!_booting) return app;
 
@@ -161,9 +159,6 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.register => const RegisterScreen(),
       AppRoutes.forgotPassword => const ForgotPasswordScreen(),
       AppRoutes.codeSignIn => const CodeSignInScreen(),
-      AppRoutes.emailLinkSent => EmailLinkSentScreen(
-        email: _emailArg(settings.arguments),
-      ),
       AppRoutes.verifyCode => const VerifyCodeScreen(),
       AppRoutes.verifyEmail => VerifyEmailScreen(
         email: _emailArg(settings.arguments),

@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     DsButton(
-                      label: 'Sign in with email link',
+                      label: 'Sign in with code',
                       variant: DsButtonVariant.secondary,
                       onPressed: () => Navigator.of(
                         context,

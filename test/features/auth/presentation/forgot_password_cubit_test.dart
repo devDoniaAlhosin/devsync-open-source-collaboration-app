@@ -1,6 +1,8 @@
 import 'package:devsync_open_source_collaboration_app/core/error/failures.dart';
 import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
+import 'package:devsync_open_source_collaboration_app/features/auth/domain/usecases/reset_password_with_otp.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/domain/usecases/send_password_reset_email.dart';
+import 'package:devsync_open_source_collaboration_app/features/auth/domain/usecases/verify_otp.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/presentation/cubit/forgot_password_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,6 +16,8 @@ void main() {
     repository = FakeAuthRepository();
     cubit = ForgotPasswordCubit(
       sendPasswordResetEmail: SendPasswordResetEmail(repository),
+      verifyOtp: VerifyOtp(repository),
+      resetPasswordWithOtp: ResetPasswordWithOtp(repository),
     );
   });
 

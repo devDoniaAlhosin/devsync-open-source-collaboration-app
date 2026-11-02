@@ -12,11 +12,12 @@ import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_info_row.dart';
 import '../../../../core/widgets/ds_text_field.dart';
-import '../cubit/email_link_cubit.dart';
+import '../cubit/verify_code_cubit.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/auth_step_badge.dart';
 import '../widgets/password_strength_meter.dart';
 
+/// Prototype 4a — email a 6-digit sign-in code (external OTP API).
 class CodeSignInScreen extends StatefulWidget {
   const CodeSignInScreen({super.key});
 
@@ -34,35 +35,41 @@ class _CodeSignInScreenState extends State<CodeSignInScreen> {
     super.dispose();
   }
 
-  void _sendLink(EmailLinkCubit cubit) {
+  void _sendCode(VerifyCodeCubit cubit) {
     final email = _email.text.trim();
     setState(() {
       _error = isValidEmail(email) ? null : 'Enter a valid email address';
     });
     if (_error != null) return;
-    cubit.sendLink(email);
+    cubit.sendCode(email, purpose: 'signin');
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => getIt<EmailLinkCubit>(),
-      child: BlocConsumer<EmailLinkCubit, EmailLinkState>(
+      create: (_) => getIt<VerifyCodeCubit>(),
+      child: BlocConsumer<VerifyCodeCubit, VerifyCodeState>(
         listener: (context, state) {
           switch (state) {
-            case EmailLinkSent(:final email):
-              Navigator.of(
-                context,
-              ).pushNamed(AppRoutes.emailLinkSent, arguments: {'email': email});
-            case EmailLinkFailure(:final message):
+            case VerifyCodeSent(:final email):
+              Navigator.of(context).pushNamed(
+                AppRoutes.verifyCode,
+                arguments: {
+                  'email': email,
+                  'from': 'signin',
+                  'purpose': 'signin',
+                  'alreadySent': true,
+                },
+              );
+            case VerifyCodeFailure(:final message):
               setState(() => _error = message);
             default:
               break;
           }
         },
         builder: (context, state) {
-          final loading = state is EmailLinkLoading;
-          final cubit = context.read<EmailLinkCubit>();
+          final loading = state is VerifyCodeLoading;
+          final cubit = context.read<VerifyCodeCubit>();
           final ds = context.ds;
           final textTheme = Theme.of(context).textTheme;
 
@@ -77,12 +84,12 @@ class _CodeSignInScreenState extends State<CodeSignInScreen> {
                   label: 'Verify your email · Secure sign-in',
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                AuthInlineHeading(
+                const AuthInlineHeading(
                   orbIcon: AppIcons.shield,
                   eyebrow: 'No password needed',
-                  title: 'Sign in with a link.',
+                  title: 'Sign in with a code.',
                   body:
-                      "Enter your email. We'll send a one-tap sign-in link — no password required.",
+                      "Enter your email. We'll send a six-digit verification code.",
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 DsTextField(
@@ -92,17 +99,17 @@ class _CodeSignInScreenState extends State<CodeSignInScreen> {
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.email],
                   errorText: _error,
-                  onSubmitted: (_) => _sendLink(cubit),
+                  onSubmitted: (_) => _sendCode(cubit),
                   onChanged: (_) {
                     if (_error != null) setState(() => _error = null);
                   },
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 DsButton(
-                  label: 'Email me a sign-in link',
+                  label: 'Email me a sign-in code',
                   icon: AppIcons.forward,
                   isLoading: loading,
-                  onPressed: loading ? null : () => _sendLink(cubit),
+                  onPressed: loading ? null : () => _sendCode(cubit),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 const DsCard(
@@ -111,7 +118,7 @@ class _CodeSignInScreenState extends State<CodeSignInScreen> {
                       DsInfoRow(
                         icon: AppIcons.shield,
                         title: 'Secure and simple',
-                        subtitle: 'Links expire and work only once',
+                        subtitle: 'One-time codes expire after 10 minutes',
                         showDivider: true,
                       ),
                       DsInfoRow(
@@ -140,7 +147,7 @@ class _CodeSignInScreenState extends State<CodeSignInScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Open the link on this device · Never forward your sign-in email',
+                          'One-time code · Expires in 10 minutes · Never share your code',
                           style: textTheme.bodySmall?.copyWith(
                             color: ds.textMuted,
                             fontSize: 12,
