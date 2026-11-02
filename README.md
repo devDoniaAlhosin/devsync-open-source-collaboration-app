@@ -15,7 +15,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white" alt="Flutter"/>
   <img src="https://img.shields.io/badge/Dart-3.12-0175C2?logo=dart&logoColor=white" alt="Dart"/>
-  <img src="https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20FCM%20%7C%20Functions-FFCA28?logo=firebase&logoColor=black" alt="Firebase"/>
+  <img src="https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20FCM-FFCA28?logo=firebase&logoColor=black" alt="Firebase"/>
+  <img src="https://img.shields.io/badge/API-Vercel-000000?logo=vercel&logoColor=white" alt="Vercel API"/>
   <img src="https://img.shields.io/badge/Status-In%20development-0E2624" alt="Status"/>
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Android"/>
 </p>
@@ -28,10 +29,10 @@ DevSync helps a developer find an open-source project that actually fits them, a
 | **Type** | Flutter graduation project · team of 5 |
 | **Timeline** | 16 October 2026 – 30 November 2026 |
 | **Primary platform** | Android (Free and Pro flavors planned) |
-| **Backend** | Firebase Auth + Firestore (FCM, Cloud Functions, Gemini matching planned) |
+| **Backend** | Firebase Auth + Firestore + [DevSync API (Vercel)](https://devsync-backend-two.vercel.app) for OTP / email / Gemini matching (no Cloud Functions · Spark-safe) |
 | **Methodology** | Agile Scrum (Jira + GitHub pull requests) |
 
-> **Built now:** design system, Lucide icons, brand assets, auth screens, Firebase Auth, and `users/{uid}` identity. **Not built:** Profile, Projects, Match Feed, like/skip, Requests, FCM, Cloud Functions, live Gemini. See [§14 Built so far](#14-built-so-far-for-the-team). Screen-by-screen flow: [docs/APP_FLOW.md](docs/APP_FLOW.md).
+> **Built now:** design system, Lucide icons, brand assets, auth screens, Firebase Auth, `users/{uid}` identity, and OTP via the Vercel API. **Not built:** Profile, Projects, Match Feed, like/skip, Requests, FCM, live Gemini (`POST /matches/generate` is a stub today). See [§14 Built so far](#14-built-so-far-for-the-team). Screen-by-screen flow: [docs/APP_FLOW.md](docs/APP_FLOW.md).
 
 ---
 
@@ -112,7 +113,7 @@ Feature ownership follows [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSy
 | Authentication | Donia | W2 · 29 Oct | Welcome/login/register/reset; Google + email; session persistence; user doc + FCM token; account deletion |
 | Profile & GitHub | Saga | W2 · 29 Oct | Skills/bio; public GitHub stats (languages, repos, contributions); cache/refresh; sample JSON first |
 | Projects | Bishay | W2 · 29 Oct | List/detail; add/edit (title, description, GitHub link, needed skills); seed data; maintainer-only edits |
-| AI matching + feed | Emad | v1 29 Oct · tuned 12 Nov | Ranked feed, score + reason; Cloud Function (LLM secret); cache; skills fallback; call limits |
+| AI matching + feed | Emad | v1 29 Oct · tuned 12 Nov | Ranked feed, score + reason; Vercel API holds `GEMINI_API_KEY`; `POST /matches/generate`; cache; skills fallback; call limits |
 | Like / skip | Yousef | W2 · 29 Oct | Feedback per user/project in Firestore for prompt evaluation |
 | Requests + FCM | Yousef | 5 Nov | One request per project + message; accept/decline; FCM on new/status change; permission at use |
 | Key animations | Bishay | 5 Nov | Transitions on sign-in, feed, requests, profile (via owner-reviewed PRs) |
@@ -142,12 +143,12 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | Mobile app | Flutter & Dart | Cross-platform UI (Android focus for this delivery) |
 | Icons | [lucide_icons_flutter](https://pub.dev/packages/lucide_icons_flutter) | Global Lucide icon set via `AppIcons` / `DsIcon` (matches prototype) |
 | Fonts | google_fonts | Bricolage Grotesque (headings) + Figtree (body / UI) |
-| Auth | Firebase Authentication | Email/password implemented; Google and GitHub buttons coded (Console / SHA-1 still needed) |
+| Auth | Firebase Authentication + DevSync API OTP | Email/password; verify email, forgot password, and sign-in with code via Vercel OTP; Google and GitHub buttons coded (Console / SHA-1 still needed) |
 | Database | Cloud Firestore | Users, projects, matches cache, requests, feedback |
 | Notifications | Firebase Cloud Messaging (FCM) | Push alerts for collaboration and updates |
-| Backend logic | Firebase Cloud Functions | FCM triggers; secure LLM API calls (keys never in the app) |
+| Backend logic | [DevSync API on Vercel](https://devsync-backend-two.vercel.app) | OTP, password reset, email verify, matching — sibling repo `devsync_backend` (no Cloud Functions) |
 | Developer data | GitHub API | Public profiles, repositories, and activity |
-| AI matching | Gemini Flash-Lite (via Cloud Function) | Fit scores and short explanations; prompt versioning; evaluate one hosted open-source model (Llama / Qwen / gpt-oss) on the eval set |
+| AI matching | Gemini Flash-Lite (via Vercel `/matches/generate`) | Fit scores and short explanations; prompt versioning; evaluate one hosted open-source model (Llama / Qwen / gpt-oss) on the eval set |
 | State | flutter_bloc (Cubit first) | Presentation state; screens render Cubit states |
 | DI | get_it | Composition root in `lib/core/di/injection.dart` |
 | Errors | `Result<T>` + typed `Failure` | Mapped at the repository boundary |
@@ -195,7 +196,7 @@ flowchart TB
   subgraph External["External systems"]
     Auth["Firebase Auth"]
     FS["Cloud Firestore"]
-    Functions["Cloud Functions"]
+    DevSyncAPI["DevSync API Vercel"]
     FCM["Cloud Messaging"]
     GitHub["GitHub API"]
     LLM["Gemini Flash-Lite"]
@@ -208,25 +209,53 @@ flowchart TB
   Repos --> Sources
   Sources --> Auth
   Sources --> FS
-  Sources --> Functions
-  Functions --> FS
-  Functions --> FCM
-  Functions --> LLM
+  Sources --> DevSyncAPI
+  DevSyncAPI --> LLM
   Sources --> GitHub
+  Sources --> FCM
 ```
 
 **Sign-in (implemented):** Login form → `LoginCubit` → `SignInWithEmail` → `AuthRepository` → Firebase Auth + `users/{uid}` → `Result` → Cubit emits success / verify-email / failure → UI navigates or shows a snackbar.
 
-Dio is **not** in the stack. If a Cloud Function later needs a shared HTTP client, add one Dio instance in `core/` and keep it behind a data source.
+### Backend boundaries
+
+Create / get / update / delete for app data goes through the **Firestore client SDK**, not custom REST on Vercel. Collections such as `users`, `projects`, `requests`, `feedback`, and the match cache are read and written from Flutter; security is Firestore rules + Firebase Auth.
+
+The **DevSync API on Vercel** is only for server-side work that needs secrets or Admin privileges. Every route the app calls is **POST**:
+
+| Area | Routes | Role |
+|---|---|---|
+| Auth OTP | `POST /otp/send`, `POST /otp/verify`, `POST /email/verify`, `POST /password/reset`, `POST /auth/session` | Email delivery, OTP checks, password reset, passwordless session |
+| Matching | **`POST /matches/generate` only** | Body = profile + candidate projects; response = fit scores + reasons. No `GET /matches/...` |
+
+Do **not** add Vercel `POST /projects` or `GET /projects` (or similar) for normal CRUD — wire those features to Firestore the same way auth already upserts `users/{uid}`.
+
+### Auth OTP flows (implemented)
+
+Base URL: [`https://devsync-backend-two.vercel.app`](https://devsync-backend-two.vercel.app) via `AuthEmailApi` (override with `DEVSYNC_API_BASE` / `DEVSYNC_API_LOCAL`).
+
+| Flow | Screens | API |
+|---|---|---|
+| **Verify email** | `/verify-email` (after register / unverified login) | `POST /otp/send` (purpose `verify`) → `POST /email/verify` |
+| **Forgot password** | `/forgot-password` → `/verify-code` | `POST /otp/send` (purpose `reset`) → `POST /otp/verify` → `POST /password/reset` |
+| **Sign in with code** | `/code-sign-in` → `/verify-code` | `POST /otp/send` (purpose `signin`) → `POST /auth/session` (Firebase custom token) → `signInWithCustomToken` |
+
+**Why `POST /auth/session`?** Passwordless sign-in with a code cannot use Firebase Auth’s normal email/password APIs with only an OTP. The Vercel backend verifies the OTP (Admin SDK), mints a **Firebase custom token**, and returns it as `customToken`. The app (`AuthEmailApi.createSession` → `AuthRemoteDataSource.signInWithEmailOtp`) then calls `signInWithCustomToken` so Firebase issues a real Auth session. Minting custom tokens requires a service account and must stay on the server — the client must never hold Admin credentials.
+
+Dio is **not** in the stack. Auth and matching use `dart:io` `HttpClient` (or a thin data-source wrapper) against the same base URL. FCM is planned client-side / Console-side without Cloud Functions for this delivery.
 
 ### Matching flow (planned)
 
+Matching’s HTTP surface is **`POST /matches/generate` only**. Ranked results come back in that POST response; they are not fetched with GET. Cache and like/skip feedback live in Firestore.
+
 1. Collect GitHub activity and declared skills into a structured profile
-2. Send the profile and candidate projects to a Cloud Function with a versioned matching prompt
-3. **Gemini Flash-Lite** (primary) returns a **fit score** and a **short reason** per project (target: ≤ 5 s for 95% of calls)
+2. Send the profile and candidate projects to **`POST https://devsync-backend-two.vercel.app/matches/generate`** (JSON locked to `MatchRequestModel` / `MatchItemModel` / `MatchResponseModel`)
+3. **Gemini Flash-Lite** on the Vercel API (primary) returns a **fit score** and a **short reason** per project (target: ≤ 5 s for 95% of calls). `GEMINI_API_KEY` stays a Vercel env secret — never in the Flutter app
 4. The app shows a ranked feed; users **like** or **skip**
 5. Feedback and an evaluation set are used to compare prompt versions and keep the better one
-6. If the model fails or is slow, a **skills-based fallback** still fills the feed
+6. If the model fails or is slow, a **skills-based fallback** (client- or server-side) still fills the feed
+
+**What we will do:** Emad implements Gemini in sibling repo `devsync_backend` (`feature/matching-gemini`). Flutter keeps `MockMatchingRemoteDataSource` until then, then swaps it for an HTTP data source using the same `DEVSYNC_API_BASE` as auth.
 
 Input/output JSON for the matcher is frozen early (W1 sample data) so the feed, like/skip, and evaluation work can proceed in parallel.
 
@@ -272,7 +301,7 @@ Everyone owns full feature slices (UI + logic + Firestore + tests + docs) and re
 
 | Period | Milestone |
 |---|---|
-| W1 · 16–22 Oct | Foundation, app shell, theme/design system, CI; AI skeleton (prompt, Cloud Function, sample JSON) |
+| W1 · 16–22 Oct | Foundation, app shell, theme/design system, CI; AI skeleton (prompt, Vercel `/matches/generate` stub, sample JSON) |
 | W2 · 23–29 Oct | Auth, profile, projects, AI v1 + feed, like/skip |
 | Through 5 Nov | Collaboration requests + FCM end to end; key-screen animations |
 | Through 12 Nov | Security rules; prompt evaluation/tuning; first obfuscated build; core tested — **core freeze** |
@@ -311,7 +340,7 @@ devsync_open_source_collaboration_app/
 └── README.md
 ```
 
-Still planned: Firebase config, Cloud Functions, Free/Pro flavors Gradle, feature backends.
+Still planned: Firebase config polish, Free/Pro flavors Gradle, live Gemini matching on Vercel, feature backends. No Cloud Functions (Spark-safe).
 
 ---
 
@@ -362,15 +391,16 @@ flutter analyze
 flutter test
 ```
 
-### Firebase, GitHub API, and LLM setup
+### Firebase, DevSync API, GitHub, and LLM setup
 
-These backends are **required for product features** but are **not fully wired in this repository yet**. When configuring locally:
+Firebase Auth + Firestore and the Vercel DevSync API are **required for product features**. Matching Gemini is **not fully wired** yet (API stub + Flutter mock). When configuring:
 
-1. Create or join the team Firebase project
+1. Create or join the team Firebase project (Auth + Firestore; **no Cloud Functions** — stay on Spark)
 2. Add Android apps for Free and Pro flavors (separate application IDs)
 3. Place platform config files as directed by the team (never commit secrets or LLM API keys)
-4. Deploy Cloud Functions that hold the LLM API key as a **secret**
-5. Configure GitHub API access according to the team’s agreed approach (public data only; respect rate limits)
+4. Use sibling repo **`devsync_backend`** for OTP / email / matching. Production: [`https://devsync-backend-two.vercel.app`](https://devsync-backend-two.vercel.app). Flutter defaults to that host; override with `--dart-define=DEVSYNC_API_BASE=...` or `--dart-define=DEVSYNC_API_LOCAL=true` for local `npm run dev`
+5. Put `GEMINI_API_KEY` only in Vercel (or local `.env` for the backend) — never in the Flutter app or this repo
+6. Configure GitHub API access according to the team’s agreed approach (public data only; respect rate limits)
 
 Exact project IDs, package names, and credentials are shared privately within the team — they are intentionally omitted from this README.
 
@@ -434,7 +464,7 @@ Security is a first-class delivery requirement: **Donia** owns Firestore rules a
 |---|---|
 | Authentication | Firebase Auth with secure token handling |
 | Data access | Firestore rules so users read/write only their own data and their requests (unit-tested) |
-| Secrets | No API keys in the repository; LLM key stays a Cloud Function secret; secrets scan before release |
+| Secrets | No API keys in the repository; LLM key stays a **Vercel env secret** on `devsync_backend`; secrets scan before release |
 | Network | HTTPS for all traffic |
 | Code protection | Obfuscation on release builds; symbol files stored safely (not in public docs) |
 | Permissions | Runtime prompts explained; app must still work if notification permission is denied |
@@ -457,11 +487,13 @@ Do **not** commit `google-services.json` variants that embed private keys beyond
 | Design system (tokens + `Ds*` widgets) | Implemented in `lib/core/` |
 | Global Lucide icons (`AppIcons`) | Implemented — use instead of Material `Icons` |
 | App name + launcher / favicon | DevSync branding on Android / iOS / web / desktop |
-| Auth flow (Intro → Welcome → Login/Register/OTP) | UI + Firebase Auth + `users/{uid}` identity implemented |
+| Auth (Intro → Welcome → Login/Register) | UI + Firebase Auth + `users/{uid}` identity implemented |
+| Verify email / forgot password / sign-in with code | Implemented — real SMTP OTP via Vercel DevSync API (`AuthEmailApi`) |
 | Settings (prototype screen 21) | Implemented — appearance, notification toggles, Free/Pro preview, sign out, delete dialog |
 | Google / GitHub sign-in | Coded; enable providers in Firebase Console (SHA-1 for Google) |
 | Profile, Projects, Feed, Requests | Planned — owners and due dates in §3 |
-| GitHub API / FCM / Cloud Functions / Gemini | Planned — not implemented in-repo yet |
+| DevSync API (Vercel) | Hosted at [devsync-backend-two.vercel.app](https://devsync-backend-two.vercel.app) — OTP live; `/matches/generate` stub until Gemini on `feature/matching-gemini` |
+| GitHub API / FCM / live Gemini matching | Planned — FCM without Cloud Functions; Gemini on Vercel then wire Flutter HTTP data source |
 | Remaining product features | Planned (owners and due dates in §3) |
 | Install-link release / App Bundle | First obfuscated build by 12 Nov; final 30 Nov 2026 |
 | App store deployment | Out of scope for this course delivery |
@@ -555,11 +587,12 @@ Preview: run the app → Home → **Settings**.
 | Welcome carousel | `/welcome` | 3 slides → Get started / Sign in |
 | Login | `/login` | Social + email, forgot password, email code |
 | Register | `/register` | Step 01/03, strength meter, terms |
-| Forgot password | `/forgot-password` | Recovery → verify code |
-| Sign in with code | `/code-sign-in` | Passwordless email → OTP |
-| Verify code | `/verify-code` | 6 boxes; demo OTP `123456` |
+| Verify email | `/verify-email` | 6-digit OTP after signup / unverified login → `POST /email/verify` |
+| Forgot password | `/forgot-password` | Recovery email → OTP → new password via Vercel |
+| Sign in with code | `/code-sign-in` | Passwordless email → OTP → `POST /auth/session` |
+| Verify code | `/verify-code` | Shared 6-box OTP UI for reset / sign-in / verify purposes |
 
-Email/password sign-in is wired through Cubit → use case → Firebase Auth. Google and GitHub buttons are coded (Console / SHA-1 still needed).
+Email/password sign-in is wired through Cubit → use case → Firebase Auth. **Verify email, forgot password, and sign-in with code** are live against the hosted DevSync API (real SMTP codes — no demo OTP). Google and GitHub buttons are coded (Console / SHA-1 still needed).
 
 ### Branding
 
