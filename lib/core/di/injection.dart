@@ -131,7 +131,7 @@ void _registerMatching() {
   if (getIt.isRegistered<MatchingRepository>()) return;
 
   getIt
-    ..registerLazySingleton<MatchingRepository>(createDemoMatchingRepository)
+    ..registerLazySingleton<MatchingRepository>(createMatchingRepository)
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
@@ -151,10 +151,7 @@ void _registerProfile() {
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))
     ..registerFactory(
-      () => ProfileCubit(
-        getProfile: getIt(),
-        updateProfile: getIt(),
-      ),
+      () => ProfileCubit(getProfile: getIt(), updateProfile: getIt()),
     );
 }
 
@@ -189,10 +186,7 @@ void _registerRequests() {
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
     ..registerFactory(
-      () => RequestsCubit(
-        getRequests: getIt(),
-        updateRequestStatus: getIt(),
-      ),
+      () => RequestsCubit(getRequests: getIt(), updateRequestStatus: getIt()),
     );
 }
 
