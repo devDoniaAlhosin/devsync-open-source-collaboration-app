@@ -5,6 +5,7 @@ import '../models/match_item_model.dart';
 import '../models/match_request_model.dart';
 import '../models/match_response_model.dart';
 import '../models/matching_analytics_model.dart';
+import 'auth_token_provider.dart';
 import 'matching_remote_data_source.dart';
 
 /// HTTP client for the DevSync matching API.
@@ -12,13 +13,19 @@ import 'matching_remote_data_source.dart';
 /// Calls `POST /matches/generate` on the backend with the developer profile
 /// and candidate projects, returning fit scores and reasons from Gemini or
 /// the deterministic fallback.
+///
+/// Requires Firebase authentication - automatically attaches the current
+/// user's ID token to all requests.
 class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
   MatchingHttpRemoteDataSource({
+    required AuthTokenProvider authTokenProvider,
     String? baseUrl,
     HttpClient? client,
-  })  : _baseUrl = baseUrl ?? _defaultMatchingApiBase(),
-        _client = client ?? HttpClient();
+  }) : _authTokenProvider = authTokenProvider,
+       _baseUrl = baseUrl ?? _defaultMatchingApiBase(),
+       _client = client ?? HttpClient();
 
+  final AuthTokenProvider _authTokenProvider;
   final String _baseUrl;
   final HttpClient _client;
 
@@ -28,8 +35,10 @@ class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
   static String _defaultMatchingApiBase() {
     const override = String.fromEnvironment('DEVSYNC_API_BASE');
     if (override.isNotEmpty) return override;
-    const useLocal =
-        bool.fromEnvironment('DEVSYNC_API_LOCAL', defaultValue: false);
+    const useLocal = bool.fromEnvironment(
+      'DEVSYNC_API_LOCAL',
+      defaultValue: false,
+    );
     if (useLocal) {
       if (Platform.isAndroid) return 'http://10.0.2.2:3000';
       return 'http://127.0.0.1:3000';
@@ -39,15 +48,42 @@ class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
 
   @override
   Future<MatchResponseModel> getMatches(MatchRequestModel request) async {
+    // Get Firebase ID token for authentication
+    final idToken = await _authTokenProvider.getIdToken();
+    if (idToken == null) {
+      throw const MatchingApiException(
+        'Authentication required - please sign in first',
+        statusCode: 401,
+      );
+    }
+
     final uri = Uri.parse('$_baseUrl/matches/generate');
 
     try {
       final httpRequest = await _client.postUrl(uri);
-      httpRequest.headers.contentType = ContentType.json;
+      httpRequest.headers
+        ..contentType = ContentType.json
+        ..set('Authorization', 'Bearer $idToken');
       httpRequest.write(jsonEncode(request.toJson()));
 
       final response = await httpRequest.close();
       final raw = await response.transform(utf8.decoder).join();
+
+      // Handle auth failures with token refresh
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        // Try refreshing the token once
+        final refreshedToken = await _authTokenProvider.getIdToken(
+          forceRefresh: true,
+        );
+        if (refreshedToken != null) {
+          // Retry with fresh token
+          return await _retryWithToken(request, refreshedToken);
+        }
+        throw MatchingApiException(
+          'Authentication failed - please sign in again',
+          statusCode: response.statusCode,
+        );
+      }
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (raw.isEmpty) {
@@ -73,10 +109,7 @@ class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
         // Use default error message if parsing fails
       }
 
-      throw MatchingApiException(
-        errorMessage,
-        statusCode: response.statusCode,
-      );
+      throw MatchingApiException(errorMessage, statusCode: response.statusCode);
     } on MatchingApiException {
       rethrow;
     } on SocketException {
@@ -116,6 +149,40 @@ class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
   Future<MatchingAnalyticsModel> getAnalytics() async {
     throw UnimplementedError(
       'getAnalytics is not supported by HTTP data source',
+    );
+  }
+
+  /// Retry the match request with a refreshed auth token.
+  Future<MatchResponseModel> _retryWithToken(
+    MatchRequestModel request,
+    String token,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/matches/generate');
+    final httpRequest = await _client.postUrl(uri);
+    httpRequest.headers
+      ..contentType = ContentType.json
+      ..set('Authorization', 'Bearer $token');
+    httpRequest.write(jsonEncode(request.toJson()));
+
+    final response = await httpRequest.close();
+    final raw = await response.transform(utf8.decoder).join();
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (raw.isEmpty) {
+        throw const MatchingApiException('Empty response from server');
+      }
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        throw const MatchingApiException('Invalid response format');
+      }
+
+      return MatchResponseModel.fromJson(decoded);
+    }
+
+    throw MatchingApiException(
+      'Matching request failed after token refresh',
+      statusCode: response.statusCode,
     );
   }
 }

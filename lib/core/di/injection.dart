@@ -131,7 +131,9 @@ void _registerMatching() {
   if (getIt.isRegistered<MatchingRepository>()) return;
 
   getIt
-    ..registerLazySingleton<MatchingRepository>(createMatchingRepository)
+    ..registerLazySingleton<MatchingRepository>(
+      () => createMatchingRepository(getIt<FirebaseAuth>()),
+    )
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))

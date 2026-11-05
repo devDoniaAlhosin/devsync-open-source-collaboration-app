@@ -1,3 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'data/datasources/auth_token_provider.dart';
 import 'data/datasources/matching_http_remote_data_source.dart';
 import 'data/datasources/matching_local_data_source.dart';
 import 'data/datasources/matching_remote_data_source.dart';
@@ -6,10 +9,16 @@ import 'domain/repositories/matching_repository.dart';
 import 'presentation/cubit/matching_cubit.dart';
 
 /// Builds the production [MatchingRepository] (HTTP remote + in-memory cache).
-MatchingRepository createMatchingRepository() => MatchingRepositoryImpl(
-  remoteDataSource: MatchingHttpRemoteDataSource(),
-  localDataSource: InMemoryMatchingLocalDataSource(),
-);
+MatchingRepository createMatchingRepository(FirebaseAuth firebaseAuth) {
+  final authTokenProvider = FirebaseAuthTokenProvider(firebaseAuth);
+
+  return MatchingRepositoryImpl(
+    remoteDataSource: MatchingHttpRemoteDataSource(
+      authTokenProvider: authTokenProvider,
+    ),
+    localDataSource: InMemoryMatchingLocalDataSource(),
+  );
+}
 
 /// Builds the demo [MatchingRepository] (mock remote + in-memory cache).
 MatchingRepository createDemoMatchingRepository() => MatchingRepositoryImpl(
