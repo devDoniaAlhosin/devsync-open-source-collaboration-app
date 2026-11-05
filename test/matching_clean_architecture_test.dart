@@ -1,5 +1,4 @@
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/matching_priority.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
@@ -13,6 +12,8 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'features/matching/mocks/mock_matching_remote_data_source.dart';
 
 void main() {
   group('MatchingCubit Clean Architecture & State Management', () {
