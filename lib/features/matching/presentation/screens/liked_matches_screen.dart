@@ -17,19 +17,60 @@ import '../../../../core/widgets/ds_score_meter.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../../projects/domain/entities/project.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
+import '../../../../core/di/injection.dart';
 import '../../domain/entities/match_item.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
 import 'project_details_screen.dart';
 
 /// Prototype **6b. Liked matches** — hearts from the feed land here.
-class LikedMatchesScreen extends StatelessWidget {
+class LikedMatchesScreen extends StatefulWidget {
   const LikedMatchesScreen({super.key});
 
   @override
+  State<LikedMatchesScreen> createState() => _LikedMatchesScreenState();
+}
+
+class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
+  late final LikedMatchesLocalDataSource _dataSource;
+  List<MatchItem> _likedMatches = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _dataSource = getIt<LikedMatchesLocalDataSource>();
+    _loadLikedMatches();
+  }
+
+  Future<void> _loadLikedMatches() async {
+    setState(() => _isLoading = true);
+    final matches = await _dataSource.getLikedMatches();
+    setState(() {
+      _likedMatches = matches;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final liked = InMemoryLikedMatchesDataSource.instance.getLikedMatches();
     final ds = context.ds;
     final textTheme = Theme.of(context).textTheme;
+
+    if (_isLoading) {
+      return Scaffold(
+        appBar: DsAppBar(
+          title: 'Liked',
+          eyebrow: 'WORKSPACE',
+          showBack: true,
+          onBack: () => Navigator.of(context).maybePop(),
+          onNotifications: () {
+            Navigator.of(context).pushNamed(AppRoutes.notifications);
+          },
+          notificationBadge: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: DsAppBar(
@@ -43,7 +84,7 @@ class LikedMatchesScreen extends StatelessWidget {
         notificationBadge: true,
       ),
       body: DsPageFade(
-        child: liked.isEmpty
+        child: _likedMatches.isEmpty
             ? const Center(
                 child: DsEmptyState(
                   icon: AppIcons.bookmark,
@@ -62,7 +103,7 @@ class LikedMatchesScreen extends StatelessWidget {
                   DsPageHeader(
                     style: DsPageHeaderStyle.page,
                     title: 'Liked matches',
-                    eyebrow: '${liked.length} saved',
+                    eyebrow: '${_likedMatches.length} saved',
                     body:
                         'Heart on the feed saves here. Same feedback Emad '
                         'uses to tune ranking — not a second Favorites product.',
@@ -71,7 +112,7 @@ class LikedMatchesScreen extends StatelessWidget {
                   DsStagger(
                     spacing: AppSpacing.md,
                     children: [
-                      for (final match in liked)
+                      for (final match in _likedMatches)
                         _LikedMatchCard(
                           match: match,
                           onView: () {

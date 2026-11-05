@@ -31,12 +31,14 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   MatchingCubit({
     required MatchingRepository repository,
+    required LikedMatchesLocalDataSource likedMatchesDataSource,
     ProfileRepository? profileRepository,
     FirebaseAuth? auth,
     UserProfile? profile,
   }) : _getRankedMatchesUseCase = GetRankedMatchesUseCase(repository),
        _generateMatchesUseCase = GenerateMatchesUseCase(repository),
        _getMatchingAnalyticsUseCase = GetMatchingAnalyticsUseCase(repository),
+       _likedMatchesDataSource = likedMatchesDataSource,
        _profileRepository = profileRepository,
        _auth = auth,
        super(MatchingState(profile: profile ?? defaultProfile)) {
@@ -49,6 +51,7 @@ class MatchingCubit extends Cubit<MatchingState> {
   final GetRankedMatchesUseCase _getRankedMatchesUseCase;
   final GenerateMatchesUseCase _generateMatchesUseCase;
   final GetMatchingAnalyticsUseCase _getMatchingAnalyticsUseCase;
+  final LikedMatchesLocalDataSource _likedMatchesDataSource;
   final ProfileRepository? _profileRepository;
   final FirebaseAuth? _auth;
 
@@ -124,7 +127,8 @@ class MatchingCubit extends Cubit<MatchingState> {
       );
 
     if (action == MatchSwipeAction.request) {
-      InMemoryLikedMatchesDataSource.instance.addLikedMatch(match);
+      // Fire and forget - don't block UI on async operation
+      _likedMatchesDataSource.addLikedMatch(match);
     }
 
     emit(

@@ -25,6 +25,7 @@ import '../../features/auth/presentation/cubit/forgot_password_cubit.dart';
 import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/auth/presentation/cubit/verify_code_cubit.dart';
 import '../../features/auth/presentation/cubit/register_cubit.dart';
+import '../../features/matching/data/datasources/liked_matches_local_data_source.dart';
 import '../../features/matching/domain/repositories/matching_repository.dart';
 import '../../features/matching/domain/usecases/generate_matches_usecase.dart';
 import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
@@ -135,12 +136,19 @@ void _registerMatching() {
     ..registerLazySingleton<MatchingRepository>(
       () => createMatchingRepository(getIt<FirebaseAuth>()),
     )
+    ..registerLazySingleton<LikedMatchesLocalDataSource>(
+      () => FirestoreLikedMatchesDataSource(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
     ..registerFactory(
       () => MatchingCubit(
         repository: getIt<MatchingRepository>(),
+        likedMatchesDataSource: getIt<LikedMatchesLocalDataSource>(),
         profileRepository: getIt<ProfileRepository>(),
         auth: getIt<FirebaseAuth>(),
       ),
