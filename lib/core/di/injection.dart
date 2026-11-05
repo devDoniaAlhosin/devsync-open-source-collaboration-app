@@ -138,7 +138,11 @@ void _registerMatching() {
     ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
     ..registerFactory(
-      () => MatchingCubit(repository: getIt<MatchingRepository>()),
+      () => MatchingCubit(
+        repository: getIt<MatchingRepository>(),
+        profileRepository: getIt<ProfileRepository>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
     );
 }
 

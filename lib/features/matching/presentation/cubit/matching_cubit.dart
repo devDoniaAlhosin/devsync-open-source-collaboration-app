@@ -1,6 +1,9 @@
 import 'package:equatable/equatable.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../profile/domain/repositories/profile_repository.dart';
+import '../../data/mappers/profile_to_user_profile_mapper.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/matching_analytics.dart';
 import '../../domain/entities/matching_preferences.dart';
@@ -28,17 +31,26 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   MatchingCubit({
     required MatchingRepository repository,
+    ProfileRepository? profileRepository,
+    FirebaseAuth? auth,
     UserProfile? profile,
   }) : _getRankedMatchesUseCase = GetRankedMatchesUseCase(repository),
        _generateMatchesUseCase = GenerateMatchesUseCase(repository),
        _getMatchingAnalyticsUseCase = GetMatchingAnalyticsUseCase(repository),
-       super(
-         MatchingState(profile: profile ?? defaultProfile),
-       );
+       _profileRepository = profileRepository,
+       _auth = auth,
+       super(MatchingState(profile: profile ?? defaultProfile)) {
+    // Attempt to load real profile if auth and profile repo are available
+    if (profile == null && _profileRepository != null && _auth != null) {
+      _loadUserProfile();
+    }
+  }
 
   final GetRankedMatchesUseCase _getRankedMatchesUseCase;
   final GenerateMatchesUseCase _generateMatchesUseCase;
   final GetMatchingAnalyticsUseCase _getMatchingAnalyticsUseCase;
+  final ProfileRepository? _profileRepository;
+  final FirebaseAuth? _auth;
 
   Future<void> generateMatches() async {
     if (state.isGenerating) return;
@@ -166,20 +178,35 @@ class MatchingCubit extends Cubit<MatchingState> {
     if (state.actionHistory.isEmpty) return;
     final history = List<MatchActionRecord>.from(state.actionHistory);
     final last = history.removeLast();
-    emit(
-      state.copyWith(
-        actionHistory: history,
-        currentDeckIndex: last.index,
-      ),
-    );
+    emit(state.copyWith(actionHistory: history, currentDeckIndex: last.index));
   }
 
   void updatePrompt(String text) {
     if (state.preferences.prompt == text) return;
-    emit(
-      state.copyWith(
-        preferences: state.preferences.copyWith(prompt: text),
-      ),
-    );
+    emit(state.copyWith(preferences: state.preferences.copyWith(prompt: text)));
+  }
+
+  /// Load user profile from Profile feature and convert to UserProfile for matching.
+  Future<void> _loadUserProfile() async {
+    final currentUser = _auth?.currentUser;
+    if (currentUser == null || _profileRepository == null) return;
+
+    try {
+      final result = await _profileRepository.getProfile();
+      result.fold(
+        (_) {
+          // Keep using default profile on failure
+        },
+        (profile) {
+          final userProfile = ProfileToUserProfileMapper.map(
+            profile,
+            currentUser.uid,
+          );
+          emit(state.copyWith(profile: userProfile));
+        },
+      );
+    } catch (_) {
+      // Keep using default profile on error
+    }
   }
 }
