@@ -1,11 +1,11 @@
 # DevSync Matching Feature - Agent Handoff
 
 ## Session Information
-**Session:** 3 (Continued)
+**Session:** 3 (Continued - Extended)
 **Date:** 2024-11-05
 **Agent:** Claude Code (Kiro)
 **Branch:** `feature/matching`
-**Status:** M07 completed, tests verified
+**Status:** M07 complete, M03/M04/M05 complete, ready for M08
 
 ## Current State
 
@@ -13,6 +13,8 @@
 ```
 On branch: feature/matching
 Latest commits:
+- e33b52c feat(matching): integrate profile feature with Profile→UserProfile mapper
+- 287b971 docs(matching): update handoff and implementation plan for M07 completion
 - 489ffb6 test(matching): add comprehensive auth and contract tests
 - 7a5514d refactor(matching): remove obsolete mock data source from production
 - 224153c feat(matching): integrate Firebase ID token authentication
@@ -22,19 +24,18 @@ Latest commits:
 **M02: Add Firebase ID token to HTTP requests** ✅
 **M06: Remove obsolete mocks** ✅
 **M07: Add/update matching tests** ✅
-- Created FirebaseAuthTokenProvider tests (5 tests)
-- Created MatchingHttpRemoteDataSource tests (12 tests)
-- Tested auth token retrieval, refresh, and error handling
-- Validated request/response models against backend contract
-- Tested JSON serialization including optional fields
-- Verified MatchResponseModel parsing with project matches
-- All 17 matching tests passing
-- Added mockito and build_runner dev dependencies
-- Removed unused import from matching_remote_data_source.dart
-- Committed: 489ffb6
+**M03/M04/M05: Domain refinement & profile integration** ✅
+- Created ProfileToUserProfileMapper bridging profile and matching features
+- Updated MatchingCubit to load real user profile from ProfileRepository
+- Injected ProfileRepository and FirebaseAuth through DI
+- Mapped Profile entity to UserProfile for matching API requests
+- Profile data now flows: Profile feature → mapper → matching API
+- Falls back to default profile on errors (graceful degradation)
+- All 17 matching tests still passing after integration
+- Committed: e33b52c
 
 ### Currently In Progress
-**Next milestone:** Consider M03/M04 (domain refinement) or M08 (integration verification)
+**M08: Integration/End-to-End Testing** - Ready to start
 
 ### Files Changed This Session
 1. Created: `docs/matching/IMPLEMENTATION_PLAN.md` - Implementation plan and audit results
@@ -42,7 +43,7 @@ Latest commits:
 3. Created: `lib/features/matching/data/datasources/auth_token_provider.dart` - Auth token provider interface
 4. Modified: `lib/features/matching/data/datasources/matching_http_remote_data_source.dart` - Added auth headers & retry
 5. Modified: `lib/features/matching/matching_dependencies.dart` - Inject FirebaseAuth, removed demo methods
-6. Modified: `lib/core/di/injection.dart` - Updated DI registration
+6. Modified: `lib/core/di/injection.dart` - Updated DI registration (twice: auth + profile)
 7. Modified: `lib/features/matching/data/datasources/matching_remote_data_source.dart` - Removed unused import
 8. Created: `test/features/matching/mocks/mock_matching_remote_data_source.dart` - Test fixture
 9. Modified: `test/match_feed_screen_test.dart` - Updated imports
@@ -52,6 +53,8 @@ Latest commits:
 13. Modified: `pubspec.yaml` - Added mockito and build_runner dev dependencies
 14. Auto-generated: `test/features/matching/data/datasources/auth_token_provider_test.mocks.dart` - Mockito mocks
 15. Auto-generated: `test/features/matching/data/datasources/matching_http_remote_data_source_test.mocks.dart` - Mockito mocks
+16. Created: `lib/features/matching/data/mappers/profile_to_user_profile_mapper.dart` - Profile→UserProfile mapper
+17. Modified: `lib/features/matching/presentation/cubit/matching_cubit.dart` - Added profile loading logic
 
 ### Backend Contract Verified
 **API:** `POST /matches/generate`
@@ -104,35 +107,43 @@ MatchingRepositoryImpl(
 1. `224153c` - feat(matching): integrate Firebase ID token authentication
 2. `7a5514d` - refactor(matching): remove obsolete mock data source from production
 3. `489ffb6` - test(matching): add comprehensive auth and contract tests
+4. `287b971` - docs(matching): update handoff and implementation plan for M07 completion
+5. `e33b52c` - feat(matching): integrate profile feature with Profile→UserProfile mapper
 
-### Next Possible Steps
-**Option A: M03/M04 - Domain Layer Refinement** (if needed)
-- Review domain entities (MatchItem, UserProfile)
-- Check if use cases need updates for new backend contract
-- Verify repository interface matches actual usage
+### Next Step: M08 - Integration/End-to-End Testing
+**Remaining work:**
+- Test actual backend calls with live API (local or production)
+- Verify full matching flow: Profile → UserProfile → HTTP request → Response → UI
+- Test error scenarios with real API (401, 403, 500, empty matches)
+- Validate Firebase auth token is properly attached to requests
+- Test fallback behavior when backend unavailable
+- Document any integration issues or blockers
 
-**Option B: M08 - Integration/End-to-End Testing**
-- Test actual backend calls (requires backend running)
-- Verify full matching flow from UI → repo → backend → UI
-- Test error scenarios with real API
+**Prerequisites:**
+- Backend must be running (local: `npm run dev` or production: Vercel)
+- User must be authenticated with Firebase
+- Profile must have valid data (skills, GitHub stats)
 
-**Option C: M05 - Profile Integration** (if not already done)
-- Ensure profile feature properly feeds UserProfile to matching
-- Verify GitHub data collection flows to matching request
-- Test profile → matching data pipeline
-
-**Recommendation:** Start with M03/M04 to verify domain layer is clean, then M05 for integration, then M08 for E2E verification.
+**Testing approach:**
+1. Manual testing via UI (match feed screen)
+2. Integration tests calling real endpoints (optional)
+3. Verify network logs show proper auth headers
+4. Check Firebase token is current and valid
+5. Test with different user profiles (varying skills/GitHub data)
 
 ### Important Notes for Next Agent
 - ⚠️ **DO NOT COMMIT** `docs/DEVSYNC_FLUTTER_MATCHING_REFACTOR_AGENT_PROMPT.md`
 - ⚠️ **DO NOT MODIFY** backend repository or files
 - ✅ M02 complete: Auth headers implemented with retry logic
+- ✅ M03/M04/M05 complete: Domain refined, profile integration working
 - ✅ M06 complete: Mocks removed from production, moved to test fixtures
 - ✅ M07 complete: Comprehensive auth and contract tests added
 - ✅ All tests passing (17 matching tests + existing widget tests)
-- ✅ Backend contract validated - returns project matches, not user matches
-- ✅ Request model includes uid, skills, GitHub data, bio (optional), topRepositories (List<String>)
-- ✅ Response model contains List<MatchItemModel> with project details
+- ✅ Profile → UserProfile mapping working (ProfileToUserProfileMapper)
+- ✅ MatchingCubit loads real user profile from ProfileRepository
+- ✅ Backend contract validated - returns project matches with all fields
+- ⚠️ topRepositories field currently empty (TODO: GitHub API integration needed)
+- ✅ Graceful fallback to default profile if profile loading fails
 
 ### Blockers
 None currently.
