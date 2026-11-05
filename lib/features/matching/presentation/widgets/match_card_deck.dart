@@ -29,7 +29,9 @@ class MatchCardDeck extends StatelessWidget {
     // stack affordance stays visible whenever more cards exist.
     final upcoming = nextMatches.take(_maxPeekLayers).toList();
     final peekCount = upcoming.isEmpty ? 0 : _maxPeekLayers;
-    final bottomPad = peekCount == 0 ? 0.0 : peekCount * _DeckPeek.offsetStep + 4;
+    final bottomPad = peekCount == 0
+        ? 0.0
+        : peekCount * _DeckPeek.offsetStep + 4;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPad),

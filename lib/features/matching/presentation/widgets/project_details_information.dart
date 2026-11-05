@@ -97,11 +97,7 @@ class ProjectSkills extends StatelessWidget {
       label: skill,
       variant: matched ? DsChipVariant.selected : DsChipVariant.muted,
       leading: matched
-          ? const DsIcon(
-              AppIcons.success,
-              size: 14,
-              color: AppColors.onTeal,
-            )
+          ? const DsIcon(AppIcons.success, size: 14, color: AppColors.onTeal)
           : null,
     );
   }

@@ -197,9 +197,9 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ExploreDevSyncItem(
         title: 'Task board',
         subtitle: 'Plan your next\nsprint',
-        onTap: () => Navigator.of(context).push(
-          DsFadePageRoute<bool>(builder: (_) => MatchingProgressScreen()),
-        ),
+        onTap: () => Navigator.of(
+          context,
+        ).push(DsFadePageRoute<bool>(builder: (_) => MatchingProgressScreen())),
       ),
       ExploreDevSyncItem(
         title: 'Insights',
@@ -251,7 +251,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                         end: Offset.zero,
                       ).animate(fade),
                       child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.985, end: 1).animate(fade),
+                        scale: Tween<double>(
+                          begin: 0.985,
+                          end: 1,
+                        ).animate(fade),
                         child: child,
                       ),
                     ),
@@ -260,10 +263,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 layoutBuilder: (currentChild, previousChildren) {
                   return Stack(
                     alignment: Alignment.topCenter,
-                    children: <Widget>[
-                      ...previousChildren,
-                      ?currentChild,
-                    ],
+                    children: <Widget>[...previousChildren, ?currentChild],
                   );
                 },
                 child: KeyedSubtree(
@@ -302,9 +302,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     await _cubit.generateMatches();
     if (!mounted) return;
     final state = _cubit.state;
-    _notify(
-      state.errorMessage ?? '${state.matches.length} matches generated',
-    );
+    _notify(state.errorMessage ?? '${state.matches.length} matches generated');
   }
 
   void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
@@ -335,9 +333,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
-      DsFadePageRoute<bool>(
-        builder: (_) => AiAnalyticsScreen(cubit: _cubit),
-      ),
+      DsFadePageRoute<bool>(builder: (_) => AiAnalyticsScreen(cubit: _cubit)),
     );
     if (refreshNeeded == true && mounted) {
       await _cubit.loadInitialData();

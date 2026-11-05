@@ -84,9 +84,7 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
     await _cubit.generateMatches();
     if (!mounted) return;
     final state = _cubit.state;
-    _notify(
-      state.errorMessage ?? '${state.matches.length} matches generated',
-    );
+    _notify(state.errorMessage ?? '${state.matches.length} matches generated');
   }
 
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {
@@ -112,9 +110,7 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
 
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
-      DsFadePageRoute<bool>(
-        builder: (_) => AiAnalyticsScreen(cubit: _cubit),
-      ),
+      DsFadePageRoute<bool>(builder: (_) => AiAnalyticsScreen(cubit: _cubit)),
     );
     if (refreshNeeded == true && mounted) {
       await _cubit.loadInitialData();

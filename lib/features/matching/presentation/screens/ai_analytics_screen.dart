@@ -93,7 +93,8 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: AiAnalyticsStatCard(
-                                value: '${analytics.positiveSignalsPercentage}%',
+                                value:
+                                    '${analytics.positiveSignalsPercentage}%',
                                 label: 'Positive signals',
                               ),
                             ),

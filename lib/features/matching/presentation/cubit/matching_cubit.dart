@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../profile/domain/repositories/profile_repository.dart';
+import '../../data/datasources/liked_matches_local_data_source.dart';
 import '../../data/mappers/profile_to_user_profile_mapper.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/matching_analytics.dart';
@@ -13,7 +14,6 @@ import '../../domain/repositories/matching_repository.dart';
 import '../../domain/usecases/generate_matches_usecase.dart';
 import '../../domain/usecases/get_matching_analytics_usecase.dart';
 import '../../domain/usecases/get_ranked_matches_usecase.dart';
-import '../liked_matches_store.dart';
 import '../widgets/draggable_match_card.dart';
 
 part 'matching_state.dart';
@@ -124,7 +124,7 @@ class MatchingCubit extends Cubit<MatchingState> {
       );
 
     if (action == MatchSwipeAction.request) {
-      LikedMatchesStore.instance.add(match);
+      InMemoryLikedMatchesDataSource.instance.addLikedMatch(match);
     }
 
     emit(

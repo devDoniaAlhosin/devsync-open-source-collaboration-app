@@ -68,11 +68,7 @@ class MatchCardSkeleton extends StatelessWidget {
 }
 
 class _Bone extends StatelessWidget {
-  const _Bone({
-    this.width,
-    this.height = 12,
-    this.radius = 8,
-  });
+  const _Bone({this.width, this.height = 12, this.radius = 8});
 
   final double? width;
   final double height;
@@ -80,11 +76,11 @@ class _Bone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: context.ds.border.withValues(alpha: 0.75),
-          borderRadius: BorderRadius.circular(radius),
-        ),
-      );
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: context.ds.border.withValues(alpha: 0.75),
+      borderRadius: BorderRadius.circular(radius),
+    ),
+  );
 }

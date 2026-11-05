@@ -18,7 +18,7 @@ import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../../projects/domain/entities/project.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/match_item.dart';
-import '../liked_matches_store.dart';
+import '../../data/datasources/liked_matches_local_data_source.dart';
 import 'project_details_screen.dart';
 
 /// Prototype **6b. Liked matches** — hearts from the feed land here.
@@ -27,7 +27,7 @@ class LikedMatchesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final liked = LikedMatchesStore.instance.items;
+    final liked = InMemoryLikedMatchesDataSource.instance.getLikedMatches();
     final ds = context.ds;
     final textTheme = Theme.of(context).textTheme;
 
@@ -158,9 +158,7 @@ class _LikedMatchCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       match.description,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: ds.textMuted,
-                      ),
+                      style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
                     ),
                   ],
                 ),

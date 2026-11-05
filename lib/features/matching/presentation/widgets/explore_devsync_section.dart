@@ -34,10 +34,8 @@ class _ExploreDevSyncSectionState extends State<ExploreDevSyncSection>
   @override
   void initState() {
     super.initState();
-    _entrance = AnimationController(
-      vsync: this,
-      duration: AppAnimations.rise,
-    )..forward();
+    _entrance = AnimationController(vsync: this, duration: AppAnimations.rise)
+      ..forward();
   }
 
   @override
