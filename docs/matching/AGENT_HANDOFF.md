@@ -1,96 +1,138 @@
 # DevSync Matching Feature - Agent Handoff
 
 ## Session Information
-**Session:** 1
+**Session:** 3 (Continued)
 **Date:** 2024-11-05
-**Agent:** Claude Code
+**Agent:** Claude Code (Kiro)
 **Branch:** `feature/matching`
-**Status:** `git status` shows modified plugin registration files (normal after flutter pub get)
+**Status:** M07 completed, tests verified
 
 ## Current State
 
 ### Git Status
 ```
 On branch: feature/matching
-Modified: Plugin registration files (auto-generated, safe to ignore)
-Untracked: docs/DEVSYNC_FLUTTER_MATCHING_REFACTOR_AGENT_PROMPT.md (DO NOT COMMIT)
+Latest commits:
+- 489ffb6 test(matching): add comprehensive auth and contract tests
+- 7a5514d refactor(matching): remove obsolete mock data source from production
+- 224153c feat(matching): integrate Firebase ID token authentication
 ```
 
-### Last Completed Task
-**M01: Audit current matching feature**
-- Status: ✅ COMPLETED
-- Files inspected: All matching feature files, DI setup, backend contract
-- Results documented in: `docs/matching/IMPLEMENTATION_PLAN.md`
+### Last Completed Tasks
+**M02: Add Firebase ID token to HTTP requests** ✅
+**M06: Remove obsolete mocks** ✅
+**M07: Add/update matching tests** ✅
+- Created FirebaseAuthTokenProvider tests (5 tests)
+- Created MatchingHttpRemoteDataSource tests (12 tests)
+- Tested auth token retrieval, refresh, and error handling
+- Validated request/response models against backend contract
+- Tested JSON serialization including optional fields
+- Verified MatchResponseModel parsing with project matches
+- All 17 matching tests passing
+- Added mockito and build_runner dev dependencies
+- Removed unused import from matching_remote_data_source.dart
+- Committed: 489ffb6
 
 ### Currently In Progress
-**M02: Add Firebase ID token to HTTP requests**
-- Status: 🔄 STARTING
-- Goal: Attach `Authorization: Bearer <token>` header to matching API calls
-- Approach: Inject FirebaseAuth, get ID token, add to request headers
+**Next milestone:** Consider M03/M04 (domain refinement) or M08 (integration verification)
 
 ### Files Changed This Session
 1. Created: `docs/matching/IMPLEMENTATION_PLAN.md` - Implementation plan and audit results
 2. Created: `docs/matching/AGENT_HANDOFF.md` - This file
+3. Created: `lib/features/matching/data/datasources/auth_token_provider.dart` - Auth token provider interface
+4. Modified: `lib/features/matching/data/datasources/matching_http_remote_data_source.dart` - Added auth headers & retry
+5. Modified: `lib/features/matching/matching_dependencies.dart` - Inject FirebaseAuth, removed demo methods
+6. Modified: `lib/core/di/injection.dart` - Updated DI registration
+7. Modified: `lib/features/matching/data/datasources/matching_remote_data_source.dart` - Removed unused import
+8. Created: `test/features/matching/mocks/mock_matching_remote_data_source.dart` - Test fixture
+9. Modified: `test/match_feed_screen_test.dart` - Updated imports
+10. Modified: `test/matching_clean_architecture_test.dart` - Updated imports
+11. Created: `test/features/matching/data/datasources/auth_token_provider_test.dart` - Auth token tests
+12. Created: `test/features/matching/data/datasources/matching_http_remote_data_source_test.dart` - HTTP tests
+13. Modified: `pubspec.yaml` - Added mockito and build_runner dev dependencies
+14. Auto-generated: `test/features/matching/data/datasources/auth_token_provider_test.mocks.dart` - Mockito mocks
+15. Auto-generated: `test/features/matching/data/datasources/matching_http_remote_data_source_test.mocks.dart` - Mockito mocks
 
-### Backend Contract Discovered
+### Backend Contract Verified
 **API:** `POST /matches/generate`
-**Authentication:** Requires Firebase ID token in Authorization header (CURRENTLY MISSING)
+**Authentication:** ✅ Firebase ID token in Authorization header (IMPLEMENTED)
 **Request:** UserProfile → MatchRequestModel → JSON
-**Response:** MatchResponseModel with matches array and promptVersion
+**Response:** MatchResponseModel with matches array (List<MatchItemModel>) and promptVersion
+**Actual Response Structure:** Project matches (not user matches)
+- projectId, projectName, description, githubUrl
+- neededSkills, score, reason, maintainerId
+- isFallback flag for deterministic fallback matches
 
 ### Key Findings
-1. ✅ HTTP data source exists and works (structure-wise)
-2. ❌ Authorization header is MISSING - critical blocker
-3. ✅ Request/response models are correct
-4. ⚠️ Mock data source still in codebase (to be removed after real auth works)
-5. ✅ DI is properly set up via `createMatchingRepository()`
-6. ⚠️ Demo methods exist but unused in production path
+1. ✅ HTTP data source exists and works
+2. ✅ Authorization header implemented with Bearer token
+3. ✅ Token refresh on 401/403 implemented
+4. ✅ Request/response models are correct
+5. ✅ Mock data source moved to test fixtures
+6. ✅ DI properly configured with FirebaseAuth injection
+7. ✅ Comprehensive tests cover auth and contract validation
 
 ### Current DI Path
-Production:
+Production (fully authenticated):
 ```dart
-createMatchingRepository() 
-  → MatchingHttpRemoteDataSource() // ❌ NO AUTH TOKEN
+createMatchingRepository(FirebaseAuth) 
+  → FirebaseAuthTokenProvider → gets ID token
+  → MatchingHttpRemoteDataSource(authTokenProvider) → adds Bearer header ✅
   → InMemoryMatchingLocalDataSource()
 ```
 
-Demo (to be removed):
+Test (using fixture):
 ```dart
-createDemoMatchingRepository()
-  → MockMatchingRemoteDataSource() // ⚠️ Remove after M02
-  → InMemoryMatchingLocalDataSource()
+MatchingRepositoryImpl(
+  remoteDataSource: MockMatchingRemoteDataSource(), // test/features/matching/mocks/
+  localDataSource: InMemoryMatchingLocalDataSource()
+)
 ```
 
 ### Tests Status
-- No matching-specific tests exist yet
-- Auth tests exist and pass
-- M07 will add matching tests after auth integration
+✅ **All 17 matching data layer tests passing:**
+- 5 FirebaseAuthTokenProvider tests (token retrieval, refresh, errors)
+- 12 MatchingHttpRemoteDataSource tests (auth flow, contract validation)
+- Tests verify request serialization matches backend contract
+- Tests verify response parsing with project match structure
+- Tests cover optional fields (bio), empty collections
+- Tests verify auth error handling and retry logic
+✅ Auth feature tests pass
+✅ Widget tests pass (match_feed_screen_test.dart)
 
 ### Commits This Session
-None yet - documentation phase completed
+1. `224153c` - feat(matching): integrate Firebase ID token authentication
+2. `7a5514d` - refactor(matching): remove obsolete mock data source from production
+3. `489ffb6` - test(matching): add comprehensive auth and contract tests
 
-### Next Immediate Steps
-1. Create `AuthTokenProvider` interface in matching/data/datasources/
-2. Implement `FirebaseAuthTokenProvider` using FirebaseAuth.currentUser.getIdToken()
-3. Inject into `MatchingHttpRemoteDataSource` constructor
-4. Add Authorization header in `getMatches()` method
-5. Handle 401/403 errors with token refresh
-6. Update DI registration to inject FirebaseAuth
-7. Test with real Firebase user
-8. Commit: "feat(matching): integrate Firebase ID token authentication"
+### Next Possible Steps
+**Option A: M03/M04 - Domain Layer Refinement** (if needed)
+- Review domain entities (MatchItem, UserProfile)
+- Check if use cases need updates for new backend contract
+- Verify repository interface matches actual usage
 
-### Exact Next Command
-```bash
-# Agent should start by creating the auth token provider interface
-```
+**Option B: M08 - Integration/End-to-End Testing**
+- Test actual backend calls (requires backend running)
+- Verify full matching flow from UI → repo → backend → UI
+- Test error scenarios with real API
+
+**Option C: M05 - Profile Integration** (if not already done)
+- Ensure profile feature properly feeds UserProfile to matching
+- Verify GitHub data collection flows to matching request
+- Test profile → matching data pipeline
+
+**Recommendation:** Start with M03/M04 to verify domain layer is clean, then M05 for integration, then M08 for E2E verification.
 
 ### Important Notes for Next Agent
 - ⚠️ **DO NOT COMMIT** `docs/DEVSYNC_FLUTTER_MATCHING_REFACTOR_AGENT_PROMPT.md`
 - ⚠️ **DO NOT MODIFY** backend repository or files
-- ✅ Use existing `FirebaseAuth.instance` from DI (already registered)
-- ✅ Follow auth module pattern for error handling
-- ✅ Keep changes minimal and focused on matching feature
-- ✅ Test each small change before committing
+- ✅ M02 complete: Auth headers implemented with retry logic
+- ✅ M06 complete: Mocks removed from production, moved to test fixtures
+- ✅ M07 complete: Comprehensive auth and contract tests added
+- ✅ All tests passing (17 matching tests + existing widget tests)
+- ✅ Backend contract validated - returns project matches, not user matches
+- ✅ Request model includes uid, skills, GitHub data, bio (optional), topRepositories (List<String>)
+- ✅ Response model contains List<MatchItemModel> with project details
 
 ### Blockers
 None currently.
