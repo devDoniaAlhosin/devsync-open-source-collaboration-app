@@ -1,4 +1,3 @@
-import '../../domain/entities/matching_analytics.dart';
 import '../models/match_item_model.dart';
 import '../models/match_request_model.dart';
 import '../models/match_response_model.dart';
