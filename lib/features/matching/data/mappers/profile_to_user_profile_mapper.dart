@@ -23,7 +23,7 @@ class ProfileToUserProfileMapper {
       publicRepoCount: profile.repos,
       totalContributions: profile.commits,
       bio: profile.bio.isEmpty ? null : profile.bio,
-      topRepositories: const [], // TODO: Add top repositories from GitHub API
+      topRepositories: profile.topRepositories,
     );
   }
 }

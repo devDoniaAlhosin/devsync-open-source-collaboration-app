@@ -31,6 +31,7 @@ import '../../features/matching/domain/usecases/get_matching_analytics_usecase.d
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
+import '../../features/profile/data/datasources/github_api_data_source.dart';
 import '../../features/profile/data/datasources/profile_local_data_source.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
@@ -151,8 +152,15 @@ void _registerProfile() {
 
   getIt
     ..registerLazySingleton(ProfileLocalDataSource.new)
+    ..registerLazySingleton<GitHubApiDataSource>(
+      () =>
+          const FakeGitHubApiDataSource(), // TODO: Replace with GitHubRestApiDataSource in production
+    )
     ..registerLazySingleton<ProfileRepository>(
-      () => ProfileRepositoryImpl(localDataSource: getIt()),
+      () => ProfileRepositoryImpl(
+        localDataSource: getIt(),
+        gitHubDataSource: getIt(),
+      ),
     )
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))

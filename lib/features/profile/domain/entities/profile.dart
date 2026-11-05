@@ -27,6 +27,7 @@ class Profile {
     required this.languages,
     required this.skills,
     this.suggestedSkills = const [],
+    this.topRepositories = const [],
   });
 
   final String name;
@@ -41,12 +42,20 @@ class Profile {
   final List<String> skills;
   final List<String> suggestedSkills;
 
+  /// Top repositories by stars (GitHub URLs).
+  /// Empty list if not fetched or user has no repos.
+  final List<String> topRepositories;
+
   String get githubUsername {
     final parts = githubUrl.split('/').where((p) => p.isNotEmpty).toList();
     return parts.isEmpty ? githubUrl : parts.last;
   }
 
-  Profile copyWith({String? bio, List<String>? skills}) {
+  Profile copyWith({
+    String? bio,
+    List<String>? skills,
+    List<String>? topRepositories,
+  }) {
     return Profile(
       name: name,
       githubUrl: githubUrl,
@@ -59,6 +68,7 @@ class Profile {
       languages: languages,
       skills: skills ?? this.skills,
       suggestedSkills: suggestedSkills,
+      topRepositories: topRepositories ?? this.topRepositories,
     );
   }
 
