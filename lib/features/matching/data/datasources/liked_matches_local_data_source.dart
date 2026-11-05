@@ -20,9 +20,7 @@ abstract class LikedMatchesLocalDataSource {
 
 /// In-memory implementation of liked matches storage.
 class InMemoryLikedMatchesDataSource implements LikedMatchesLocalDataSource {
-  InMemoryLikedMatchesDataSource._() {
-    _items.addAll(_seedData);
-  }
+  InMemoryLikedMatchesDataSource._();
 
   static final InMemoryLikedMatchesDataSource instance =
       InMemoryLikedMatchesDataSource._();
@@ -46,19 +44,5 @@ class InMemoryLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   @override
   void clearLikedMatches() {
     _items.clear();
-    _items.addAll(_seedData);
   }
-
-  /// Seed data for initial UI demonstration.
-  static const _seedData = [
-    MatchItem(
-      projectId: 'flutter-oss-charts',
-      projectName: 'flutter-oss/charts',
-      description: 'Needs a Dart contributor',
-      githubUrl: 'https://github.com/flutter-oss/charts',
-      neededSkills: ['Dart', 'Firebase', 'Animation'],
-      score: 92,
-      reason: 'Strong Dart + animation overlap with your profile.',
-    ),
-  ];
 }
