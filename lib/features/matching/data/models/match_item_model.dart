@@ -94,6 +94,20 @@ class MatchItemModel extends MatchItem {
     return value;
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'projectId': projectId,
+      'projectName': projectName,
+      'description': description,
+      'githubUrl': githubUrl,
+      'neededSkills': neededSkills,
+      'score': score,
+      'reason': reason,
+      'maintainerId': maintainerId,
+      'isFallback': isFallback,
+    };
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'projectId': projectId,

@@ -1,3 +1,4 @@
+import '../../../profile/domain/entities/profile.dart';
 import '../entities/match_item.dart';
 import '../entities/user_profile.dart';
 
@@ -7,6 +8,7 @@ abstract class MatchingRepository {
     UserProfile profile, {
     String? prompt,
     Set<String>? tags,
+    Profile? userProfile,
   });
 
   String? get promptVersion => null;

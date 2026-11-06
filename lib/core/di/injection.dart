@@ -134,7 +134,10 @@ void _registerMatching() {
 
   getIt
     ..registerLazySingleton<MatchingRepository>(
-      () => createMatchingRepository(getIt<FirebaseAuth>()),
+      () => createMatchingRepository(
+        getIt<FirebaseAuth>(),
+        getIt<FirebaseFirestore>(),
+      ),
       dispose: (repository) => repository.dispose(),
     )
     ..registerLazySingleton<MatchingProfileRepository>(
