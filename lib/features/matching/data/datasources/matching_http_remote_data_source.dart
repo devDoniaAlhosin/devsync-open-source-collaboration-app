@@ -1,193 +1,163 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import '../models/match_item_model.dart';
 import '../models/match_request_model.dart';
 import '../models/match_response_model.dart';
-import '../models/matching_analytics_model.dart';
 import 'auth_token_provider.dart';
 import 'matching_remote_data_source.dart';
 
-/// HTTP client for the DevSync matching API.
-///
-/// Calls `POST /matches/generate` on the backend with the developer profile
-/// and candidate projects, returning fit scores and reasons from Gemini or
-/// the deterministic fallback.
-///
-/// Requires Firebase authentication - automatically attaches the current
-/// user's ID token to all requests.
+/// Authenticated transport for `POST /matches/generate`.
+/// Candidate projects and fallback scoring belong to the backend.
 class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
   MatchingHttpRemoteDataSource({
     required AuthTokenProvider authTokenProvider,
     String? baseUrl,
     HttpClient? client,
+    this.requestTimeout = const Duration(seconds: 45),
   }) : _authTokenProvider = authTokenProvider,
        _baseUrl = baseUrl ?? _defaultMatchingApiBase(),
+       _ownsClient = client == null,
        _client = client ?? HttpClient();
 
   final AuthTokenProvider _authTokenProvider;
   final String _baseUrl;
   final HttpClient _client;
-
-  /// Production Vercel host. Override with `--dart-define=DEVSYNC_API_BASE=...`.
-  static const _hostedBase = 'https://devsync-backend-two.vercel.app';
+  final bool _ownsClient;
+  final Duration requestTimeout;
 
   static String _defaultMatchingApiBase() {
     const override = String.fromEnvironment('DEVSYNC_API_BASE');
     if (override.isNotEmpty) return override;
-    const useLocal = bool.fromEnvironment(
-      'DEVSYNC_API_LOCAL',
-      defaultValue: false,
-    );
+    const useLocal = bool.fromEnvironment('DEVSYNC_API_LOCAL');
     if (useLocal) {
-      if (Platform.isAndroid) return 'http://10.0.2.2:3000';
-      return 'http://127.0.0.1:3000';
+      return Platform.isAndroid
+          ? 'http://10.0.2.2:3000'
+          : 'http://127.0.0.1:3000';
     }
-    return _hostedBase;
+    return 'https://devsync-backend-two.vercel.app';
   }
 
   @override
   Future<MatchResponseModel> getMatches(MatchRequestModel request) async {
-    // Get Firebase ID token for authentication
-    final idToken = await _authTokenProvider.getIdToken();
-    if (idToken == null) {
-      throw const MatchingApiException(
-        'Authentication required - please sign in first',
-        statusCode: 401,
-      );
-    }
-
-    final uri = Uri.parse('$_baseUrl/matches/generate');
-
     try {
-      final httpRequest = await _client.postUrl(uri);
-      httpRequest.headers
-        ..contentType = ContentType.json
-        ..set('Authorization', 'Bearer $idToken');
-      httpRequest.write(jsonEncode(request.toJson()));
-
-      final response = await httpRequest.close();
-      final raw = await response.transform(utf8.decoder).join();
-
-      // Handle auth failures with token refresh
-      if (response.statusCode == 401 || response.statusCode == 403) {
-        // Try refreshing the token once
-        final refreshedToken = await _authTokenProvider.getIdToken(
-          forceRefresh: true,
-        );
-        if (refreshedToken != null) {
-          // Retry with fresh token
-          return await _retryWithToken(request, refreshedToken);
-        }
+      var token = await _getToken();
+      var response = await _send(request, token);
+      // A forbidden UID is not an expired token. Only retry unauthorized once.
+      if (response.statusCode == HttpStatus.unauthorized) {
+        token = await _getToken(forceRefresh: true);
+        response = await _send(request, token);
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MatchingApiException(
-          'Authentication failed - please sign in again',
+          _messageForStatus(response.statusCode),
           statusCode: response.statusCode,
         );
       }
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (raw.isEmpty) {
-          throw const MatchingApiException('Empty response from server');
-        }
-
-        final decoded = jsonDecode(raw);
-        if (decoded is! Map<String, dynamic>) {
-          throw const MatchingApiException('Invalid response format');
-        }
-
-        return MatchResponseModel.fromJson(decoded);
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Expected matching response object');
       }
-
-      // Try to extract error message from response body
-      String errorMessage = 'Matching request failed';
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is Map<String, dynamic>) {
-          errorMessage = decoded['error'] as String? ?? errorMessage;
-        }
-      } catch (_) {
-        // Use default error message if parsing fails
-      }
-
-      throw MatchingApiException(errorMessage, statusCode: response.statusCode);
+      return MatchResponseModel.fromJson(decoded);
     } on MatchingApiException {
       rethrow;
+    } on AuthTokenException {
+      throw const MatchingApiException(
+        'Your session could not be verified. Please sign in again.',
+        statusCode: 401,
+      );
+    } on TimeoutException {
+      throw const MatchingApiException(
+        'Matching took too long. Please try again.',
+      );
     } on SocketException {
       throw const MatchingApiException(
-        'Cannot reach the DevSync matching server',
-        statusCode: 0,
+        'Cannot reach the matching server. Check your connection and retry.',
       );
     } on HttpException {
       throw const MatchingApiException(
-        'Cannot reach the DevSync matching server',
-        statusCode: 0,
+        'Cannot reach the matching server. Please try again.',
       );
-    } on FormatException catch (e) {
-      throw MatchingApiException(
-        'Failed to parse server response: ${e.message}',
+    } on FormatException {
+      throw const MatchingApiException(
+        'The matching server returned an invalid response. Please try again.',
+        statusCode: 502,
       );
-    } catch (e) {
-      throw MatchingApiException(
-        'Unexpected error during matching: ${e.toString()}',
+    } catch (_) {
+      throw const MatchingApiException(
+        'Matching is unavailable right now. Please try again.',
+        statusCode: 500,
       );
     }
   }
 
-  /// Not implemented for HTTP source - requires different backend endpoint.
-  @override
-  Future<List<MatchItemModel>> generateMatchesWithPrompt({
-    required String prompt,
-    Set<String>? tags,
-  }) async {
-    throw UnimplementedError(
-      'generateMatchesWithPrompt is not supported by HTTP data source',
-    );
+  Future<String> _getToken({bool forceRefresh = false}) async {
+    final token = await _authTokenProvider
+        .getIdToken(forceRefresh: forceRefresh)
+        .timeout(requestTimeout);
+    if (token == null || token.trim().isEmpty) {
+      throw const MatchingApiException(
+        'Please sign in to find matches.',
+        statusCode: 401,
+      );
+    }
+    return token;
   }
 
-  /// Not implemented for HTTP source - requires different backend endpoint.
-  @override
-  Future<MatchingAnalyticsModel> getAnalytics() async {
-    throw UnimplementedError(
-      'getAnalytics is not supported by HTTP data source',
-    );
-  }
-
-  /// Retry the match request with a refreshed auth token.
-  Future<MatchResponseModel> _retryWithToken(
+  Future<({int statusCode, String body})> _send(
     MatchRequestModel request,
     String token,
   ) async {
-    final uri = Uri.parse('$_baseUrl/matches/generate');
-    final httpRequest = await _client.postUrl(uri);
-    httpRequest.headers
-      ..contentType = ContentType.json
-      ..set('Authorization', 'Bearer $token');
-    httpRequest.write(jsonEncode(request.toJson()));
-
-    final response = await httpRequest.close();
-    final raw = await response.transform(utf8.decoder).join();
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (raw.isEmpty) {
-        throw const MatchingApiException('Empty response from server');
+    HttpClientRequest? activeRequest;
+    var timedOut = false;
+    Future<({int statusCode, String body})> send() async {
+      final base = _baseUrl.replaceFirst(RegExp(r'/+$'), '');
+      final httpRequest = await _client.postUrl(
+        Uri.parse('$base/matches/generate'),
+      );
+      activeRequest = httpRequest;
+      if (timedOut) {
+        httpRequest.abort();
+        throw TimeoutException('Matching request timed out');
       }
-
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map<String, dynamic>) {
-        throw const MatchingApiException('Invalid response format');
-      }
-
-      return MatchResponseModel.fromJson(decoded);
+      httpRequest.followRedirects = false;
+      httpRequest.headers
+        ..contentType = ContentType.json
+        ..set(HttpHeaders.authorizationHeader, 'Bearer $token');
+      httpRequest.write(jsonEncode(request.toJson()));
+      final response = await httpRequest.close();
+      final body = await response.transform(utf8.decoder).join();
+      return (statusCode: response.statusCode, body: body);
     }
 
-    throw MatchingApiException(
-      'Matching request failed after token refresh',
-      statusCode: response.statusCode,
+    return send().timeout(
+      requestTimeout,
+      onTimeout: () {
+        timedOut = true;
+        activeRequest?.abort();
+        throw TimeoutException('Matching request timed out');
+      },
     );
+  }
+
+  static String _messageForStatus(int status) => switch (status) {
+    400 =>
+      'Your matching profile or preferences are invalid. Review them and retry.',
+    401 => 'Your session expired. Please sign in again.',
+    403 => 'This account is not authorized to request these matches.',
+    429 => 'Too many matching requests. Please wait a moment and try again.',
+    >= 500 =>
+      'The matching service is temporarily unavailable. Please try again.',
+    _ => 'The matching request failed. Please try again.',
+  };
+
+  @override
+  void close() {
+    if (_ownsClient) _client.close(force: true);
   }
 }
 
-/// Exception thrown when the matching API call fails.
+/// Safe, user-facing failure from the matching API.
 class MatchingApiException implements Exception {
   const MatchingApiException(this.message, {this.statusCode = 0});
 

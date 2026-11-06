@@ -1,9 +1,6 @@
 import '../models/match_item_model.dart';
 
-/// Reads and writes cached match results (Firestore `matches` collection).
-///
-/// The cache avoids redundant Cloud Function calls and lets the feed
-/// show stale data while a refresh runs in the background.
+/// Explicit storage of previously fetched backend results, keyed by user.
 abstract class MatchingLocalDataSource {
   /// Return cached matches for [uid], newest first.
   Future<List<MatchItemModel>> getCachedMatches(String uid);
@@ -15,13 +12,13 @@ abstract class MatchingLocalDataSource {
   Future<void> clearCache(String uid);
 }
 
-/// In-memory cache used until Firestore is wired in.
+/// Session cache. It is never substituted for an API failure.
 class InMemoryMatchingLocalDataSource implements MatchingLocalDataSource {
   final Map<String, List<MatchItemModel>> _store = {};
 
   @override
   Future<List<MatchItemModel>> getCachedMatches(String uid) async {
-    return _store[uid] ?? [];
+    return List.unmodifiable(_store[uid] ?? const []);
   }
 
   @override

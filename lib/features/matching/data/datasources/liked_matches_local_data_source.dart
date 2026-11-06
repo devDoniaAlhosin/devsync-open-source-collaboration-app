@@ -1,16 +1,18 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../domain/entities/match_item.dart';
 import '../models/match_item_model.dart';
 
-/// Local data source for managing liked/hearted matches.
+/// Storage contract for managing liked/hearted matches.
 ///
 /// Provides abstraction over storage mechanism (in-memory or Firestore).
 abstract class LikedMatchesLocalDataSource {
   /// Get all liked matches.
   ///
-  /// Returns empty list if user not authenticated or no likes saved.
+  /// Returns an empty list when no likes are saved; failures are reported.
   Future<List<MatchItem>> getLikedMatches();
 
   /// Add a match to liked list if not already present.
@@ -36,100 +38,147 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   FirestoreLikedMatchesDataSource({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
+    Duration operationTimeout = const Duration(seconds: 15),
   }) : _firestore = firestore,
-       _auth = auth;
+       _auth = auth,
+       _operationTimeout = operationTimeout;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final Duration _operationTimeout;
 
   static const String _collectionName = 'liked_matches';
   static const String _subCollectionName = 'matches';
 
-  /// Get reference to user's liked matches collection.
-  CollectionReference<Map<String, dynamic>>? _getUserMatchesCollection() {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) return null;
-
-    return _firestore
-        .collection(_collectionName)
-        .doc(userId)
-        .collection(_subCollectionName);
-  }
-
   @override
-  Future<List<MatchItem>> getLikedMatches() async {
-    final collection = _getUserMatchesCollection();
-    if (collection == null) return [];
-
-    try {
+  Future<List<MatchItem>> getLikedMatches() => _run(
+    'Could not load saved matches. Please try again.',
+    (collection, _) async {
       final snapshot = await collection
           .orderBy('likedAt', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => MatchItemModel.fromFirestore(doc.data()).toEntity())
-          .toList();
-    } catch (e) {
-      // Handle errors gracefully - return empty list
-      // In production, consider logging this error
-      return [];
-    }
-  }
+          .get()
+          .timeout(_operationTimeout);
+      return snapshot.docs.map((doc) {
+        final match = MatchItemModel.fromFirestore(doc.data()).toEntity();
+        if (match.projectId != doc.id) {
+          throw const FormatException('Saved match ID does not match');
+        }
+        return match;
+      }).toList();
+    },
+  );
 
   @override
-  Future<void> addLikedMatch(MatchItem match) async {
-    final collection = _getUserMatchesCollection();
-    if (collection == null) return;
-
-    try {
+  Future<void> addLikedMatch(MatchItem match) => _run(
+    'Could not save this match. Please try again.',
+    (collection, _) async {
+      _validateProjectId(match.projectId);
       final model = MatchItemModel.fromEntity(match);
-      await collection.doc(match.projectId).set(model.toFirestore());
-    } catch (e) {
-      // Handle errors gracefully
-      // In production, consider logging this error
-    }
-  }
+      await collection
+          .doc(match.projectId)
+          .set(model.toFirestore())
+          .timeout(_operationTimeout);
+    },
+  );
 
   @override
-  Future<void> removeLikedMatch(String projectId) async {
-    final collection = _getUserMatchesCollection();
-    if (collection == null) return;
-
-    try {
-      await collection.doc(projectId).delete();
-    } catch (e) {
-      // Handle errors gracefully
-    }
-  }
+  Future<void> removeLikedMatch(String projectId) => _run(
+    'Could not remove this saved match. Please try again.',
+    (collection, _) async {
+      _validateProjectId(projectId);
+      await collection.doc(projectId).delete().timeout(_operationTimeout);
+    },
+  );
 
   @override
-  Future<void> clearLikedMatches() async {
-    final collection = _getUserMatchesCollection();
-    if (collection == null) return;
-
-    try {
-      // Firestore doesn't have a "delete collection" API client-side
-      // Fetch all docs and delete them
-      final snapshot = await collection.get();
-      final batch = _firestore.batch();
-
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
+  Future<void> clearLikedMatches() => _run(
+    'Could not clear saved matches. Please try again.',
+    (collection, userId) async {
+      final snapshot = await collection.get().timeout(_operationTimeout);
+      // Firestore allows at most 500 writes per batch.
+      for (var offset = 0; offset < snapshot.docs.length; offset += 500) {
+        _ensureCurrentUser(userId);
+        final batch = _firestore.batch();
+        for (final doc in snapshot.docs.skip(offset).take(500)) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit().timeout(_operationTimeout);
       }
+    },
+  );
 
-      await batch.commit();
-    } catch (e) {
-      // Handle errors gracefully
+  Future<T> _run<T>(
+    String failureMessage,
+    Future<T> Function(
+      CollectionReference<Map<String, dynamic>> collection,
+      String userId,
+    )
+    operation,
+  ) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null || userId.isEmpty) {
+      throw const LikedMatchesException(
+        'Sign in to access your saved matches.',
+      );
+    }
+
+    try {
+      final collection = _firestore
+          .collection(_collectionName)
+          .doc(userId)
+          .collection(_subCollectionName);
+      final result = await operation(collection, userId);
+      _ensureCurrentUser(userId);
+      return result;
+    } on FirebaseException {
+      throw LikedMatchesException(failureMessage);
+    } on TimeoutException {
+      throw const LikedMatchesException(
+        'Saved matches are taking too long. Check your connection and retry.',
+      );
+    } on FormatException {
+      throw const LikedMatchesException(
+        'Saved match data could not be read. Please try again.',
+      );
+    } on LikedMatchesException {
+      rethrow;
+    } catch (_) {
+      throw LikedMatchesException(failureMessage);
+    }
+  }
+
+  void _ensureCurrentUser(String userId) {
+    if (_auth.currentUser?.uid != userId) {
+      throw const LikedMatchesException(
+        'Your account changed. Please load saved matches again.',
+      );
+    }
+  }
+
+  void _validateProjectId(String projectId) {
+    if (projectId.trim().isEmpty || projectId.contains('/')) {
+      throw const LikedMatchesException(
+        'This match has an invalid project ID.',
+      );
     }
   }
 }
 
+class LikedMatchesException implements Exception {
+  const LikedMatchesException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// In-memory implementation of liked matches storage (for testing).
 class InMemoryLikedMatchesDataSource implements LikedMatchesLocalDataSource {
-  InMemoryLikedMatchesDataSource._();
+  InMemoryLikedMatchesDataSource();
 
   static final InMemoryLikedMatchesDataSource instance =
-      InMemoryLikedMatchesDataSource._();
+      InMemoryLikedMatchesDataSource();
 
   final List<MatchItem> _items = [];
 

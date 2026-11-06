@@ -1,7 +1,5 @@
-import '../models/match_item_model.dart';
 import '../models/match_request_model.dart';
 import '../models/match_response_model.dart';
-import '../models/matching_analytics_model.dart';
 
 /// Calls the matching Cloud Function and returns parsed results.
 ///
@@ -12,12 +10,6 @@ abstract class MatchingRemoteDataSource {
   /// Send [request] to the Cloud Function and return the parsed response.
   Future<MatchResponseModel> getMatches(MatchRequestModel request);
 
-  /// Generate dynamic matches for the given custom natural-language [prompt] and [tags].
-  Future<List<MatchItemModel>> generateMatchesWithPrompt({
-    required String prompt,
-    Set<String>? tags,
-  });
-
-  /// Retrieve recommendation analytics and transparency metrics.
-  Future<MatchingAnalyticsModel> getAnalytics();
+  /// Release transport resources when the owning repository is disposed.
+  void close() {}
 }
