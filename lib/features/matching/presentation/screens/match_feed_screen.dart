@@ -16,6 +16,7 @@ import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../domain/entities/match_item.dart';
+import '../../domain/failures/matching_failures.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
 import '../widgets/draggable_match_card.dart';
@@ -130,7 +131,17 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Widget _buildContent(MatchingState state) {
     if (state.isLoading || state.isGenerating) return _buildLoadingSkeleton();
 
-    // Handle new failure types
+    if (state.failure is NoMatchesFailure) {
+      return MatchFeedEmptyState(
+        hasSkills: state.profile.declaredSkills.isNotEmpty,
+        hasReviewedAll: false,
+        onRefresh: _cubit.loadInitialData,
+        onAddSkills: _openMatchingProfile,
+        onConnectGitHub: _openMatchingProfile,
+      );
+    }
+
+    // Handle other failure types
     if (state.failure != null) {
       return ErrorStateWidget(
         failure: state.failure!,

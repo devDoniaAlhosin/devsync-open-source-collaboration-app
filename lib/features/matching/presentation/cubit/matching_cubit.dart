@@ -69,6 +69,21 @@ class MatchingCubit extends Cubit<MatchingState> {
       return;
     }
 
+    if (profile.declaredSkills.isEmpty) {
+      emit(
+        state.copyWith(
+          profile: profile,
+          matches: const [],
+          currentDeckIndex: 0,
+          isLoading: false,
+          isGenerating: false,
+          failure: const NoMatchesFailure(),
+          clearActionError: true,
+        ),
+      );
+      return;
+    }
+
     final prompt = state.preferences.prompt.trim();
     if (prompt.length > 1000) {
       emit(
