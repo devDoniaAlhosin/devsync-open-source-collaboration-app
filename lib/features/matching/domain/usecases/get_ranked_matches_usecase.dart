@@ -8,7 +8,11 @@ class GetRankedMatchesUseCase {
 
   final MatchingRepository _repository;
 
-  Future<List<MatchItem>> call(UserProfile profile) {
-    return _repository.getRankedMatches(profile);
+  Future<List<MatchItem>> call(
+    UserProfile profile, {
+    String? prompt,
+    Set<String>? tags,
+  }) {
+    return _repository.getRankedMatches(profile, prompt: prompt, tags: tags);
   }
 }

@@ -40,37 +40,64 @@ class MatchItemModel extends MatchItem {
 
   /// Parse from the API JSON response (for HTTP data source).
   factory MatchItemModel.fromJson(Map<String, dynamic> json) {
+    final score = json['score'];
+    final skills = json['neededSkills'];
+    final maintainerId = json['maintainerId'];
+    final isFallback = json['isFallback'];
+    if (score is! num ||
+        !score.isFinite ||
+        score < 0 ||
+        score > 100 ||
+        skills is! List ||
+        skills.any((skill) => skill is! String) ||
+        (maintainerId != null && maintainerId is! String) ||
+        (isFallback != null && isFallback is! bool)) {
+      throw const FormatException('Invalid project match');
+    }
     return MatchItemModel(
-      projectId: json['projectId'] as String,
-      projectName: json['projectName'] as String,
-      description: json['description'] as String? ?? '',
-      githubUrl: json['githubUrl'] as String? ?? '',
-      neededSkills: List<String>.from(json['neededSkills'] as List? ?? []),
-      score: (json['score'] as num).toDouble(),
-      reason: json['reason'] as String? ?? '',
-      maintainerId: json['maintainerId'] as String?,
-      isFallback: json['isFallback'] as bool? ?? false,
+      projectId: _readString(json, 'projectId', nonEmpty: true),
+      projectName: _readString(json, 'projectName', nonEmpty: true),
+      description: _readString(json, 'description'),
+      githubUrl: _readString(json, 'githubUrl'),
+      neededSkills: List<String>.unmodifiable(skills.cast<String>()),
+      score: score.toDouble(),
+      reason: _readString(json, 'reason'),
+      maintainerId: maintainerId as String?,
+      isFallback: isFallback as bool? ?? false,
     );
   }
 
   /// Parse from Firestore document data.
   factory MatchItemModel.fromFirestore(Map<String, dynamic> data) {
+    final match = MatchItemModel.fromJson(data);
+    final timestamp = data['likedAt'];
+    if (timestamp != null && timestamp is! Timestamp) {
+      throw const FormatException('Invalid saved match timestamp');
+    }
     return MatchItemModel(
-      projectId: data['projectId'] as String? ?? '',
-      projectName: data['projectName'] as String? ?? '',
-      description: data['description'] as String? ?? '',
-      githubUrl: data['githubUrl'] as String? ?? '',
-      neededSkills:
-          (data['neededSkills'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const [],
-      score: (data['score'] as num?)?.toDouble() ?? 0.0,
-      reason: data['reason'] as String? ?? '',
-      maintainerId: data['maintainerId'] as String?,
-      isFallback: data['isFallback'] as bool? ?? false,
-      likedAt: (data['likedAt'] as Timestamp?)?.toDate(),
+      projectId: match.projectId,
+      projectName: match.projectName,
+      description: match.description,
+      githubUrl: match.githubUrl,
+      neededSkills: match.neededSkills,
+      score: match.score,
+      reason: match.reason,
+      maintainerId: match.maintainerId,
+      isFallback: match.isFallback,
+      likedAt: (timestamp as Timestamp?)?.toDate(),
     );
+  }
+
+  static String _readString(
+    Map<String, dynamic> json,
+    String key, {
+    bool nonEmpty = false,
+  }) {
+    final value = json[key];
+    if (value is! String || (nonEmpty && value.trim().isEmpty)) {
+      throw FormatException('Invalid match $key');
+    }
+    return value;
   }
 
   /// Serialize to Firestore document data.

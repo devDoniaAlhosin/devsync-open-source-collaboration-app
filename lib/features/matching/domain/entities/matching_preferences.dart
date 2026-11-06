@@ -4,7 +4,7 @@ import 'matching_priority.dart';
 class MatchingPreferences {
   const MatchingPreferences({
     required this.prompt,
-    this.selectedTags = const {'Flutter UI', 'Testing', 'Firebase'},
+    this.selectedTags = const {},
     this.priority = MatchingPriority.skills,
   });
 
@@ -31,9 +31,8 @@ class MatchingPreferences {
 
   /// Default baseline preferences for new users.
   static const MatchingPreferences defaultPreferences = MatchingPreferences(
-    prompt:
-        'Find beginner-friendly Flutter or Firebase projects where I can help with UI, animations, testing, and documentation. Prefer active maintainers.',
-    selectedTags: {'Flutter UI', 'Testing', 'Firebase'},
+    prompt: '',
+    selectedTags: {},
     priority: MatchingPriority.skills,
   );
 }

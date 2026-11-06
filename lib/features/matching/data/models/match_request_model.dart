@@ -1,6 +1,6 @@
 import '../../domain/entities/user_profile.dart';
 
-/// Serializable request payload sent to the matching Cloud Function.
+/// Profile and preferences sent to the matching API. The backend fetches projects.
 class MatchRequestModel {
   const MatchRequestModel({
     required this.uid,
@@ -10,6 +10,8 @@ class MatchRequestModel {
     required this.totalContributions,
     this.bio,
     this.topRepositories = const [],
+    this.prompt,
+    this.tags,
   });
 
   final String uid;
@@ -19,9 +21,15 @@ class MatchRequestModel {
   final int totalContributions;
   final String? bio;
   final List<String> topRepositories;
+  final String? prompt;
+  final Set<String>? tags;
 
   /// Build from the domain [UserProfile].
-  factory MatchRequestModel.fromProfile(UserProfile profile) {
+  factory MatchRequestModel.fromProfile(
+    UserProfile profile, {
+    String? prompt,
+    Set<String>? tags,
+  }) {
     return MatchRequestModel(
       uid: profile.uid,
       declaredSkills: profile.declaredSkills,
@@ -30,10 +38,12 @@ class MatchRequestModel {
       totalContributions: profile.totalContributions,
       bio: profile.bio,
       topRepositories: profile.topRepositories,
+      prompt: prompt,
+      tags: tags,
     );
   }
 
-  /// Serialize to the JSON body expected by the Cloud Function.
+  /// Preferences never change the user's declared skills.
   Map<String, dynamic> toJson() {
     return {
       'uid': uid,
@@ -43,6 +53,8 @@ class MatchRequestModel {
       'totalContributions': totalContributions,
       if (bio != null) 'bio': bio,
       'topRepositories': topRepositories,
+      if (prompt != null) 'prompt': prompt,
+      if (tags != null) 'tags': tags!.toList(),
     };
   }
 }

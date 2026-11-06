@@ -11,6 +11,8 @@ class UserProfile {
     required this.totalContributions,
     this.bio,
     this.topRepositories = const [],
+    this.displayName,
+    this.githubUrl,
   });
 
   /// Firebase Auth UID.
@@ -33,4 +35,19 @@ class UserProfile {
 
   /// Names of top repositories (by stars or recent activity).
   final List<String> topRepositories;
+
+  /// Account display name, shown only when it is stored with the account.
+  final String? displayName;
+
+  /// Public GitHub URL recorded with the account, if available.
+  final String? githubUrl;
+
+  /// An unloaded profile. It is never valid to submit this to the backend.
+  static const empty = UserProfile(
+    uid: '',
+    declaredSkills: [],
+    githubLanguages: {},
+    publicRepoCount: 0,
+    totalContributions: 0,
+  );
 }

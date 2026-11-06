@@ -2,18 +2,17 @@
 enum MatchingPriority {
   skills(
     label: 'Skills',
-    promptTemplate:
-        'Prioritize projects matching my Flutter, Firebase, UI, animation, and testing skills. Prefer beginner-friendly issues and active maintainers.',
+    promptTemplate: 'Prioritize projects matching my declared skills.',
   ),
   beginnerFriendly(
     label: 'Beginner-friendly',
     promptTemplate:
-        'Prioritize beginner-friendly, well-documented Flutter or Firebase issues with clear steps and responsive maintainers.',
+        'Prefer beginner-friendly, well-documented projects with clear contribution steps.',
   ),
   recentActivity(
     label: 'Recent activity',
     promptTemplate:
-        'Prioritize Flutter and Firebase repositories with recent commits, active maintainers, and open issues that match my skills.',
+        'Prefer projects with recent activity where that information is available.',
   );
 
   const MatchingPriority({required this.label, required this.promptTemplate});
