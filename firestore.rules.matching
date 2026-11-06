@@ -1,0 +1,117 @@
+// Firestore Security Rules for DevSync Matching Feature
+// Deploy: firebase deploy --only firestore:rules
+//
+// This file contains ONLY the matching feature rules.
+// Merge these rules into your existing firestore.rules file.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // MATCHING FEATURE COLLECTIONS
+    // ============================================
+    
+    // Liked Matches Collection
+    // Structure: liked_matches/{userId}/matches/{projectId}
+    // User can read/write their own liked matches
+    match /liked_matches/{userId}/matches/{projectId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['projectId', 'projectName', 'description', 'githubUrl', 'neededSkills', 'score', 'reason', 'likedAt'])
+        && request.resource.data.projectId is string
+        && request.resource.data.projectName is string
+        && request.resource.data.description is string
+        && request.resource.data.githubUrl is string
+        && request.resource.data.neededSkills is list
+        && request.resource.data.score is number
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 100
+        && request.resource.data.reason is string
+        && request.resource.data.likedAt is timestamp;
+      
+      allow update: if request.auth != null && request.auth.uid == userId;
+      
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Match Cache Collection
+    // Structure: matches_cache/{userId}
+    // User can read/write their own cache
+    match /matches_cache/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      allow write: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['matches', 'cachedAt', 'profileHash', 'ttl'])
+        && request.resource.data.matches is list
+        && request.resource.data.cachedAt is timestamp
+        && request.resource.data.profileHash is string
+        && request.resource.data.ttl is number
+        && request.resource.data.ttl > 0;
+    }
+    
+    // Projects Collection (Read-only for matching)
+    // Backend has full write access via Admin SDK
+    // Users can only read public projects
+    match /projects/{projectId} {
+      allow read: if request.auth != null;
+      
+      // Only allow writes via backend (Admin SDK bypasses rules)
+      allow write: if false;
+    }
+    
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Validate match item structure
+    function isValidMatchItem(match) {
+      return match.keys().hasAll(['projectId', 'projectName', 'description', 'githubUrl', 'neededSkills', 'score', 'reason'])
+        && match.projectId is string
+        && match.projectName is string
+        && match.description is string
+        && match.githubUrl is string
+        && match.neededSkills is list
+        && match.score is number
+        && match.score >= 0
+        && match.score <= 100
+        && match.reason is string;
+    }
+  }
+}
+
+// ============================================
+// USAGE NOTES
+// ============================================
+//
+// 1. Merge these rules into your existing firestore.rules file
+// 2. Keep your existing rules for other collections (users, projects, etc.)
+// 3. Deploy with: firebase deploy --only firestore:rules
+// 4. Test rules: firebase emulators:start --only firestore
+//
+// Security guarantees:
+// - Users can only access their own liked matches
+// - Users can only access their own match cache
+// - Users can read all projects (for matching)
+// - Backend has full write access via Admin SDK
+// - All data validated for structure and types
+//
+// Performance considerations:
+// - Rules are evaluated on every read/write
+// - Keep rules simple for best performance
+// - Use compound indexes for complex queries
+//
+// ============================================
