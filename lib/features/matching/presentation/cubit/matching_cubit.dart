@@ -1,120 +1,212 @@
 import 'package:equatable/equatable.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../profile/domain/repositories/profile_repository.dart';
+import '../../../../core/error/failures.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
-import '../../data/mappers/profile_to_user_profile_mapper.dart';
 import '../../domain/entities/match_item.dart';
-import '../../domain/entities/matching_analytics.dart';
 import '../../domain/entities/matching_preferences.dart';
 import '../../domain/entities/matching_priority.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../domain/repositories/matching_profile_repository.dart';
 import '../../domain/repositories/matching_repository.dart';
-import '../../domain/usecases/generate_matches_usecase.dart';
-import '../../domain/usecases/get_matching_analytics_usecase.dart';
 import '../../domain/usecases/get_ranked_matches_usecase.dart';
 import '../widgets/draggable_match_card.dart';
 
 part 'matching_state.dart';
 
-/// Presentation state for the matching feature (Cubit replaces ChangeNotifier).
+/// State coordinator for real matching inputs, backend results, and saved cards.
 class MatchingCubit extends Cubit<MatchingState> {
-  static const defaultProfile = UserProfile(
-    uid: 'demo-user',
-    declaredSkills: ['Flutter', 'Dart', 'Firebase'],
-    githubLanguages: {'Dart': 60, 'Python': 20, 'JavaScript': 10},
-    publicRepoCount: 12,
-    totalContributions: 340,
-    bio: 'Mobile developer interested in open source.',
-  );
-
   MatchingCubit({
     required MatchingRepository repository,
     required LikedMatchesLocalDataSource likedMatchesDataSource,
-    ProfileRepository? profileRepository,
-    FirebaseAuth? auth,
+    MatchingProfileRepository? profileRepository,
     UserProfile? profile,
-  }) : _getRankedMatchesUseCase = GetRankedMatchesUseCase(repository),
-       _generateMatchesUseCase = GenerateMatchesUseCase(repository),
-       _getMatchingAnalyticsUseCase = GetMatchingAnalyticsUseCase(repository),
+  }) : _repository = repository,
+       _getRankedMatchesUseCase = GetRankedMatchesUseCase(repository),
        _likedMatchesDataSource = likedMatchesDataSource,
        _profileRepository = profileRepository,
-       _auth = auth,
-       super(MatchingState(profile: profile ?? defaultProfile)) {
-    // Attempt to load real profile if auth and profile repo are available
-    if (profile == null && _profileRepository != null && _auth != null) {
-      _loadUserProfile();
-    }
-  }
+       super(MatchingState(profile: profile ?? UserProfile.empty));
 
+  final MatchingRepository _repository;
   final GetRankedMatchesUseCase _getRankedMatchesUseCase;
-  final GenerateMatchesUseCase _generateMatchesUseCase;
-  final GetMatchingAnalyticsUseCase _getMatchingAnalyticsUseCase;
   final LikedMatchesLocalDataSource _likedMatchesDataSource;
-  final ProfileRepository? _profileRepository;
-  final FirebaseAuth? _auth;
+  final MatchingProfileRepository? _profileRepository;
 
-  Future<void> generateMatches() async {
-    if (state.isGenerating) return;
-    emit(state.copyWith(isGenerating: true, clearError: true));
+  Future<void> loadInitialData() => _loadMatches(isGenerating: false);
 
-    try {
-      final results = await _generateMatchesUseCase(
-        prompt: state.preferences.prompt,
-        tags: state.preferences.selectedTags,
-      );
+  Future<void> generateMatches() => _loadMatches(isGenerating: true);
 
+  Future<void> _loadMatches({required bool isGenerating}) async {
+    if (state.isLoading || state.isGenerating || state.isSaving) return;
+    emit(
+      state.copyWith(
+        isLoading: !isGenerating,
+        isGenerating: isGenerating,
+        clearError: true,
+      ),
+    );
+
+    final profile = await _resolveProfile();
+    if (profile == null) {
       emit(
         state.copyWith(
-          matches: results,
-          currentDeckIndex: 0,
-          actionHistory: const [],
+          isLoading: false,
           isGenerating: false,
-          clearError: true,
+          errorMessage:
+              state.actionErrorMessage ??
+              'Could not load your matching profile. Please try again.',
+          clearActionError: true,
         ),
       );
-    } catch (_) {
-      emit(
-        state.copyWith(
-          isGenerating: false,
-          errorMessage: 'Failed to generate recommendations.',
-        ),
-      );
+      return;
     }
-  }
 
-  Future<void> loadInitialData() async {
-    emit(state.copyWith(isLoading: true, clearError: true));
-
-    try {
-      final results = await _getRankedMatchesUseCase(state.profile);
-      final analyticsData = await _getMatchingAnalyticsUseCase();
-
+    final prompt = state.preferences.prompt.trim();
+    if (prompt.length > 1000) {
       emit(
         state.copyWith(
+          profile: profile,
+          isLoading: false,
+          isGenerating: false,
+          errorMessage: 'Keep your preference under 1,000 characters.',
+        ),
+      );
+      return;
+    }
+
+    try {
+      final results = await _getRankedMatchesUseCase(
+        profile,
+        prompt: prompt.isEmpty ? null : prompt,
+        tags: state.preferences.selectedTags.isEmpty
+            ? null
+            : state.preferences.selectedTags,
+      );
+      emit(
+        state.copyWith(
+          profile: profile,
           matches: results,
-          analytics: analyticsData,
+          promptVersion: _repository.promptVersion,
           currentDeckIndex: 0,
           actionHistory: const [],
           isLoading: false,
+          isGenerating: false,
           clearError: true,
+          clearActionError: true,
+        ),
+      );
+    } on Failure catch (failure) {
+      emit(
+        state.copyWith(
+          profile: profile,
+          isLoading: false,
+          isGenerating: false,
+          errorMessage: failure.message,
         ),
       );
     } catch (_) {
       emit(
         state.copyWith(
+          profile: profile,
           isLoading: false,
+          isGenerating: false,
           errorMessage: 'Could not load matches. Please try again.',
         ),
       );
     }
   }
 
-  void performDeckAction(MatchItem match, MatchSwipeAction action) {
-    if (state.currentDeckIndex >= state.matches.length ||
+  Future<UserProfile?> _resolveProfile() async {
+    final profileRepository = _profileRepository;
+    if (profileRepository == null) {
+      if (state.profile.uid.isNotEmpty) return state.profile;
+      emit(
+        state.copyWith(actionErrorMessage: 'Please sign in to find matches.'),
+      );
+      return null;
+    }
+
+    UserProfile? profile;
+    String? error;
+    final result = await profileRepository.getProfile();
+    result.fold(
+      (failure) => error = failure.message,
+      (value) => profile = value,
+    );
+    if (profile == null) {
+      emit(state.copyWith(actionErrorMessage: error));
+    }
+    return profile;
+  }
+
+  /// Saves the actual signed-in account's declared skills.
+  Future<bool> saveDeclaredSkills(List<String> skills) async {
+    final profileRepository = _profileRepository;
+    if (profileRepository == null || state.isSaving) return false;
+    emit(state.copyWith(isSaving: true, clearActionError: true));
+
+    UserProfile? profile;
+    String? error;
+    final result = await profileRepository.updateDeclaredSkills(skills);
+    result.fold(
+      (failure) => error = failure.message,
+      (value) => profile = value,
+    );
+    if (profile == null) {
+      emit(
+        state.copyWith(
+          isSaving: false,
+          actionErrorMessage:
+              error ?? 'Could not save your skills. Please try again.',
+        ),
+      );
+      return false;
+    }
+
+    emit(
+      state.copyWith(profile: profile, isSaving: false, clearActionError: true),
+    );
+    await loadInitialData();
+    return true;
+  }
+
+  /// Persists a saved match before advancing the deck.
+  Future<bool> performDeckAction(
+    MatchItem match,
+    MatchSwipeAction action,
+  ) async {
+    if (state.isSaving ||
+        state.currentDeckIndex >= state.matches.length ||
         state.matches[state.currentDeckIndex].projectId != match.projectId) {
-      return;
+      return false;
+    }
+
+    var removeSavedMatchOnUndo = false;
+    if (action == MatchSwipeAction.request) {
+      emit(state.copyWith(isSaving: true, clearActionError: true));
+      try {
+        final saved = await _likedMatchesDataSource.getLikedMatches();
+        final alreadySaved = saved.any(
+          (savedMatch) => savedMatch.projectId == match.projectId,
+        );
+        if (!alreadySaved) {
+          await _likedMatchesDataSource.addLikedMatch(match);
+          removeSavedMatchOnUndo = true;
+        }
+      } on LikedMatchesException catch (error) {
+        emit(
+          state.copyWith(isSaving: false, actionErrorMessage: error.message),
+        );
+        return false;
+      } catch (_) {
+        emit(
+          state.copyWith(
+            isSaving: false,
+            actionErrorMessage: 'Could not save this match. Please try again.',
+          ),
+        );
+        return false;
+      }
     }
 
     final history = List<MatchActionRecord>.from(state.actionHistory)
@@ -123,18 +215,51 @@ class MatchingCubit extends Cubit<MatchingState> {
           index: state.currentDeckIndex,
           action: action,
           match: match,
+          removesSavedMatchOnUndo: removeSavedMatchOnUndo,
         ),
       );
-
-    if (action == MatchSwipeAction.request) {
-      // Fire and forget - don't block UI on async operation
-      _likedMatchesDataSource.addLikedMatch(match);
-    }
-
     emit(
       state.copyWith(
         actionHistory: history,
         currentDeckIndex: state.currentDeckIndex + 1,
+        isSaving: false,
+        clearActionError: true,
+      ),
+    );
+    return true;
+  }
+
+  Future<void> undoLastDeckAction() async {
+    if (state.isSaving || state.actionHistory.isEmpty) return;
+    final last = state.actionHistory.last;
+    if (last.removesSavedMatchOnUndo) {
+      emit(state.copyWith(isSaving: true, clearActionError: true));
+      try {
+        await _likedMatchesDataSource.removeLikedMatch(last.match.projectId);
+      } on LikedMatchesException catch (error) {
+        emit(
+          state.copyWith(isSaving: false, actionErrorMessage: error.message),
+        );
+        return;
+      } catch (_) {
+        emit(
+          state.copyWith(
+            isSaving: false,
+            actionErrorMessage:
+                'Could not undo this saved match. Please try again.',
+          ),
+        );
+        return;
+      }
+    }
+    final history = List<MatchActionRecord>.from(state.actionHistory)
+      ..removeLast();
+    emit(
+      state.copyWith(
+        actionHistory: history,
+        currentDeckIndex: last.index,
+        isSaving: false,
+        clearActionError: true,
       ),
     );
   }
@@ -165,11 +290,13 @@ class MatchingCubit extends Cubit<MatchingState> {
   }
 
   void toggleTag(String tag) {
+    final normalized = tag.trim();
+    if (normalized.isEmpty || normalized.length > 100) return;
     final updated = Set<String>.from(state.preferences.selectedTags);
-    if (updated.contains(tag)) {
-      updated.remove(tag);
-    } else {
-      updated.add(tag);
+    if (updated.contains(normalized)) {
+      updated.remove(normalized);
+    } else if (updated.length < 30) {
+      updated.add(normalized);
     }
     emit(
       state.copyWith(
@@ -178,39 +305,8 @@ class MatchingCubit extends Cubit<MatchingState> {
     );
   }
 
-  void undoLastDeckAction() {
-    if (state.actionHistory.isEmpty) return;
-    final history = List<MatchActionRecord>.from(state.actionHistory);
-    final last = history.removeLast();
-    emit(state.copyWith(actionHistory: history, currentDeckIndex: last.index));
-  }
-
   void updatePrompt(String text) {
     if (state.preferences.prompt == text) return;
     emit(state.copyWith(preferences: state.preferences.copyWith(prompt: text)));
-  }
-
-  /// Load user profile from Profile feature and convert to UserProfile for matching.
-  Future<void> _loadUserProfile() async {
-    final currentUser = _auth?.currentUser;
-    if (currentUser == null || _profileRepository == null) return;
-
-    try {
-      final result = await _profileRepository.getProfile();
-      result.fold(
-        (_) {
-          // Keep using default profile on failure
-        },
-        (profile) {
-          final userProfile = ProfileToUserProfileMapper.map(
-            profile,
-            currentUser.uid,
-          );
-          emit(state.copyWith(profile: userProfile));
-        },
-      );
-    } catch (_) {
-      // Keep using default profile on error
-    }
   }
 }

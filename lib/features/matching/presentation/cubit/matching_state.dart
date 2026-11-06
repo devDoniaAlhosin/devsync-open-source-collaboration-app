@@ -7,43 +7,49 @@ class MatchActionRecord extends Equatable {
     required this.index,
     required this.action,
     required this.match,
+    required this.removesSavedMatchOnUndo,
   });
 
   final int index;
   final MatchSwipeAction action;
   final MatchItem match;
+  final bool removesSavedMatchOnUndo;
 
   @override
-  List<Object?> get props => [index, action, match];
+  List<Object?> get props => [index, action, match, removesSavedMatchOnUndo];
 }
 
 final class MatchingState extends Equatable {
   const MatchingState({
     this.isLoading = false,
     this.isGenerating = false,
+    this.isSaving = false,
     this.errorMessage,
+    this.actionErrorMessage,
     this.matches = const [],
-    this.analytics = MatchingAnalytics.demoAnalytics,
     this.preferences = MatchingPreferences.defaultPreferences,
     this.viewMode = MatchingViewMode.studio,
     this.currentDeckIndex = 0,
     this.actionHistory = const [],
+    this.promptVersion,
     required this.profile,
   });
 
   final bool isLoading;
   final bool isGenerating;
+  final bool isSaving;
   final String? errorMessage;
+  final String? actionErrorMessage;
   final List<MatchItem> matches;
-  final MatchingAnalytics analytics;
   final MatchingPreferences preferences;
   final MatchingViewMode viewMode;
   final int currentDeckIndex;
   final List<MatchActionRecord> actionHistory;
+  final String? promptVersion;
   final UserProfile profile;
 
+  String? get profileName => profile.displayName;
   bool get canUndo => actionHistory.isNotEmpty;
-
   bool get hasMatches => matches.isNotEmpty;
 
   MatchItem? get currentDeckMatch {
@@ -53,32 +59,42 @@ final class MatchingState extends Equatable {
 
   List<MatchItem> get nextDeckMatches {
     if (matches.isEmpty) return const [];
-    return matches.skip(currentDeckIndex + 1).take(2).toList();
+    return List.unmodifiable(matches.skip(currentDeckIndex + 1).take(2));
   }
 
   MatchingState copyWith({
     bool? isLoading,
     bool? isGenerating,
+    bool? isSaving,
     String? errorMessage,
     bool clearError = false,
+    String? actionErrorMessage,
+    bool clearActionError = false,
     List<MatchItem>? matches,
-    MatchingAnalytics? analytics,
     MatchingPreferences? preferences,
     MatchingViewMode? viewMode,
     int? currentDeckIndex,
     List<MatchActionRecord>? actionHistory,
+    String? promptVersion,
+    bool clearPromptVersion = false,
     UserProfile? profile,
   }) {
     return MatchingState(
       isLoading: isLoading ?? this.isLoading,
       isGenerating: isGenerating ?? this.isGenerating,
+      isSaving: isSaving ?? this.isSaving,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      actionErrorMessage: clearActionError
+          ? null
+          : (actionErrorMessage ?? this.actionErrorMessage),
       matches: matches ?? this.matches,
-      analytics: analytics ?? this.analytics,
       preferences: preferences ?? this.preferences,
       viewMode: viewMode ?? this.viewMode,
       currentDeckIndex: currentDeckIndex ?? this.currentDeckIndex,
       actionHistory: actionHistory ?? this.actionHistory,
+      promptVersion: clearPromptVersion
+          ? null
+          : (promptVersion ?? this.promptVersion),
       profile: profile ?? this.profile,
     );
   }
@@ -87,13 +103,15 @@ final class MatchingState extends Equatable {
   List<Object?> get props => [
     isLoading,
     isGenerating,
+    isSaving,
     errorMessage,
+    actionErrorMessage,
     matches,
-    analytics,
     preferences,
     viewMode,
     currentDeckIndex,
     actionHistory,
+    promptVersion,
     profile,
   ];
 }
