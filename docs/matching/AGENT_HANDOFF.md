@@ -39,6 +39,12 @@ The work was committed in atomic, logical groups:
 7. `1dd4c08` — `test(matching): update contract, cubit, liked matches, and widget tests`
    - Updated and passed all 50 matching tests across unit, widget, and contract suites.
 
+8. `1a14de9` — `refactor(matching): streamline doc comments across data and domain layers`
+   - Replaced verbose AI boilerplate comments with clean, natural human summaries.
+
+9. `1a108a9` — `refactor(matching): streamline doc comments across screens, cubit, and widgets`
+   - Cleaned up inline clutter and added small human-readable class doc summaries.
+
 ## Validation Results
 - **Unit and Widget Tests**:
   - `test/matching_clean_architecture_test.dart` (8/8 PASSED)
