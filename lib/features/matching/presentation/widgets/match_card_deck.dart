@@ -25,8 +25,6 @@ class MatchCardDeck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Prefer real upcoming matches; pad with blank silhouettes so the
-    // stack affordance stays visible whenever more cards exist.
     final upcoming = nextMatches.take(_maxPeekLayers).toList();
     final peekCount = upcoming.isEmpty ? 0 : _maxPeekLayers;
     final bottomPad = peekCount == 0
@@ -55,8 +53,7 @@ class MatchCardDeck extends StatelessWidget {
   }
 }
 
-/// Full-size card silhouette behind the active match so the deck reads as
-/// a swipeable stack (edges peek below / beside the front card).
+/// Visual layer peeking beneath the top card in the deck.
 class _DeckPeek extends StatelessWidget {
   const _DeckPeek({required this.depth, this.match});
 

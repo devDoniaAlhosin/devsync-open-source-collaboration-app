@@ -12,9 +12,8 @@ import '../widgets/ai_studio_content.dart';
 import 'ai_analytics_screen.dart';
 import 'project_details_screen.dart';
 
-/// Standalone full-screen view of the AI Matching Studio.
+/// Screen for fine-tuning match prompts and preferences.
 class AiMatchingStudioScreen extends StatefulWidget {
-  /// Shared [MatchingCubit] from the parent feed. When `null`, owns one from GetIt.
   final MatchingCubit? cubit;
 
   const AiMatchingStudioScreen({super.key, this.cubit});

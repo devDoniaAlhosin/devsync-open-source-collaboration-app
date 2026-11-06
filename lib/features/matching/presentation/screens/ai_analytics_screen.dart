@@ -11,7 +11,7 @@ import '../widgets/ai_analytics_stat_card.dart';
 import '../widgets/ai_analytics_transparency_card.dart';
 import 'prompt_quality_screen.dart';
 
-/// A snapshot of actual results from the latest matching request.
+/// Displays analytics and insights for recent match results.
 class AiAnalyticsScreen extends StatefulWidget {
   const AiAnalyticsScreen({super.key, this.cubit});
   final MatchingCubit? cubit;

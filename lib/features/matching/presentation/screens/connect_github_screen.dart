@@ -8,7 +8,7 @@ import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../cubit/matching_cubit.dart';
 
-/// Edits declared matching skills and displays recorded public GitHub data.
+/// Screen for editing declared matching skills and GitHub settings.
 class ConnectGithubScreen extends StatefulWidget {
   const ConnectGithubScreen({super.key, this.cubit});
 

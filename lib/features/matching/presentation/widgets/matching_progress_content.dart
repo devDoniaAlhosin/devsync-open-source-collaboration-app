@@ -6,7 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import 'match_card_skeleton.dart';
 
-/// Reusable loading content whose phase comes from the caller's operation.
+/// Progress indicator content shown while generating matches.
 class MatchingProgressContent extends StatelessWidget {
   final MatchingProgressPhase phase;
 

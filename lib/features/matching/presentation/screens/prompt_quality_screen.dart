@@ -4,7 +4,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_card.dart';
 
-/// Explains supported preferences without presenting invented evaluation scores.
+/// Screen providing prompt guidelines and preference recommendations.
 class PromptQualityScreen extends StatelessWidget {
   const PromptQualityScreen({super.key});
 

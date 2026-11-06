@@ -104,7 +104,7 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
     widget.onAction(action);
   }
 
-  /// A failed save keeps the same card available for another attempt.
+  /// Resets card position when an action is cancelled or fails.
   void restore() {
     if (!mounted) return;
     setState(() {

@@ -4,7 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 
-/// Explains backend-provided scores without inventing model weights.
+/// Displays an overview of how matching scores are calculated.
 class AiStudioScoringCard extends StatelessWidget {
   const AiStudioScoringCard({super.key, required this.onExploreAnalytics});
 

@@ -14,7 +14,7 @@ import '../widgets/draggable_match_card.dart';
 
 part 'matching_state.dart';
 
-/// State coordinator for real matching inputs, backend results, and saved cards.
+/// Coordinates matching state, recommendations, and card actions.
 class MatchingCubit extends Cubit<MatchingState> {
   MatchingCubit({
     required MatchingRepository repository,
@@ -139,7 +139,7 @@ class MatchingCubit extends Cubit<MatchingState> {
     return profile;
   }
 
-  /// Saves the actual signed-in account's declared skills.
+  /// Saves updated declared skills to user profile.
   Future<bool> saveDeclaredSkills(List<String> skills) async {
     final profileRepository = _profileRepository;
     if (profileRepository == null || state.isSaving) return false;
@@ -170,7 +170,7 @@ class MatchingCubit extends Cubit<MatchingState> {
     return true;
   }
 
-  /// Persists a saved match before advancing the deck.
+  /// Handles swipe actions on deck cards.
   Future<bool> performDeckAction(
     MatchItem match,
     MatchSwipeAction action,

@@ -31,13 +31,11 @@ import 'connect_github_screen.dart';
 import 'project_details_screen.dart';
 import 'prompt_quality_screen.dart';
 
-/// Screen hosting the AI recommendations and interactive match feed.
+/// Main matching screen with recommendations deck.
 class MatchFeedScreen extends StatefulWidget {
   final MatchingCubit? cubit;
   final MatchingViewMode? initialViewMode;
   final VoidCallback? onMenuPressed;
-
-  /// Switches the host shell to the Profile tab (keeps the drawer).
   final VoidCallback? onOpenProfile;
 
   const MatchFeedScreen({

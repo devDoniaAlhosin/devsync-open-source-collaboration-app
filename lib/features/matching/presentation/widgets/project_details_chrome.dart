@@ -6,7 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
 
-/// Shows the actual repository URL supplied by the matching backend.
+/// Bottom sheet displaying the project repository URL.
 abstract final class ProjectWorkspaceSheet {
   static Future<void> show(
     BuildContext context, {
