@@ -61,7 +61,7 @@ class AiStudioSuggestedMatchesCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: Center(
                 child: Text(
-                  'No matches generated yet. Tap "Generate matches" above.',
+                  'No recommendations to show. Update your skills or generate matches again.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
@@ -124,6 +124,12 @@ class _MatchRow extends StatelessWidget {
           ).textTheme.bodySmall?.copyWith(color: ds.textMuted, height: 1.5),
         ),
         const SizedBox(height: AppSpacing.sm),
+        if (match.reason.isNotEmpty) Text(match.reason),
+        if (match.isFallback)
+          Text(
+            'Skill-based match',
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
         DsScoreMeter(score: match.score, height: 6, animate: true),
         const SizedBox(height: AppSpacing.xs),
         Align(

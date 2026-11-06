@@ -22,7 +22,7 @@ class AiAnalyticsTransparencyCard extends StatelessWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
-              'Matching should use public GitHub activity and your declared skills only. Scores here are sample data.',
+              'Scores and explanations come from the matching service. Skill-based matches are the service’s fallback when AI scoring is unavailable. These scores are recommendations, not guarantees.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: ds.textPrimary,
                 height: 1.55,

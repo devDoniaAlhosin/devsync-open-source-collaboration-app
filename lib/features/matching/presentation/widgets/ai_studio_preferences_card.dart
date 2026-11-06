@@ -9,8 +9,7 @@ import '../../../../core/widgets/ds_chip.dart';
 
 /// Card for customizing natural language matching preferences and quick skill tags.
 class AiStudioPreferencesCard extends StatelessWidget {
-  static const _availableTags = ['Flutter UI', 'Testing', 'Firebase'];
-
+  final List<String> availableTags;
   final TextEditingController promptController;
   final Set<String> selectedTags;
   final ValueChanged<String> onTagToggled;
@@ -23,6 +22,7 @@ class AiStudioPreferencesCard extends StatelessWidget {
     required this.selectedTags,
     required this.onTagToggled,
     required this.onGenerateMatches,
+    this.availableTags = const [],
     this.isGenerating = false,
   });
 
@@ -56,7 +56,7 @@ class AiStudioPreferencesCard extends StatelessWidget {
                   border: Border.all(color: ds.border),
                 ),
                 child: Text(
-                  'Demo',
+                  'Personalized',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: ds.textMuted,
                     fontWeight: FontWeight.w600,
@@ -75,6 +75,8 @@ class AiStudioPreferencesCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: promptController,
+            maxLength: 1000,
+            enabled: !isGenerating,
             maxLines: 4,
             minLines: 3,
             textAlignVertical: TextAlignVertical.top,
@@ -100,11 +102,11 @@ class AiStudioPreferencesCard extends StatelessWidget {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: [
-              for (final tag in _availableTags)
+              for (final tag in availableTags.take(30))
                 DsChip(
                   label: tag,
                   selected: selectedTags.contains(tag),
-                  onTap: () => onTagToggled(tag),
+                  onTap: isGenerating ? null : () => onTagToggled(tag),
                 ),
             ],
           ),
@@ -117,7 +119,7 @@ class AiStudioPreferencesCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Using demo project data; no external AI request is sent.',
+            'Uses your saved skills and public GitHub profile to rank available projects.',
             style: Theme.of(
               context,
             ).textTheme.labelSmall?.copyWith(color: ds.textMuted),

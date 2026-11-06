@@ -3,99 +3,36 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
-import '../../../../core/widgets/ds_score_meter.dart';
 
-/// Card displaying the multi-dimensional scoring breakdown and analytics CTA.
+/// Explains backend-provided scores without inventing model weights.
 class AiStudioScoringCard extends StatelessWidget {
-  const AiStudioScoringCard({
-    super.key,
-    required this.breakdown,
-    required this.onExploreAnalytics,
-  });
+  const AiStudioScoringCard({super.key, required this.onExploreAnalytics});
 
-  final Map<String, int> breakdown;
   final VoidCallback onExploreAnalytics;
 
   @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-
-    return DsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'How scoring works',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          for (final entry in breakdown.entries) ...[
-            _ScoreRow(label: entry.key, score: entry.value),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          Text(
-            'Illustrative explanations, not real model scores.',
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: ds.textMuted),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Center(
-            child: TextButton(
-              onPressed: onExploreAnalytics,
-              child: Text(
-                'Explore AI quality analytics',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.teal,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScoreRow extends StatelessWidget {
-  const _ScoreRow({required this.label, required this.score});
-
-  final String label;
-  final int score;
-
-  @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-
-    return Row(
+  Widget build(BuildContext context) => DsCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: ds.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+        Text(
+          'How scoring works',
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-        Expanded(child: DsScoreMeter(score: score.toDouble(), height: 6)),
-        const SizedBox(width: AppSpacing.md),
-        SizedBox(
-          width: 32,
-          child: Text(
-            '$score',
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: ds.textMuted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Each project includes a score and explanation from the matching service. '
+          'Skill-based matches are labeled when AI scoring is unavailable.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: context.ds.textMuted),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextButton(
+          onPressed: onExploreAnalytics,
+          child: const Text('Explore match insights'),
         ),
       ],
-    );
-  }
+    ),
+  );
 }

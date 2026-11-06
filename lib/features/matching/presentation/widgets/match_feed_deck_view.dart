@@ -103,7 +103,7 @@ class _MatchActionBar extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.md),
           _RoundActionButton(
-            tooltip: 'Request collaboration',
+            tooltip: 'Save this match',
             icon: AppIcons.heart,
             isPrimary: true,
             onPressed: onRequest,
