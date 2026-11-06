@@ -1,3 +1,4 @@
+import '../../data/models/match_request_model.dart';
 import '../entities/match_item.dart';
 import '../entities/user_profile.dart';
 import '../repositories/matching_repository.dart';
@@ -12,7 +13,13 @@ class GetRankedMatchesUseCase {
     UserProfile profile, {
     String? prompt,
     Set<String>? tags,
+    List<CandidateProject>? candidateProjects,
   }) {
-    return _repository.getRankedMatches(profile, prompt: prompt, tags: tags);
+    return _repository.getRankedMatches(
+      profile,
+      prompt: prompt,
+      tags: tags,
+      candidateProjects: candidateProjects,
+    );
   }
 }

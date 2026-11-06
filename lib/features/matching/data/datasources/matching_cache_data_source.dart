@@ -152,3 +152,26 @@ class FirestoreMatchingCacheDataSource implements MatchingCacheDataSource {
     }
   }
 }
+
+/// No-op implementation of [MatchingCacheDataSource] for tests or when caching is disabled.
+class NoOpMatchingCacheDataSource implements MatchingCacheDataSource {
+  const NoOpMatchingCacheDataSource();
+
+  @override
+  Future<List<MatchItemModel>?> getCachedMatches() async => null;
+
+  @override
+  Future<void> cacheMatches(
+    List<MatchItemModel> matches, {
+    required String profileHash,
+  }) async {}
+
+  @override
+  Future<bool> isCacheValid(
+    String profileHash, {
+    Duration ttl = const Duration(hours: 1),
+  }) async => false;
+
+  @override
+  Future<void> clearCache() async {}
+}

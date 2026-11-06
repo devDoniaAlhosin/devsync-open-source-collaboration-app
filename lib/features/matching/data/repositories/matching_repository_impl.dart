@@ -24,8 +24,8 @@ class MatchingRepositoryImpl implements MatchingRepository {
   MatchingRepositoryImpl({
     required this.remoteDataSource,
     required this.localDataSource,
-    required this.cacheDataSource,
-  });
+    MatchingCacheDataSource? cacheDataSource,
+  }) : cacheDataSource = cacheDataSource ?? const NoOpMatchingCacheDataSource();
 
   final MatchingRemoteDataSource remoteDataSource;
   final MatchingLocalDataSource localDataSource;
@@ -41,6 +41,7 @@ class MatchingRepositoryImpl implements MatchingRepository {
     String? prompt,
     Set<String>? tags,
     Profile? userProfile,
+    List<CandidateProject>? candidateProjects,
   }) async {
     // Generate profile hash for cache validation
     final profileHash = userProfile != null
@@ -60,17 +61,32 @@ class MatchingRepositoryImpl implements MatchingRepository {
       // Cache miss or expired - fetch from API
       final request = MatchRequestModel.fromProfile(
         profile,
+        projects: candidateProjects,
         prompt: prompt,
         tags: tags,
       );
       final response = await remoteDataSource.getMatches(request);
 
-      // Check if we got any matches
-      if (response.matches.isEmpty) {
+      // Filter out non-matching candidates (score <= 0 or missing all required skills)
+      final relevantMatches = response.matches.where((match) {
+        if (match.score <= 0) return false;
+        final normalizedReason = match.reason.trim().toLowerCase();
+        if (normalizedReason.startsWith('missing all required skills')) {
+          return false;
+        }
+        if (normalizedReason.startsWith('no skill overlap') ||
+            normalizedReason.startsWith('no matching skills')) {
+          return false;
+        }
+        return true;
+      }).toList();
+
+      // Check if we got any matching results
+      if (relevantMatches.isEmpty) {
         throw const NoMatchesFailure();
       }
 
-      final sorted = List<MatchItemModel>.from(response.matches)
+      final sorted = List<MatchItemModel>.from(relevantMatches)
         ..sort((a, b) {
           final byScore = b.score.compareTo(a.score);
           return byScore != 0 ? byScore : a.projectId.compareTo(b.projectId);
