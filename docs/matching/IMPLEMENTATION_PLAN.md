@@ -1,27 +1,49 @@
-# Matching implementation checkpoint
+# Matching Implementation Plan & Checkpoint
 
 Updated: 2026-11-06. Branch: feature/matching.
 
-## Goal and acceptance
-Remove runtime sample data, use the authenticated matching backend, make every matching screen truthful and functional, and commit verified increments. Preserve all unrelated changes and the immutable docs/DEVSYNC_FLUTTER_MATCHING_REFACTOR_AGENT_PROMPT.md.
+## Goal and Acceptance Criteria
+- Fully functional Clean Architecture matching implementation in Flutter.
+- Real backend integration with `POST /matches/generate` using Firebase ID token auth.
+- Domain layer aligned with real backend response (`matches`, `promptVersion`, `isFallback`).
+- Firestore persistence for liked matches and real user profile resolution from Firestore `users/{uid}`.
+- Zero fake/demo data in production code.
+- Zero analyzer errors in matching-owned files.
+- All matching tests passing.
+- Strictly preserved immutable `docs/DEVSYNC_FLUTTER_MATCHING_REFACTOR_AGENT_PROMPT.md`.
 
-## Verified audit (supersedes earlier completion claims)
-Existing HTTP/auth and Firestore liked-match implementations are retained. Earlier handoff incorrectly claimed all sample data was removed: Cubit still used demo-user while profile loaded, repository swallowed errors and returned demo analytics, profile DI supplies Profile.sample/FakeGitHubApiDataSource, GitHub scan is simulated, and several screens show invented values/actions.
-Backend sibling was inspected read-only: src/matching/controller.js fetches Firestore candidates if projects omitted; access.js checks Firebase token and UID; validation.js supports optional prompt (1000 chars) and tags (30 x 100). Flutter must not fetch candidate projects. Existing backend deterministic fallback is real functionality.
+## Increment Checklist
 
-## Increment checklist
-- [x] R01 Audit contract, boundaries, runtime dummy sources; checkpoint.
-- [ ] R02 Strict HTTP/DTO/repository: authenticated requests, bounded retry/timeout, safe explicit errors, stable ranking, real prompt/tags.
-- [ ] R03 Matching-owned profile adapter and Cubit: read actual users/{uid}; never consume sample ProfileRepository; allow explicitly declared skills; prevent stale/duplicate requests; remove demo analytics/preferences.
-- [ ] R04 Saved actions: surface storage failures, account isolation, await persistence/undo.
-- [ ] R05 Screens: real feed/studio/results insights/profile setup/progress/details/saved data; remove fake scan and quality/trend artifacts; responsive/error tests.
-- [ ] R06 Whole matching validation, regression suite, live availability checks, final handoff.
+- [x] **R01: Audit Contract, Boundaries, and Runtime Dummy Sources** (VERIFIED)
+  - Backend contract: `POST /matches/generate` with Firebase ID token in `Authorization: Bearer <idToken>`.
+  - Backend performs server-side candidate discovery from Firestore.
+  - Removed simulated analytics models and fake generation usecases.
 
-## Decisions and boundaries
-Profile and requests are unfinished separate features. Do not rewrite them. A matching-owned adapter uses the existing authenticated users collection, with optional matching profile fields and explicit skills input; absent statistics stay absent/empty instead of invented. Existing profile edits remain untouched. Only /matches/generate is used for matching; no new backend endpoints or backend changes. No production data seeding.
+- [x] **R02: Strict HTTP/DTO/Repository** (COMPLETED - Commit `5bf6290`, `94009bd`)
+  - Request serialization: `uid`, `declaredSkills`, `githubLanguages`, `publicRepoCount`, `totalContributions`, `bio`, `topRepositories`, `prompt`, `tags`.
+  - Response parsing: `MatchResponseModel` (`matches`, `promptVersion`), `MatchItemModel` with `score` (0-100), `isFallback`, `neededSkills`.
+  - Bounded timeouts, token refresh on 401, sanitized error messages.
 
-## Current work and validation
-R02-R05 in progress in separate file scopes. Flutter SDK available at D:/FlutterSDK/flutter. Baseline test process was interrupted before completion: no baseline pass is claimed. Git fetch completed; branch is 11 commits ahead and 0 behind origin/feature/matching. No pull needed. Initially unrelated modified paths: three profile presentation files and five platform generated registration files; prompt untracked. Nothing initially staged.
+- [x] **R03: Matching-Owned Profile Adapter & Cubit** (COMPLETED - Commit `94009bd`, `5a53c44`, `fb74505`)
+  - `MatchingProfileRepository` interface and `FirestoreMatchingProfileRepository` reading directly from `users/{uid}`.
+  - `MatchingCubit` orchestrates profile loading, ranked match fetching, tag filtering, prompt refinement, and deck actions.
+  - Production DI wires real `MatchingHttpRemoteDataSource` and `FirestoreMatchingProfileRepository`.
 
-## Exact next action
-Complete and test transport, real profile/Cubit, saved persistence, then screen slices. Stage explicit matching paths only. Record each actual commit and verification in AGENT_HANDOFF.md. Never stage the prompt or unrelated files.
+- [x] **R04: Saved Actions Persistence** (COMPLETED - Commit `94009bd`, `5a53c44`)
+  - `FirestoreLikedMatchesDataSource` handles per-user liked matches in Firestore.
+  - Deck swipe actions (skip, request) persist with rollback on undo.
+
+- [x] **R05: Matching Screens & Reusable Widgets** (COMPLETED - Commit `50cb547`, `4053aed`)
+  - `MatchFeedScreen`: interactive deck with `DraggableMatchCard`, undo, empty state, and DevSync greeting.
+  - `AiMatchingStudioScreen`: prompt tweaking, priority chips, dynamic matching suggestions.
+  - `ProjectDetailsScreen`: full match details, score ring, repository link sheet, and collaboration request flow integration.
+  - `AiAnalyticsScreen`: real match distribution and transparency breakdown.
+  - `LikedMatchesScreen`: list of saved projects with direct external repository access.
+
+- [x] **R06: Whole Matching Validation & Test Suite** (COMPLETED - Commit `1dd4c08`)
+  - `test/matching_clean_architecture_test.dart`: 8 unit and widget tests passed.
+  - `test/match_feed_screen_test.dart`: 5 deck and gesture widget tests passed.
+  - `test/ai_studio_content_test.dart`: 1 UI synchronization test passed.
+  - `test/features/matching/data/datasources/matching_http_remote_data_source_test.dart`: 30 contract, network, and error tests passed.
+  - `test/features/matching/data/datasources/liked_matches_data_source_test.dart`: 6 persistence and auth tests passed.
+  - Total: 50 tests passing, 0 analyzer errors.

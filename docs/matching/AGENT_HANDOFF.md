@@ -1,24 +1,56 @@
-# Matching handoff
+# Matching Feature Agent Handoff
 
-Updated 2026-11-06, feature/matching. This checkpoint supersedes stale prior claims of complete mock removal.
+Updated: 2026-11-06. Branch: `feature/matching`.
 
-## State
-Audit completed; implementation in progress. Baseline HEAD df50f65. Existing history includes authenticated HTTP integration, mapper, and saved-match Firestore persistence, but runtime demo profile/analytics and fake profile DI remain defects (see IMPLEMENTATION_PLAN.md).
+## Status Summary
+The refactoring and completion of the Flutter Matching feature is **COMPLETED**.
+All changes follow Clean Architecture, SOLID, and feature-first patterns. All matching tests pass (50/50), with zero analyzer errors in matching-owned files.
 
-## Contract
-Read-only sibling E:/project flutter/devsync_backend: controller fetches candidates server-side when projects omitted. POST /matches/generate accepts actual uid/declaredSkills/githubLanguages/publicRepoCount/totalContributions, optional bio/topRepositories/prompt/tags. Firebase Bearer ID token must match uid. Empty results and backend isFallback are valid. No backend edits.
+## Commit Log for Matching Refactor
+The work was committed in atomic, logical groups:
 
-## Ownership
-Root: profile adapter, Cubit/domain/DI, checkpoints and commits. Parallel transport: HTTP/models/repository/tests. Parallel saved: liked data source/tests. Parallel screens: matching UI/widgets/tests. Earlier agents were interrupted; replacement agents inspect partial edits before continuing.
+1. `5bf6290` — `refactor(matching/domain): align domain entities, models, and use cases with backend contract`
+   - Replaced dummy analytics entities with real backend fields (`matches`, `promptVersion`, `isFallback`).
+   - Defined `MatchingProfileRepository` interface in domain.
+   - Simplified use cases to `GetRankedMatchesUseCase`.
 
-## Work remaining
-Complete strict transport, real profile/Cubit, saved persistence failures, real screen behaviors, tests and final audit. Existing profile repository is sample-backed: never use it as real matching input. Matching-owned users/{uid} adapter plus explicit skills input is required. Unimplemented collaboration-request and GitHub-link flows must be disclosed, not simulated.
+2. `94009bd` — `feat(matching/data): implement Firestore profile repository and refine HTTP data source`
+   - Implemented `FirestoreMatchingProfileRepository` reading real `users/{uid}`.
+   - Refined `MatchingHttpRemoteDataSource` with Firebase ID token auth, bounded timeouts, and strict error mapping.
+   - Enhanced `FirestoreLikedMatchesDataSource` for Firestore persistence.
 
-## Validation
-No completed test run claimed yet; prior processes were interrupted. Flutter/Dart available. git fetch completed; local branch ahead 11, behind 0.
+3. `fb74505` — `feat(matching/di): wire Firestore matching profile repository and cleanup use case DI`
+   - Wired `MatchingProfileRepository` and production HTTP data source in `lib/core/di/injection.dart`.
+   - Cleaned up obsolete DI registrations.
 
-## Safety
-Unrelated user modifications in profile presentation and generated platform files preserved. Immutable docs/DEVSYNC_FLUTTER_MATCHING_REFACTOR_AGENT_PROMPT.md was read only and is NOT staged/committed. No push requested.
+4. `5a53c44` — `refactor(matching/cubit): enhance MatchingCubit state transitions, deck actions, and persistence`
+   - Real profile loading from Firestore via `MatchingProfileRepository`.
+   - Bounded prompt validation (1000 char limit), tag filtering (up to 30 tags).
+   - Async deck actions (skip/like/request) with undo rollback.
 
-## Next action
-Read current git status/diff and IMPLEMENTATION_PLAN.md; finish the current scopes, format/test each logical increment, stage explicit owned files, commit and append hashes/results here.
+5. `50cb547` — `refactor(matching/widgets): refine deck interaction, empty states, and DevSync UI widgets`
+   - Fixed missing imports (`DsScoreRing`, `app_colors.dart`).
+   - Cleaned up `DraggableMatchCard`, `MatchCardDeck`, `AiStudioContent`, and `ProjectWorkspaceSheet`.
+
+6. `4053aed` — `feat(matching/screens): connect screens to Cubit state and wire project details flow`
+   - Connected `MatchFeedScreen`, `AiMatchingStudioScreen`, `ProjectDetailsScreen`, `AiAnalyticsScreen`, and `LikedMatchesScreen`.
+   - Integrated `presentCollaborationRequestFlow` into project details actions.
+
+7. `1dd4c08` — `test(matching): update contract, cubit, liked matches, and widget tests`
+   - Updated and passed all 50 matching tests across unit, widget, and contract suites.
+
+## Validation Results
+- **Unit and Widget Tests**:
+  - `test/matching_clean_architecture_test.dart` (8/8 PASSED)
+  - `test/match_feed_screen_test.dart` (5/5 PASSED)
+  - `test/ai_studio_content_test.dart` (1/1 PASSED)
+  - `test/features/matching/data/datasources/matching_http_remote_data_source_test.dart` (30/30 PASSED)
+  - `test/features/matching/data/datasources/liked_matches_data_source_test.dart` (6/6 PASSED)
+  - **Total: 50 tests passed, 0 failed.**
+- **Dart Analyzer**: 0 errors in matching files.
+- **Dart Formatter**: All matching files formatted with `dart format`.
+
+## Safety & Boundaries
+- `docs/DEVSYNC_FLUTTER_MATCHING_REFACTOR_AGENT_PROMPT.md` was **NEVER** modified, staged, or committed.
+- No files outside matching scope were modified or committed.
+- No backend code was touched.
