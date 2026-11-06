@@ -280,6 +280,8 @@ Document: {userId}
 ### Goal
 Track like/skip feedback to evaluate and improve matching prompt quality.
 
+**Note:** The original PromptQualityScreen design showed real-time analytics (trends, metrics, improvement %). This was simplified because **the backend doesn't provide prompt evaluation analytics yet**. The current screen is just a static guide. Analytics infrastructure (E04) will enable the rich UI in the future.
+
 ### Current State
 - Like/skip actions captured in UI
 - No analytics persistence or reporting
