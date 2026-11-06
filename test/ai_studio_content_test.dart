@@ -13,7 +13,7 @@ void main() {
         body: AiStudioContent(
           preferences: MatchingPreferences(prompt: prompt),
           matches: const [],
-          scoringBreakdown: const {},
+          availableTags: const [],
           isGenerating: false,
           onPromptChanged: edits.add,
           onTagToggled: (_) {},

@@ -1,6 +1,8 @@
+import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/liked_matches_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_item.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/user_profile.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
@@ -9,6 +11,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'features/matching/mocks/mock_matching_remote_data_source.dart';
+
+const _testProfile = UserProfile(
+  uid: 'test-uid-001',
+  declaredSkills: ['Flutter', 'Dart'],
+  githubLanguages: {'Dart': 80, 'Python': 20},
+  publicRepoCount: 14,
+  totalContributions: 200,
+);
 
 void main() {
   late MatchingCubit cubit;
@@ -19,6 +29,8 @@ void main() {
         remoteDataSource: MockMatchingRemoteDataSource(),
         localDataSource: InMemoryMatchingLocalDataSource(),
       ),
+      likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
+      profile: _testProfile,
     );
     await cubit.loadInitialData();
     cubit.setViewMode(MatchingViewMode.deck);

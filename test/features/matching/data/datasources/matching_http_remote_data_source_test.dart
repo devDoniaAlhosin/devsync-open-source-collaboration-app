@@ -1,223 +1,246 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/auth_token_provider.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_http_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_request_model.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_response_model.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 
-import 'matching_http_remote_data_source_test.mocks.dart';
+const _request = MatchRequestModel(
+  uid: 'signed-in-user',
+  declaredSkills: ['Dart'],
+  githubLanguages: {'Dart': 120},
+  publicRepoCount: 3,
+  totalContributions: 8,
+  topRepositories: ['owner/repository'],
+  prompt: 'Prefer documentation',
+  tags: {'Testing'},
+);
 
-@GenerateMocks([AuthTokenProvider])
+class _Tokens implements AuthTokenProvider {
+  String? token = 'initial-token';
+  String? refreshed = 'refreshed-token';
+  Object? error;
+  final List<bool> calls = [];
+
+  @override
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    calls.add(forceRefresh);
+    if (error != null) throw error!;
+    return forceRefresh ? refreshed : token;
+  }
+}
+
 void main() {
-  group('MatchingHttpRemoteDataSource', () {
-    late MockAuthTokenProvider mockAuthTokenProvider;
-    late MatchingHttpRemoteDataSource dataSource;
+  late HttpServer server;
+  late _Tokens tokens;
+  late MatchingHttpRemoteDataSource source;
+  late Future<void> Function(HttpRequest) handle;
+  var requests = 0;
 
-    const testToken = 'test-firebase-id-token';
-    const baseUrl = 'http://localhost:3000';
+  Future<void> reply(HttpRequest request, int status, Object body) async {
+    request.response.statusCode = status;
+    request.response.headers.contentType = ContentType.json;
+    request.response.write(jsonEncode(body));
+    await request.response.close();
+  }
 
-    final testRequest = MatchRequestModel(
-      uid: 'user123',
-      declaredSkills: ['flutter', 'dart'],
-      githubLanguages: {'Dart': 100},
-      publicRepoCount: 5,
-      totalContributions: 50,
-      bio: 'Test bio',
-      topRepositories: [],
+  setUp(() async {
+    server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    tokens = _Tokens();
+    requests = 0;
+    handle = (request) =>
+        reply(request, 200, {'matches': [], 'promptVersion': 'v1'});
+    server.listen((request) async {
+      requests++;
+      await handle(request);
+    });
+    source = MatchingHttpRemoteDataSource(
+      baseUrl: 'http://127.0.0.1:${server.port}/',
+      authTokenProvider: tokens,
     );
+  });
 
-    setUp(() {
-      mockAuthTokenProvider = MockAuthTokenProvider();
-      dataSource = MatchingHttpRemoteDataSource(
-        baseUrl: baseUrl,
-        authTokenProvider: mockAuthTokenProvider,
+  tearDown(() async {
+    source.close();
+    await server.close(force: true);
+  });
+
+  test('posts actual profile and preferences with bearer token', () async {
+    Map<String, dynamic>? payload;
+    handle = (request) async {
+      expect(request.method, 'POST');
+      expect(request.uri.path, '/matches/generate');
+      expect(
+        request.headers.value(HttpHeaders.authorizationHeader),
+        'Bearer initial-token',
+      );
+      expect(request.headers.contentType?.mimeType, 'application/json');
+      payload =
+          jsonDecode(await utf8.decoder.bind(request).join())
+              as Map<String, dynamic>;
+      await reply(request, 200, {'matches': [], 'promptVersion': 'v1'});
+    };
+    final response = await source.getMatches(_request);
+    expect(response.matches, isEmpty);
+    expect(response.promptVersion, 'v1');
+    expect(payload, _request.toJson());
+    expect(payload!.containsKey('projects'), isFalse);
+    expect(payload!['declaredSkills'], ['Dart']);
+    expect(payload!['tags'], ['Testing']);
+    expect(tokens.calls, [false]);
+  });
+
+  for (final token in <String?>[null, '']) {
+    test('missing token $token prevents any HTTP request', () async {
+      tokens.token = token;
+      await expectLater(
+        source.getMatches(_request),
+        throwsA(
+          isA<MatchingApiException>().having(
+            (e) => e.statusCode,
+            'status',
+            401,
+          ),
+        ),
+      );
+      expect(requests, 0);
+    });
+  }
+
+  test('refreshes unauthorized token once and preserves payload', () async {
+    final seenTokens = <String?>[];
+    handle = (request) async {
+      seenTokens.add(request.headers.value(HttpHeaders.authorizationHeader));
+      expect(
+        jsonDecode(await utf8.decoder.bind(request).join()),
+        _request.toJson(),
+      );
+      await reply(request, requests == 1 ? 401 : 200, {
+        'matches': [],
+        'promptVersion': 'v1',
+      });
+    };
+    await source.getMatches(_request);
+    expect(tokens.calls, [false, true]);
+    expect(seenTokens, ['Bearer initial-token', 'Bearer refreshed-token']);
+  });
+
+  test('rejected refreshed token does not retry a third time', () async {
+    handle = (request) => reply(request, 401, {'error': 'private detail'});
+    await expectLater(
+      source.getMatches(_request),
+      throwsA(
+        isA<MatchingApiException>().having((e) => e.statusCode, 'status', 401),
+      ),
+    );
+    expect(requests, 2);
+    expect(tokens.calls, [false, true]);
+  });
+
+  test('missing refreshed token stops before sending a retry', () async {
+    tokens.refreshed = null;
+    handle = (request) => reply(request, 401, {});
+    await expectLater(
+      source.getMatches(_request),
+      throwsA(
+        isA<MatchingApiException>().having((e) => e.statusCode, 'status', 401),
+      ),
+    );
+    expect(requests, 1);
+  });
+
+  for (final status in [400, 403, 429, 500, 503]) {
+    test('maps $status safely without retry', () async {
+      handle = (request) =>
+          reply(request, status, {'error': 'SECRET token stack trace'});
+      await expectLater(
+        source.getMatches(_request),
+        throwsA(
+          isA<MatchingApiException>()
+              .having((e) => e.statusCode, 'status', status)
+              .having(
+                (e) => e.message,
+                'safe message',
+                isNot(contains('SECRET')),
+              ),
+        ),
+      );
+      expect(requests, 1);
+      expect(tokens.calls, [false]);
+    });
+  }
+
+  for (final body in [
+    'not-json',
+    '[]',
+    '{}',
+    '{"matches":{},"promptVersion":"v1"}',
+  ]) {
+    test('rejects malformed response $body', () async {
+      handle = (request) async {
+        request.response.write(body);
+        await request.response.close();
+      };
+      await expectLater(
+        source.getMatches(_request),
+        throwsA(
+          isA<MatchingApiException>().having(
+            (e) => e.statusCode,
+            'status',
+            502,
+          ),
+        ),
       );
     });
+  }
 
-    group('Authentication', () {
-      test('throws MatchingApiException when auth token is null', () async {
-        when(mockAuthTokenProvider.getIdToken()).thenAnswer((_) async => null);
-
-        expect(
-          () => dataSource.getMatches(testRequest),
-          throwsA(
-            isA<MatchingApiException>().having(
+  test('auth provider errors are sanitized', () async {
+    tokens.error = const AuthTokenException('SECRET internal auth details');
+    await expectLater(
+      source.getMatches(_request),
+      throwsA(
+        isA<MatchingApiException>()
+            .having((e) => e.statusCode, 'status', 401)
+            .having(
               (e) => e.message,
-              'message',
-              contains('Authentication required'),
+              'safe message',
+              isNot(contains('SECRET')),
             ),
-          ),
-        );
-      });
+      ),
+    );
+    expect(requests, 0);
+  });
 
-      test('requests auth token before making API call', () async {
-        when(
-          mockAuthTokenProvider.getIdToken(),
-        ).thenAnswer((_) async => testToken);
+  test('a stalled HTTP response times out', () async {
+    source.close();
+    source = MatchingHttpRemoteDataSource(
+      baseUrl: 'http://127.0.0.1:${server.port}',
+      authTokenProvider: tokens,
+      requestTimeout: const Duration(milliseconds: 50),
+    );
+    handle = (_) async {};
+    await expectLater(
+      source.getMatches(_request),
+      throwsA(
+        isA<MatchingApiException>().having(
+          (e) => e.message,
+          'message',
+          contains('too long'),
+        ),
+      ),
+    );
+  });
 
-        // This will fail to reach the server, but we're just testing that
-        // the auth token is requested first
-        try {
-          await dataSource.getMatches(testRequest);
-        } catch (_) {
-          // Expected to fail - server not actually running
-        }
-
-        verify(mockAuthTokenProvider.getIdToken()).called(1);
-      });
-    });
-
-    group('Request Model Contract', () {
-      test('MatchRequestModel serializes all required fields', () {
-        final request = MatchRequestModel(
-          uid: 'test-uid-123',
-          declaredSkills: ['Flutter', 'Dart', 'Firebase'],
-          githubLanguages: {'Dart': 8500, 'JavaScript': 1500},
-          publicRepoCount: 15,
-          totalContributions: 250,
-          bio: 'Mobile developer with 5 years experience',
-          topRepositories: ['awesome-app', 'cool-lib'],
-        );
-
-        final json = request.toJson();
-
-        expect(json['uid'], 'test-uid-123');
-        expect(json['declaredSkills'], ['Flutter', 'Dart', 'Firebase']);
-        expect(json['githubLanguages'], {'Dart': 8500, 'JavaScript': 1500});
-        expect(json['publicRepoCount'], 15);
-        expect(json['totalContributions'], 250);
-        expect(json['bio'], 'Mobile developer with 5 years experience');
-        expect(json['topRepositories'], ['awesome-app', 'cool-lib']);
-      });
-
-      test('MatchRequestModel handles optional bio field', () {
-        final request = MatchRequestModel(
-          uid: 'test-uid',
-          declaredSkills: ['Dart'],
-          githubLanguages: {},
-          publicRepoCount: 0,
-          totalContributions: 0,
-          topRepositories: [],
-        );
-
-        final json = request.toJson();
-
-        // bio is excluded from JSON when null (not included as key)
-        expect(json.containsKey('bio'), false);
-      });
-
-      test('MatchRequestModel handles empty collections', () {
-        final request = MatchRequestModel(
-          uid: 'test-uid',
-          declaredSkills: [],
-          githubLanguages: {},
-          publicRepoCount: 0,
-          totalContributions: 0,
-          topRepositories: [],
-        );
-
-        final json = request.toJson();
-
-        expect(json['declaredSkills'], isEmpty);
-        expect(json['githubLanguages'], isEmpty);
-        expect(json['topRepositories'], isEmpty);
-      });
-    });
-
-    group('Response Model Contract', () {
-      test('MatchResponseModel parses empty matches array', () {
-        final json = {
-          'matches': <Map<String, dynamic>>[],
-          'promptVersion': '1.0',
-        };
-
-        final response = MatchResponseModel.fromJson(json);
-
-        expect(response.matches, isEmpty);
-        expect(response.promptVersion, '1.0');
-      });
-
-      test('MatchResponseModel parses match with all required fields', () {
-        final json = {
-          'matches': [
-            {
-              'projectId': 'proj456',
-              'projectName': 'Test Project',
-              'description': 'A Flutter testing project',
-              'githubUrl': 'https://github.com/test/project',
-              'neededSkills': ['Flutter', 'Dart'],
-              'score': 85.5,
-              'reason': 'Shared Flutter and Dart skills',
-              'maintainerId': 'user123',
-              'isFallback': false,
-            },
-          ],
-          'promptVersion': '2.0',
-        };
-
-        final response = MatchResponseModel.fromJson(json);
-
-        expect(response.matches.length, 1);
-        expect(response.matches[0].projectId, 'proj456');
-        expect(response.matches[0].projectName, 'Test Project');
-        expect(response.matches[0].score, 85.5);
-        expect(response.matches[0].reason, 'Shared Flutter and Dart skills');
-        expect(response.matches[0].isFallback, false);
-        expect(response.matches[0].neededSkills, ['Flutter', 'Dart']);
-        expect(response.promptVersion, '2.0');
-      });
-
-      test('MatchResponseModel parses fallback matches', () {
-        final json = {
-          'matches': [
-            {
-              'projectId': 'proj789',
-              'projectName': 'Fallback Project',
-              'description': 'Default project match',
-              'githubUrl': 'https://github.com/fallback/project',
-              'neededSkills': ['Any'],
-              'score': 50.0,
-              'reason': 'Deterministic fallback match',
-              'isFallback': true,
-            },
-          ],
-          'promptVersion': '1.5',
-        };
-
-        final response = MatchResponseModel.fromJson(json);
-
-        expect(response.matches[0].isFallback, true);
-      });
-    });
-
-    group('Error Handling', () {
-      test('MatchingApiException includes status code', () {
-        const exception = MatchingApiException('Server error', statusCode: 500);
-
-        expect(exception.message, 'Server error');
-        expect(exception.statusCode, 500);
-        expect(exception.toString(), 'Server error');
-      });
-
-      test('MatchingApiException defaults status code to 0', () {
-        const exception = MatchingApiException('Network error');
-
-        expect(exception.statusCode, 0);
-      });
-    });
-
-    group('Unimplemented Methods', () {
-      test('generateMatchesWithPrompt throws UnimplementedError', () {
-        expect(
-          () => dataSource.generateMatchesWithPrompt(prompt: 'test'),
-          throwsUnimplementedError,
-        );
-      });
-
-      test('getAnalytics throws UnimplementedError', () {
-        expect(() => dataSource.getAnalytics(), throwsUnimplementedError);
-      });
-    });
+  test('connection refusal returns safe network failure', () async {
+    await server.close(force: true);
+    await expectLater(
+      source.getMatches(_request),
+      throwsA(
+        isA<MatchingApiException>()
+            .having((e) => e.statusCode, 'status', 0)
+            .having((e) => e.message, 'message', contains('connection')),
+      ),
+    );
   });
 }
