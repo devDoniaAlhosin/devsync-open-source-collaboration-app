@@ -2,22 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
-import '../../../../core/widgets/ds_staggered_entrance.dart';
-import '../../domain/entities/matching_priority.dart';
+import '../../../../core/widgets/ds_empty_state.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_analytics_stat_card.dart';
 import '../widgets/ai_analytics_transparency_card.dart';
-import '../widgets/ai_analytics_trend_chart.dart';
-import '../widgets/ai_analytics_tuning_card.dart';
+import 'prompt_quality_screen.dart';
 
-/// Screen displaying AI model quality analytics and priority tuning.
+/// A snapshot of actual results from the latest matching request.
 class AiAnalyticsScreen extends StatefulWidget {
-  final MatchingCubit? cubit;
-
   const AiAnalyticsScreen({super.key, this.cubit});
+  final MatchingCubit? cubit;
 
   @override
   State<AiAnalyticsScreen> createState() => _AiAnalyticsScreenState();
@@ -26,116 +23,6 @@ class AiAnalyticsScreen extends StatefulWidget {
 class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
   late final MatchingCubit _cubit;
   late final bool _ownsCubit;
-  late MatchingPriority _selectedPriority;
-
-  @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-
-    return BlocProvider.value(
-      value: _cubit,
-      child: Scaffold(
-        appBar: DsAppBar(
-          title: 'AI Analytics',
-          eyebrow: 'DEVSYNC',
-          showBack: true,
-          onBack: () => Navigator.of(context).maybePop(),
-        ),
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 540),
-              child: BlocBuilder<MatchingCubit, MatchingState>(
-                builder: (context, state) {
-                  final analytics = state.analytics;
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppSpacing.screenPadding),
-                    child: DsStagger(
-                      spacing: AppSpacing.lg,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'MODEL TRANSPARENCY',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: AppColors.lightAccentText,
-                                    letterSpacing: 1.2,
-                                  ),
-                            ),
-                            Text(
-                              'Recommendation insights',
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: ds.textPrimary,
-                                    fontSize: 24,
-                                    letterSpacing: -0.3,
-                                  ),
-                            ),
-                            Text(
-                              'Understand your feedback and matching trends.',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: ds.textMuted),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AiAnalyticsStatCard(
-                                value: '${analytics.matchesRated}',
-                                label: 'Matches rated',
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: AiAnalyticsStatCard(
-                                value:
-                                    '${analytics.positiveSignalsPercentage}%',
-                                label: 'Positive signals',
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: AiAnalyticsStatCard(
-                                value: '${analytics.skillsMatchedCount}',
-                                label: 'Skills matched',
-                              ),
-                            ),
-                          ],
-                        ),
-                        AiAnalyticsTrendChart(
-                          trendValues: analytics.relevanceTrend,
-                        ),
-                        AiAnalyticsTuningCard(
-                          selectedPriority: _selectedPriority,
-                          onPrioritySelected: (p) =>
-                              setState(() => _selectedPriority = p),
-                          onRefinePrompt: _handleRefinePrompt,
-                        ),
-                        const AiAnalyticsTransparencyCard(),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    if (_ownsCubit) {
-      _cubit.close();
-    }
-    super.dispose();
-  }
 
   @override
   void initState() {
@@ -143,17 +30,99 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
     _ownsCubit = widget.cubit == null;
     _cubit = widget.cubit ?? getIt<MatchingCubit>();
     if (_ownsCubit) _cubit.loadInitialData();
-    _selectedPriority = _cubit.state.preferences.priority;
   }
 
-  void _handleRefinePrompt() {
-    _cubit.refinePromptWithPriority(_selectedPriority);
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text('Demo prompt refined for ${_selectedPriority.label}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.of(context).maybePop(true);
+  @override
+  void dispose() {
+    if (_ownsCubit) _cubit.close();
+    super.dispose();
   }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: DsAppBar(
+      title: 'Match insights',
+      eyebrow: 'DEVSYNC',
+      showBack: true,
+      onBack: () => Navigator.of(context).maybePop(),
+    ),
+    body: SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: BlocBuilder<MatchingCubit, MatchingState>(
+            bloc: _cubit,
+            builder: (context, state) {
+              if (state.isLoading || state.isGenerating) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state.errorMessage != null) {
+                return DsEmptyState(
+                  icon: AppIcons.error,
+                  title: 'Could not load insights',
+                  message: state.errorMessage,
+                  actionLabel: 'Retry',
+                  onAction: _cubit.loadInitialData,
+                );
+              }
+              final matches = state.matches;
+              final average = matches.isEmpty
+                  ? null
+                  : matches.fold<double>(0, (sum, match) => sum + match.score) /
+                        matches.length;
+              return ListView(
+                padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                children: [
+                  Text(
+                    'Recommendation insights',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  const Text('Results from your latest matching request.'),
+                  const SizedBox(height: AppSpacing.lg),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      AiAnalyticsStatCard(
+                        value: '${matches.length}',
+                        label: 'Projects returned',
+                      ),
+                      AiAnalyticsStatCard(
+                        value: average == null ? '—' : '${average.round()}%',
+                        label: 'Average match',
+                      ),
+                      AiAnalyticsStatCard(
+                        value:
+                            '${matches.where((match) => match.isFallback).length}',
+                        label: 'Skill-based matches',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (matches.isEmpty)
+                    const Text(
+                      'No matches yet. Add skills to your profile or try again later.',
+                    ),
+                  if (state.promptVersion != null) ...[
+                    Text('Scoring version: ${state.promptVersion}'),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                  const AiAnalyticsTransparencyCard(),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PromptQualityScreen(),
+                      ),
+                    ),
+                    child: const Text('About prompt quality'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
 }

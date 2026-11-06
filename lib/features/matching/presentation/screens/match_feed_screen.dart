@@ -27,6 +27,7 @@ import '../widgets/match_feed_greeting.dart';
 import '../widgets/match_info_sheet.dart';
 import 'ai_analytics_screen.dart';
 import 'ai_matching_studio_screen.dart';
+import 'connect_github_screen.dart';
 import 'project_details_screen.dart';
 import 'prompt_quality_screen.dart';
 
@@ -86,7 +87,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 },
                 onNotifications: () =>
                     Navigator.of(context).pushNamed(AppRoutes.notifications),
-                notificationBadge: true,
                 actions: [
                   DsIconButton(
                     icon: AppIcons.bookmark,
@@ -128,7 +128,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   }
 
   Widget _buildContent(MatchingState state) {
-    if (state.isLoading) return _buildLoadingSkeleton();
+    if (state.isLoading || state.isGenerating) return _buildLoadingSkeleton();
     final error = state.errorMessage;
     if (error != null) {
       return DsEmptyState(
@@ -159,27 +159,26 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     final match = state.currentDeckMatch;
     if (match == null) {
       return MatchFeedEmptyState(
-        onAddSkills: () {
-          if (widget.onOpenProfile != null) {
-            widget.onOpenProfile!();
-            return;
-          }
-          Navigator.of(context).pushNamed(AppRoutes.profile);
-        },
-        onConnectGitHub: () =>
-            Navigator.of(context).pushNamed(AppRoutes.connectGithub),
+        hasSkills: state.profile.declaredSkills.isNotEmpty,
+        hasReviewedAll: state.matches.isNotEmpty,
+        onRefresh: _cubit.loadInitialData,
+        onAddSkills: _openMatchingProfile,
+        onConnectGitHub: _openMatchingProfile,
       );
     }
 
-    return MatchFeedDeckView(
-      cardKey: _cardKey,
-      match: match,
-      nextMatches: state.nextDeckMatches,
-      canUndo: state.canUndo,
-      onUndo: _cubit.undoLastDeckAction,
-      onTap: () => _navigateToProjectDetails(match, state),
-      onAction: (action) => _handleDeckAction(match, action),
-      onInfo: () => _showMatchInfo(match),
+    return AbsorbPointer(
+      absorbing: state.isSaving,
+      child: MatchFeedDeckView(
+        cardKey: _cardKey,
+        match: match,
+        nextMatches: state.nextDeckMatches,
+        canUndo: state.canUndo,
+        onUndo: _undo,
+        onTap: () => _navigateToProjectDetails(match, state),
+        onAction: (action) => _handleDeckAction(match, action),
+        onInfo: () => _showMatchInfo(match),
+      ),
     );
   }
 
@@ -195,25 +194,33 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         ),
       ),
       ExploreDevSyncItem(
-        title: 'Task board',
-        subtitle: 'Plan your next\nsprint',
-        onTap: () => Navigator.of(
-          context,
-        ).push(DsFadePageRoute<bool>(builder: (_) => MatchingProgressScreen())),
+        title: 'Refresh matches',
+        subtitle: 'Find new\nrecommendations',
+        onTap: () => Navigator.of(context).push(
+          DsFadePageRoute<bool>(
+            builder: (_) => MatchingProgressScreen(cubit: _cubit),
+          ),
+        ),
       ),
       ExploreDevSyncItem(
         title: 'Insights',
-        subtitle: 'Track contributions',
+        subtitle: 'Review your\nmatch results',
         onTap: _openAnalytics,
       ),
       ExploreDevSyncItem(
-        title: 'Collaboration',
-        subtitle: 'Work with your\nteam',
-        onTap: () => Navigator.of(
-          context,
-        ).push(DsFadePageRoute<bool>(builder: (_) => PromptQualityScreen())),
+        title: 'Prompt guide',
+        subtitle: 'Improve your\npreferences',
+        onTap: () => Navigator.of(context).push(
+          DsFadePageRoute<bool>(builder: (_) => const PromptQualityScreen()),
+        ),
       ),
     ];
+  }
+
+  void _openMatchingProfile() {
+    Navigator.of(context).push(
+      DsFadePageRoute<void>(builder: (_) => ConnectGithubScreen(cubit: _cubit)),
+    );
   }
 
   Widget _buildPageContent(MatchingState state) {
@@ -228,7 +235,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               mainAxisSize: MainAxisSize.min,
               spacing: AppSpacing.sm,
               children: [
-                const MatchFeedGreeting(userName: 'Nour'),
+                MatchFeedGreeting(userName: state.profileName),
                 ExploreDevSyncSection(items: _buildExploreItems()),
               ],
             ),
@@ -289,8 +296,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       onPromptChanged: _cubit.updatePrompt,
       preferences: state.preferences,
       matches: state.matches,
-      scoringBreakdown: state.analytics.scoringBreakdown,
-      isGenerating: state.isGenerating,
+      availableTags: state.profile.declaredSkills,
+      isGenerating: state.isGenerating || state.isLoading,
       onTagToggled: _cubit.toggleTag,
       onGenerateMatches: _generateMatches,
       onViewProjectDetails: (match) => _navigateToProjectDetails(match, state),
@@ -305,10 +312,29 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     _notify(state.errorMessage ?? '${state.matches.length} matches generated');
   }
 
-  void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
-    _cubit.performDeckAction(match, action);
-    final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
+  Future<void> _handleDeckAction(
+    MatchItem match,
+    MatchSwipeAction action,
+  ) async {
+    final success = await _cubit.performDeckAction(match, action);
+    if (!mounted) return;
+    if (!success) {
+      _cardKey.currentState?.restore();
+      _notify(
+        _cubit.state.actionErrorMessage ??
+            'Could not save this action. Try again.',
+      );
+      return;
+    }
+    final verb = action == MatchSwipeAction.request ? 'saved' : 'skipped';
     _notify('${match.projectName} $verb');
+  }
+
+  Future<void> _undo() async {
+    await _cubit.undoLastDeckAction();
+    if (!mounted) return;
+    final error = _cubit.state.actionErrorMessage;
+    if (error != null) _notify(error);
   }
 
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {

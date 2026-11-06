@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
+import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
+import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/match_item.dart';
 import '../widgets/project_details_chrome.dart';
 import '../widgets/project_details_content.dart';
@@ -52,7 +55,26 @@ class ProjectDetailsScreen extends StatelessWidget {
             ),
       bottomNavigationBar: details == null
           ? null
-          : CollaborationAction(match: details.match),
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: DsButton(
+                  label: 'Request to collaborate',
+                  onPressed: () => presentCollaborationRequestFlow(
+                    context,
+                    projectName: details.match.projectName,
+                    maintainerName: 'Project maintainer',
+                    initials: details.match.projectName
+                        .split(RegExp(r'[/\s\-]'))
+                        .where((p) => p.isNotEmpty)
+                        .take(2)
+                        .map((p) => p[0].toUpperCase())
+                        .join(),
+                    matchPercent: details.match.score.round(),
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }

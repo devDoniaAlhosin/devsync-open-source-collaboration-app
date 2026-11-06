@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_fade_switch.dart';
+import '../../../../core/widgets/ds_empty_state.dart';
+import '../../../../core/icons/app_icons.dart';
 import '../../domain/entities/match_item.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
@@ -67,11 +69,22 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
   }
 
   Widget _buildBody(BuildContext context, MatchingState state) {
+    if (state.isLoading)
+      return const Center(child: CircularProgressIndicator());
+    if (state.errorMessage != null) {
+      return DsEmptyState(
+        icon: AppIcons.error,
+        title: 'Could not generate matches',
+        message: state.errorMessage,
+        actionLabel: 'Retry',
+        onAction: _cubit.generateMatches,
+      );
+    }
     return AiStudioContent(
       onPromptChanged: _cubit.updatePrompt,
       preferences: state.preferences,
       matches: state.matches,
-      scoringBreakdown: state.analytics.scoringBreakdown,
+      availableTags: state.profile.declaredSkills,
       isGenerating: state.isGenerating,
       onTagToggled: _cubit.toggleTag,
       onGenerateMatches: _generateMatches,

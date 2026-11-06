@@ -22,9 +22,11 @@ import '../../domain/entities/match_item.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
 import 'project_details_screen.dart';
 
-/// Prototype **6b. Liked matches** — hearts from the feed land here.
+/// Saved backend recommendations for the signed-in account.
 class LikedMatchesScreen extends StatefulWidget {
-  const LikedMatchesScreen({super.key});
+  const LikedMatchesScreen({super.key, this.dataSource});
+
+  final LikedMatchesLocalDataSource? dataSource;
 
   @override
   State<LikedMatchesScreen> createState() => _LikedMatchesScreenState();
@@ -34,21 +36,35 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
   late final LikedMatchesLocalDataSource _dataSource;
   List<MatchItem> _likedMatches = [];
   bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _dataSource = getIt<LikedMatchesLocalDataSource>();
+    _dataSource = widget.dataSource ?? getIt<LikedMatchesLocalDataSource>();
     _loadLikedMatches();
   }
 
   Future<void> _loadLikedMatches() async {
-    setState(() => _isLoading = true);
-    final matches = await _dataSource.getLikedMatches();
     setState(() {
-      _likedMatches = matches;
-      _isLoading = false;
+      _isLoading = true;
+      _error = null;
     });
+    try {
+      final matches = await _dataSource.getLikedMatches();
+      if (!mounted) return;
+      setState(() {
+        _likedMatches = matches;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error =
+            'Could not load your saved matches. Check your connection and sign-in, then retry.';
+      });
+    }
   }
 
   @override
@@ -66,7 +82,6 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
           onNotifications: () {
             Navigator.of(context).pushNamed(AppRoutes.notifications);
           },
-          notificationBadge: true,
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -81,10 +96,17 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
         onNotifications: () {
           Navigator.of(context).pushNamed(AppRoutes.notifications);
         },
-        notificationBadge: true,
       ),
       body: DsPageFade(
-        child: _likedMatches.isEmpty
+        child: _error != null
+            ? DsEmptyState(
+                icon: AppIcons.error,
+                title: 'Could not load saved matches',
+                message: _error,
+                actionLabel: 'Retry',
+                onAction: _loadLikedMatches,
+              )
+            : _likedMatches.isEmpty
             ? const Center(
                 child: DsEmptyState(
                   icon: AppIcons.bookmark,
@@ -92,59 +114,61 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                   message: 'Like a card on Matches and it will show up here.',
                 ),
               )
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPadding,
-                  AppSpacing.sm,
-                  AppSpacing.screenPadding,
-                  AppSpacing.xxxl,
-                ),
-                children: [
-                  DsPageHeader(
-                    style: DsPageHeaderStyle.page,
-                    title: 'Liked matches',
-                    eyebrow: '${_likedMatches.length} saved',
-                    body:
-                        'Heart on the feed saves here. Same feedback Emad '
-                        'uses to tune ranking — not a second Favorites product.',
+            : RefreshIndicator(
+                onRefresh: _loadLikedMatches,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.sm,
+                    AppSpacing.screenPadding,
+                    AppSpacing.xxxl,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  DsStagger(
-                    spacing: AppSpacing.md,
-                    children: [
-                      for (final match in _likedMatches)
-                        _LikedMatchCard(
-                          match: match,
-                          onView: () {
-                            Navigator.of(context).push(
-                              DsFadePageRoute<void>(
-                                builder: (_) => ProjectDetailsScreen(
-                                  arguments: ProjectDetailsArguments(
-                                    match: match,
+                  children: [
+                    DsPageHeader(
+                      style: DsPageHeaderStyle.page,
+                      title: 'Liked matches',
+                      eyebrow: '${_likedMatches.length} saved',
+                      body:
+                          'Projects you saved from the matching feed. Scores reflect the recommendation when it was saved.',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    DsStagger(
+                      spacing: AppSpacing.md,
+                      children: [
+                        for (final match in _likedMatches)
+                          _LikedMatchCard(
+                            match: match,
+                            onView: () {
+                              Navigator.of(context).push(
+                                DsFadePageRoute<void>(
+                                  builder: (_) => ProjectDetailsScreen(
+                                    arguments: ProjectDetailsArguments(
+                                      match: match,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                          onRequest: () {
-                            presentCollaborationRequestFlow(
-                              context,
-                              projectName: match.projectName,
-                              maintainerName: 'Karim',
-                              initials: initialsFromTitle(match.projectName),
-                              matchPercent: match.score.round(),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Liked matches help ranking — they are not a separate '
-                    'Favorites product.',
-                    style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
-                  ),
-                ],
+                              );
+                            },
+                            onRequest: () {
+                              presentCollaborationRequestFlow(
+                                context,
+                                projectName: match.projectName,
+                                maintainerName: 'Project maintainer',
+                                initials: initialsFromTitle(match.projectName),
+                                matchPercent: match.score.round(),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Refresh to load the latest saved matches for your account.',
+                      style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
+                    ),
+                  ],
+                ),
               ),
       ),
     );
