@@ -8,13 +8,8 @@ class MatchingPreferences {
     this.priority = MatchingPriority.skills,
   });
 
-  /// The active natural-language prompt describing preferred open-source work.
   final String prompt;
-
-  /// Quick skill / topic tags selected to guide recommendations.
   final Set<String> selectedTags;
-
-  /// Current prioritization signal for AI scoring.
   final MatchingPriority priority;
 
   MatchingPreferences copyWith({
@@ -29,7 +24,6 @@ class MatchingPreferences {
     );
   }
 
-  /// Default baseline preferences for new users.
   static const MatchingPreferences defaultPreferences = MatchingPreferences(
     prompt: '',
     selectedTags: {},

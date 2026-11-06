@@ -7,15 +7,12 @@ import '../../../../core/result/result.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/matching_profile_repository.dart';
 
-/// Reads the signed-in user's matching inputs from `users/{uid}`.
-///
-/// Missing fields remain empty; this repository never substitutes demo data.
+/// Loads and updates user matching profile data from Firestore `users/{uid}`.
 class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
   FirestoreMatchingProfileRepository({
-    required FirebaseFirestore firestore,
-    required FirebaseAuth auth,
-  }) : _firestore = firestore,
-       _auth = auth;
+    required this._firestore,
+    required this._auth,
+  });
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;

@@ -6,34 +6,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/match_item.dart';
 import '../models/match_item_model.dart';
 
-/// Storage contract for managing liked/hearted matches.
-///
-/// Provides abstraction over storage mechanism (in-memory or Firestore).
+/// Storage contract for managing liked matches.
 abstract class LikedMatchesLocalDataSource {
-  /// Get all liked matches.
-  ///
-  /// Returns an empty list when no likes are saved; failures are reported.
   Future<List<MatchItem>> getLikedMatches();
-
-  /// Add a match to liked list if not already present.
   Future<void> addLikedMatch(MatchItem match);
-
-  /// Remove a match from liked list.
   Future<void> removeLikedMatch(String projectId);
-
-  /// Clear all liked matches.
   Future<void> clearLikedMatches();
 }
 
-/// Firestore implementation of liked matches storage.
-///
-/// Stores liked matches in Firestore under collection:
-/// `liked_matches/{userId}/matches/{projectId}`
-///
-/// Provides:
-/// - Persistence across app restarts
-/// - Sync across multiple devices
-/// - Offline-first behavior (Firestore cache)
+/// Firestore implementation for persisting liked matches per user.
 class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   FirestoreLikedMatchesDataSource({
     required FirebaseFirestore firestore,
@@ -173,7 +154,7 @@ class LikedMatchesException implements Exception {
   String toString() => message;
 }
 
-/// In-memory implementation of liked matches storage (for testing).
+/// In-memory implementation of liked matches for testing.
 class InMemoryLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   InMemoryLikedMatchesDataSource();
 

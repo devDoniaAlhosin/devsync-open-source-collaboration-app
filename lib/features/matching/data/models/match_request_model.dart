@@ -1,6 +1,6 @@
 import '../../domain/entities/user_profile.dart';
 
-/// Profile and preferences sent to the matching API. The backend fetches projects.
+/// Request payload sent to `POST /matches/generate`.
 class MatchRequestModel {
   const MatchRequestModel({
     required this.uid,
@@ -24,7 +24,6 @@ class MatchRequestModel {
   final String? prompt;
   final Set<String>? tags;
 
-  /// Build from the domain [UserProfile].
   factory MatchRequestModel.fromProfile(
     UserProfile profile, {
     String? prompt,
@@ -43,7 +42,6 @@ class MatchRequestModel {
     );
   }
 
-  /// Preferences never change the user's declared skills.
   Map<String, dynamic> toJson() {
     return {
       'uid': uid,

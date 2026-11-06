@@ -1,5 +1,6 @@
 import 'match_item_model.dart';
 
+/// Response payload from `POST /matches/generate`.
 class MatchResponseModel {
   const MatchResponseModel({
     required this.matches,

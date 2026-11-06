@@ -1,18 +1,13 @@
 import '../models/match_item_model.dart';
 
-/// Explicit storage of previously fetched backend results, keyed by user.
+/// Local cache for previously fetched match results.
 abstract class MatchingLocalDataSource {
-  /// Return cached matches for [uid], newest first.
   Future<List<MatchItemModel>> getCachedMatches(String uid);
-
-  /// Store [matches] in the cache for [uid].
   Future<void> cacheMatches(String uid, List<MatchItemModel> matches);
-
-  /// Clear the cache for [uid] (e.g. on sign-out or account deletion).
   Future<void> clearCache(String uid);
 }
 
-/// Session cache. It is never substituted for an API failure.
+/// In-memory cache implementation.
 class InMemoryMatchingLocalDataSource implements MatchingLocalDataSource {
   final Map<String, List<MatchItemModel>> _store = {};
 

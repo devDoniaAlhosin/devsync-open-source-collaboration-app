@@ -6,10 +6,7 @@ import 'data/datasources/matching_local_data_source.dart';
 import 'data/repositories/matching_repository_impl.dart';
 import 'domain/repositories/matching_repository.dart';
 
-/// Builds the production [MatchingRepository] (HTTP remote + in-memory cache).
-///
-/// Uses authenticated HTTP calls to the DevSync backend API.
-/// For testing, create a MatchingRepositoryImpl with a mock data source.
+/// Creates the production [MatchingRepository] instance.
 MatchingRepository createMatchingRepository(FirebaseAuth firebaseAuth) {
   final authTokenProvider = FirebaseAuthTokenProvider(firebaseAuth);
 

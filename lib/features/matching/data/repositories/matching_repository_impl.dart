@@ -8,8 +8,7 @@ import '../datasources/matching_remote_data_source.dart';
 import '../models/match_item_model.dart';
 import '../models/match_request_model.dart';
 
-/// Returns backend results and exposes caching only as an explicit operation.
-/// API failures must reach the caller rather than masquerading as empty results.
+/// Coordinates remote matching API requests and local caching.
 class MatchingRepositoryImpl implements MatchingRepository {
   MatchingRepositoryImpl({
     required this.remoteDataSource,

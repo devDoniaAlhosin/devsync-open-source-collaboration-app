@@ -2,9 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/match_item.dart';
 
-/// Data model for serializing [MatchItem] to/from Firestore.
-///
-/// This extends the domain entity with Firestore-specific serialization methods.
+/// Data model for [MatchItem] serialization with JSON and Firestore.
 class MatchItemModel extends MatchItem {
   const MatchItemModel({
     required super.projectId,
@@ -19,10 +17,8 @@ class MatchItemModel extends MatchItem {
     this.likedAt,
   });
 
-  /// Timestamp when this match was liked (for Firestore sorting).
   final DateTime? likedAt;
 
-  /// Convert domain entity to Firestore model.
   factory MatchItemModel.fromEntity(MatchItem entity) {
     return MatchItemModel(
       projectId: entity.projectId,
@@ -38,7 +34,6 @@ class MatchItemModel extends MatchItem {
     );
   }
 
-  /// Parse from the API JSON response (for HTTP data source).
   factory MatchItemModel.fromJson(Map<String, dynamic> json) {
     final score = json['score'];
     final skills = json['neededSkills'];
@@ -67,7 +62,6 @@ class MatchItemModel extends MatchItem {
     );
   }
 
-  /// Parse from Firestore document data.
   factory MatchItemModel.fromFirestore(Map<String, dynamic> data) {
     final match = MatchItemModel.fromJson(data);
     final timestamp = data['likedAt'];
@@ -100,7 +94,6 @@ class MatchItemModel extends MatchItem {
     return value;
   }
 
-  /// Serialize to Firestore document data.
   Map<String, dynamic> toFirestore() {
     return {
       'projectId': projectId,
@@ -118,7 +111,6 @@ class MatchItemModel extends MatchItem {
     };
   }
 
-  /// Convert model back to domain entity.
   MatchItem toEntity() {
     return MatchItem(
       projectId: projectId,

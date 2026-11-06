@@ -1,21 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Provides Firebase ID tokens for authenticated API requests.
-///
-/// This abstraction allows the matching data layer to obtain auth tokens
-/// without directly depending on FirebaseAuth implementation details,
-/// following the Dependency Inversion Principle.
+/// Provides Firebase ID tokens for API calls.
 abstract class AuthTokenProvider {
-  /// Get the current user's Firebase ID token.
-  ///
-  /// Returns null if no user is signed in.
-  /// Throws [AuthTokenException] if token retrieval fails.
   Future<String?> getIdToken({bool forceRefresh = false});
 }
 
-/// Firebase implementation of [AuthTokenProvider].
-///
-/// Retrieves ID tokens from the current Firebase Auth session.
+/// Firebase Auth implementation of [AuthTokenProvider].
 class FirebaseAuthTokenProvider implements AuthTokenProvider {
   FirebaseAuthTokenProvider(this._firebaseAuth);
 
@@ -38,7 +28,7 @@ class FirebaseAuthTokenProvider implements AuthTokenProvider {
   }
 }
 
-/// Exception thrown when ID token retrieval fails.
+/// Thrown when ID token retrieval fails.
 class AuthTokenException implements Exception {
   const AuthTokenException(this.message);
 
