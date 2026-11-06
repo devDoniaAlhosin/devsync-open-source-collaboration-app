@@ -26,9 +26,9 @@ import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/auth/presentation/cubit/verify_code_cubit.dart';
 import '../../features/auth/presentation/cubit/register_cubit.dart';
 import '../../features/matching/data/datasources/liked_matches_local_data_source.dart';
+import '../../features/matching/data/repositories/firestore_matching_profile_repository.dart';
+import '../../features/matching/domain/repositories/matching_profile_repository.dart';
 import '../../features/matching/domain/repositories/matching_repository.dart';
-import '../../features/matching/domain/usecases/generate_matches_usecase.dart';
-import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
@@ -135,6 +135,13 @@ void _registerMatching() {
   getIt
     ..registerLazySingleton<MatchingRepository>(
       () => createMatchingRepository(getIt<FirebaseAuth>()),
+      dispose: (repository) => repository.dispose(),
+    )
+    ..registerLazySingleton<MatchingProfileRepository>(
+      () => FirestoreMatchingProfileRepository(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
     )
     ..registerLazySingleton<LikedMatchesLocalDataSource>(
       () => FirestoreLikedMatchesDataSource(
@@ -143,14 +150,11 @@ void _registerMatching() {
       ),
     )
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
-    ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
-    ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
     ..registerFactory(
       () => MatchingCubit(
         repository: getIt<MatchingRepository>(),
         likedMatchesDataSource: getIt<LikedMatchesLocalDataSource>(),
-        profileRepository: getIt<ProfileRepository>(),
-        auth: getIt<FirebaseAuth>(),
+        profileRepository: getIt<MatchingProfileRepository>(),
       ),
     );
 }
