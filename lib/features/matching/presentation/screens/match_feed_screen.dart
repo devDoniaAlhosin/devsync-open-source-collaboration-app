@@ -19,6 +19,8 @@ import '../../domain/entities/match_item.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
 import '../widgets/draggable_match_card.dart';
+import '../widgets/empty_matches_widget.dart';
+import '../widgets/error_state_widget.dart';
 import '../widgets/explore_devsync_section.dart';
 import '../widgets/match_card_skeleton.dart';
 import '../widgets/match_feed_deck_view.dart';
@@ -127,6 +129,16 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   Widget _buildContent(MatchingState state) {
     if (state.isLoading || state.isGenerating) return _buildLoadingSkeleton();
+
+    // Handle new failure types
+    if (state.failure != null) {
+      return ErrorStateWidget(
+        failure: state.failure!,
+        onRetry: state.failure!.retryable ? _cubit.retry : null,
+      );
+    }
+
+    // Legacy error message handling
     final error = state.errorMessage;
     if (error != null) {
       return DsEmptyState(
@@ -137,6 +149,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         onAction: _cubit.loadInitialData,
       );
     }
+
     return switch (state.viewMode) {
       MatchingViewMode.studio => _buildStudioView(state),
       MatchingViewMode.deck => _buildDeckView(state),
@@ -156,6 +169,12 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Widget _buildDeckView(MatchingState state) {
     final match = state.currentDeckMatch;
     if (match == null) {
+      // Use EmptyMatchesWidget for legitimately empty results
+      if (state.matches.isEmpty && !state.hasError) {
+        return EmptyMatchesWidget(onRefresh: _cubit.loadInitialData);
+      }
+
+      // Legacy empty state
       return MatchFeedEmptyState(
         hasSkills: state.profile.declaredSkills.isNotEmpty,
         hasReviewedAll: state.matches.isNotEmpty,

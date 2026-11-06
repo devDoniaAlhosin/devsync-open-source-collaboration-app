@@ -1,6 +1,8 @@
-import '../../../../core/error/failures.dart';
+import 'dart:io';
+
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../domain/failures/matching_failures.dart';
 import '../../domain/repositories/matching_repository.dart';
 import '../datasources/matching_http_remote_data_source.dart';
 import '../datasources/matching_local_data_source.dart';
@@ -35,6 +37,12 @@ class MatchingRepositoryImpl implements MatchingRepository {
         tags: tags,
       );
       final response = await remoteDataSource.getMatches(request);
+
+      // Check if we got any matches
+      if (response.matches.isEmpty) {
+        throw const NoMatchesFailure();
+      }
+
       final sorted = List<MatchItem>.from(response.matches)
         ..sort((a, b) {
           final byScore = b.score.compareTo(a.score);
@@ -43,19 +51,21 @@ class MatchingRepositoryImpl implements MatchingRepository {
       _promptVersion = response.promptVersion;
       return List<MatchItem>.unmodifiable(sorted);
     } on MatchingApiException catch (error) {
+      // Map HTTP errors to domain failures
       throw switch (error.statusCode) {
+        401 || 403 => const AuthFailure(),
+        429 => const RateLimitFailure(),
+        >= 500 => const ServerFailure(),
         400 => ValidationFailure(error.message),
-        401 => AuthFailure(error.message),
-        403 => PermissionFailure(error.message),
-        0 => NetworkFailure(error.message),
-        _ => UnexpectedFailure(error.message),
+        0 => const NetworkFailure(), // No status code = network error
+        _ => UnknownFailure(error.message),
       };
-    } on Failure {
+    } on SocketException {
+      throw const NetworkFailure();
+    } on MatchingFailure {
       rethrow;
-    } catch (_) {
-      throw const UnexpectedFailure(
-        'Could not load matches. Please try again.',
-      );
+    } catch (error) {
+      throw UnknownFailure(error.toString());
     }
   }
 

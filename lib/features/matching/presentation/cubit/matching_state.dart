@@ -27,6 +27,7 @@ final class MatchingState extends Equatable {
     this.isSaving = false,
     this.errorMessage,
     this.actionErrorMessage,
+    this.failure,
     this.matches = const [],
     this.preferences = MatchingPreferences.defaultPreferences,
     this.viewMode = MatchingViewMode.studio,
@@ -41,6 +42,7 @@ final class MatchingState extends Equatable {
   final bool isSaving;
   final String? errorMessage;
   final String? actionErrorMessage;
+  final MatchingFailure? failure;
   final List<MatchItem> matches;
   final MatchingPreferences preferences;
   final MatchingViewMode viewMode;
@@ -52,6 +54,7 @@ final class MatchingState extends Equatable {
   String? get profileName => profile.displayName;
   bool get canUndo => actionHistory.isNotEmpty;
   bool get hasMatches => matches.isNotEmpty;
+  bool get hasError => failure != null || errorMessage != null;
 
   MatchItem? get currentDeckMatch {
     if (matches.isEmpty || currentDeckIndex >= matches.length) return null;
@@ -71,6 +74,8 @@ final class MatchingState extends Equatable {
     bool clearError = false,
     String? actionErrorMessage,
     bool clearActionError = false,
+    MatchingFailure? failure,
+    bool clearFailure = false,
     List<MatchItem>? matches,
     MatchingPreferences? preferences,
     MatchingViewMode? viewMode,
@@ -88,6 +93,7 @@ final class MatchingState extends Equatable {
       actionErrorMessage: clearActionError
           ? null
           : (actionErrorMessage ?? this.actionErrorMessage),
+      failure: clearFailure ? null : (failure ?? this.failure),
       matches: matches ?? this.matches,
       preferences: preferences ?? this.preferences,
       viewMode: viewMode ?? this.viewMode,
@@ -107,6 +113,7 @@ final class MatchingState extends Equatable {
     isSaving,
     errorMessage,
     actionErrorMessage,
+    failure,
     matches,
     preferences,
     viewMode,

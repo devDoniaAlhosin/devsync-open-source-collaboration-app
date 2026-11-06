@@ -1,12 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/matching_preferences.dart';
 import '../../domain/entities/matching_priority.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../domain/failures/matching_failures.dart';
 import '../../domain/repositories/matching_profile_repository.dart';
 import '../../domain/repositories/matching_repository.dart';
 import '../../domain/usecases/get_ranked_matches_usecase.dart';
@@ -36,6 +36,13 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   Future<void> generateMatches() => _loadMatches(isGenerating: true);
 
+  /// Retry the last failed operation.
+  Future<void> retry() async {
+    if (state.failure != null && state.failure!.retryable) {
+      await loadInitialData();
+    }
+  }
+
   Future<void> _loadMatches({required bool isGenerating}) async {
     if (state.isLoading || state.isGenerating || state.isSaving) return;
     emit(
@@ -43,6 +50,7 @@ class MatchingCubit extends Cubit<MatchingState> {
         isLoading: !isGenerating,
         isGenerating: isGenerating,
         clearError: true,
+        clearFailure: true,
       ),
     );
 
@@ -92,25 +100,26 @@ class MatchingCubit extends Cubit<MatchingState> {
           isLoading: false,
           isGenerating: false,
           clearError: true,
+          clearFailure: true,
           clearActionError: true,
         ),
       );
-    } on Failure catch (failure) {
+    } on MatchingFailure catch (failure) {
       emit(
         state.copyWith(
           profile: profile,
           isLoading: false,
           isGenerating: false,
-          errorMessage: failure.message,
+          failure: failure,
         ),
       );
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           profile: profile,
           isLoading: false,
           isGenerating: false,
-          errorMessage: 'Could not load matches. Please try again.',
+          failure: UnknownFailure(error.toString()),
         ),
       );
     }
