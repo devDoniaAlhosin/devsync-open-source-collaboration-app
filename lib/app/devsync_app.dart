@@ -36,6 +36,7 @@ import '../features/shell/home_shell_screen.dart';
 import '../features/shell/settings_screen.dart';
 import '../features/shell/stub_screen.dart';
 import 'app_routes.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/edit_profile_entry.dart';
 
 /// Root app — **light theme is the default**.
 class DevSyncApp extends StatefulWidget {
@@ -172,10 +173,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.feed => const MatchFeedScreen(),
       AppRoutes.likedMatches => const LikedMatchesScreen(),
       AppRoutes.connectGithub => const ConnectGithubScreen(),
-      AppRoutes.editProfile => EditProfileScreen(
-        data: ProfileData.sample(),
-        asOnboarding: true,
-      ),
+      AppRoutes.editProfile => const EditProfileEntry(),
       AppRoutes.analytics => const AiAnalyticsScreen(),
       AppRoutes.aiStudio => const AiMatchingStudioScreen(),
       AppRoutes.projects => const ProjectsShell(initialTab: 1),
