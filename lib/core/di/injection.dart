@@ -50,6 +50,7 @@ import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
 import '../../features/requests/domain/usecases/update_request_status.dart';
 import '../../features/requests/presentation/cubit/requests_cubit.dart';
+import '../../features/requests/domain/usecases/create_request.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -151,10 +152,7 @@ void _registerProfile() {
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))
     ..registerFactory(
-      () => ProfileCubit(
-        getProfile: getIt(),
-        updateProfile: getIt(),
-      ),
+      () => ProfileCubit(getProfile: getIt(), updateProfile: getIt()),
     );
 }
 
@@ -188,8 +186,10 @@ void _registerRequests() {
     )
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
+    ..registerLazySingleton(() => CreateRequest(getIt()))
     ..registerFactory(
       () => RequestsCubit(
+        createRequest: getIt(),
         getRequests: getIt(),
         updateRequestStatus: getIt(),
       ),
