@@ -5,6 +5,18 @@ import 'package:devsync_open_source_collaboration_app/core/di/injection.dart';
 
 import 'helpers/test_dependencies.dart';
 
+/// The app boots into the launch experience; Welcome is one tap away.
+Future<void> _openWelcome(WidgetTester tester) async {
+  await tester.pumpWidget(const DevSyncApp(showSplash: false));
+  await tester.pump();
+
+  await tester.ensureVisible(find.text('Get started'));
+  await tester.pump();
+  await tester.tap(find.text('Get started'));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 600));
+}
+
 void main() {
   setUp(() async {
     await configureTestDependencies();
@@ -14,9 +26,8 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('Welcome opens after splash gate', (tester) async {
-    await tester.pumpWidget(const DevSyncApp(showSplash: false));
-    await tester.pump();
+  testWidgets('Intro launches into Welcome', (tester) async {
+    await _openWelcome(tester);
 
     expect(find.text('Code with the right people.'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
@@ -24,8 +35,7 @@ void main() {
   });
 
   testWidgets('Welcome Next advances carousel', (tester) async {
-    await tester.pumpWidget(const DevSyncApp(showSplash: false));
-    await tester.pump();
+    await _openWelcome(tester);
 
     await tester.tap(find.text('Next'));
     await tester.pump();
@@ -35,8 +45,7 @@ void main() {
   });
 
   testWidgets('Login opens from Welcome Sign in', (tester) async {
-    await tester.pumpWidget(const DevSyncApp(showSplash: false));
-    await tester.pump();
+    await _openWelcome(tester);
 
     await tester.tap(find.text('Sign in'));
     await tester.pump();
@@ -44,6 +53,6 @@ void main() {
 
     expect(find.text('Your workspace awaits.'), findsOneWidget);
     expect(find.text('Work email'), findsOneWidget);
-    expect(find.text('Sign in with email link'), findsOneWidget);
+    expect(find.text('Sign in with code'), findsOneWidget);
   });
 }

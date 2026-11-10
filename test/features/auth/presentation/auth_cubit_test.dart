@@ -38,23 +38,23 @@ void main() {
     await events.close();
   });
 
-  Future<void> _emit(AppUser? user) async {
+  Future<void> emitEvent(AppUser? user) async {
     events.add(user);
     await Future<void>.delayed(Duration.zero);
   }
 
   test('null user emits signed out', () async {
-    await _emit(null);
+    await emitEvent(null);
     expect(cubit.state, const AuthSignedOut());
   });
 
   test('unverified user emits needs verification', () async {
-    await _emit(_unverified);
+    await emitEvent(_unverified);
     expect(cubit.state, const AuthNeedsVerification(_unverified));
   });
 
   test('verified user emits authenticated', () async {
-    await _emit(_verified);
+    await emitEvent(_verified);
     expect(cubit.state, const AuthAuthenticated(_verified));
   });
 

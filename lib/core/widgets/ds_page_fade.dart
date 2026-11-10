@@ -58,7 +58,7 @@ class _DsPageFadeState extends State<DsPageFade>
       return;
     }
 
-    final enabled = TickerMode.valuesOf(context).enabled;
+    final enabled = TickerMode.of(context);
     final wasEnabled = _lastTickerEnabled;
     _lastTickerEnabled = enabled;
 

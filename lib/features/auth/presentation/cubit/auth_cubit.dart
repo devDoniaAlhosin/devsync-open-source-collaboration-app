@@ -14,10 +14,13 @@ part 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit({
-    required this._watchAuthState,
-    required this._signOut,
-    required this._deleteAccount,
-  }) : super(const AuthInitial()) {
+    required WatchAuthState watchAuthState,
+    required SignOut signOut,
+    required DeleteAccount deleteAccount,
+  }) : _watchAuthState = watchAuthState,
+       _signOut = signOut,
+       _deleteAccount = deleteAccount,
+       super(const AuthInitial()) {
     _subscription = _watchAuthState(const NoParams()).listen(_onUser);
   }
 
