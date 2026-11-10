@@ -1,3 +1,4 @@
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/connect_github_entry.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/requests_screen.dart';
@@ -24,8 +25,6 @@ import '../features/matching/presentation/screens/liked_matches_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart'
     as matching_details;
-import '../features/profile/data/models/profile_data.dart';
-import '../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../features/requests/presentation/screens/connected_celebration_screen.dart';
 import '../features/requests/presentation/screens/notification_permission_screen.dart';
 import '../features/projects/domain/entities/project.dart';
@@ -179,6 +178,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.projects => const ProjectsShell(initialTab: 1),
       AppRoutes.projectDetail => _projectDetailPage(settings.arguments),
       AppRoutes.profile => const ProfileScreen(),
+      AppRoutes.connectGithub => const ConnectGithubEntry(),
       AppRoutes.requests => const RequestsScreen(),
       AppRoutes.notificationPermission => NotificationPermissionScreen(
         args: settings.arguments is NotificationPermissionArgs
