@@ -2,6 +2,7 @@
 abstract final class FirestoreCollections {
   static const users = 'users';
   static const projects = 'projects';
+  static const views = 'views';
   static const matches = 'matches';
   static const feedback = 'feedback';
   static const requests = 'requests';

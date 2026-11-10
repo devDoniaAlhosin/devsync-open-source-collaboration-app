@@ -10,6 +10,10 @@ class Project {
     required this.requestsCount,
     required this.matchPercentage,
     required this.isOwner,
+    this.ownerId = '',
+    this.ownerName = '',
+    this.createdAt,
+    this.hasPendingRequest = false,
   });
 
   final String id;
@@ -20,10 +24,27 @@ class Project {
   final int requiredContributors;
   final int viewsCount;
   final int requestsCount;
+
+  /// Cached AI match score. Computed by `feature/matching` / the DevSync API;
+  /// this module only reads and presents it.
   final int matchPercentage;
   final bool isOwner;
 
+  /// Firebase uid of the maintainer. Empty for legacy/demo records.
+  final String ownerId;
+
+  /// Denormalized maintainer name so Discover can render without an extra read.
+  final String ownerName;
+  final DateTime? createdAt;
+
+  /// True when the signed-in user already has a pending request for this
+  /// project (viewer-relative, resolved by the data layer).
+  final bool hasPendingRequest;
+
   String get initials => initialsFromTitle(title);
+
+  bool isOwnedBy(String? uid) =>
+      uid != null && uid.isNotEmpty && ownerId == uid;
 
   String get cleanGithubUrl {
     return githubUrl
@@ -53,6 +74,10 @@ class Project {
     int? requestsCount,
     int? matchPercentage,
     bool? isOwner,
+    String? ownerId,
+    String? ownerName,
+    DateTime? createdAt,
+    bool? hasPendingRequest,
   }) {
     return Project(
       id: id ?? this.id,
@@ -65,6 +90,10 @@ class Project {
       requestsCount: requestsCount ?? this.requestsCount,
       matchPercentage: matchPercentage ?? this.matchPercentage,
       isOwner: isOwner ?? this.isOwner,
+      ownerId: ownerId ?? this.ownerId,
+      ownerName: ownerName ?? this.ownerName,
+      createdAt: createdAt ?? this.createdAt,
+      hasPendingRequest: hasPendingRequest ?? this.hasPendingRequest,
     );
   }
 }

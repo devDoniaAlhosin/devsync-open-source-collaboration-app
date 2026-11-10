@@ -37,13 +37,7 @@ import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_profile.dart';
 import '../../features/profile/domain/usecases/update_profile.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
-import '../../features/projects/data/datasources/projects_local_data_source.dart';
-import '../../features/projects/data/repositories/projects_repository_impl.dart';
-import '../../features/projects/domain/repositories/projects_repository.dart';
-import '../../features/projects/domain/usecases/get_project_stats.dart';
-import '../../features/projects/domain/usecases/get_projects.dart';
-import '../../features/projects/domain/usecases/upsert_project.dart';
-import '../../features/projects/presentation/cubit/projects_cubit.dart';
+import '../../features/projects/projects_dependencies.dart';
 import '../../features/requests/data/datasources/requests_local_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
 import '../../features/requests/domain/repositories/requests_repository.dart';
@@ -123,7 +117,7 @@ Future<void> configureDependencies() async {
 
   _registerMatching();
   _registerProfile();
-  _registerProjects();
+  registerProjectsDependencies(getIt);
   _registerRequests();
 }
 
@@ -151,30 +145,7 @@ void _registerProfile() {
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))
     ..registerFactory(
-      () => ProfileCubit(
-        getProfile: getIt(),
-        updateProfile: getIt(),
-      ),
-    );
-}
-
-void _registerProjects() {
-  if (getIt.isRegistered<ProjectsRepository>()) return;
-
-  getIt
-    ..registerLazySingleton(ProjectsLocalDataSource.new)
-    ..registerLazySingleton<ProjectsRepository>(
-      () => ProjectsRepositoryImpl(localDataSource: getIt()),
-    )
-    ..registerLazySingleton(() => GetProjects(getIt()))
-    ..registerLazySingleton(() => GetProjectStats(getIt()))
-    ..registerLazySingleton(() => UpsertProject(getIt()))
-    ..registerFactory(
-      () => ProjectsCubit(
-        getProjects: getIt(),
-        getProjectStats: getIt(),
-        upsertProject: getIt(),
-      ),
+      () => ProfileCubit(getProfile: getIt(), updateProfile: getIt()),
     );
 }
 
@@ -189,10 +160,7 @@ void _registerRequests() {
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
     ..registerFactory(
-      () => RequestsCubit(
-        getRequests: getIt(),
-        updateRequestStatus: getIt(),
-      ),
+      () => RequestsCubit(getRequests: getIt(), updateRequestStatus: getIt()),
     );
 }
 

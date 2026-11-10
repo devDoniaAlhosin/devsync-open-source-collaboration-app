@@ -32,7 +32,7 @@ DevSync helps a developer find an open-source project that actually fits them, a
 | **Backend** | Firebase Auth + Firestore + [DevSync API (Vercel)](https://devsync-backend-two.vercel.app) for OTP / email / Gemini matching (no Cloud Functions · Spark-safe) |
 | **Methodology** | Agile Scrum (Jira + GitHub pull requests) |
 
-> **Built now:** design system, Lucide icons, brand assets, auth screens, Firebase Auth, `users/{uid}` identity, and OTP via the Vercel API. **Not built:** Profile, Projects, Match Feed, like/skip, Requests, FCM, live Gemini (`POST /matches/generate` is a stub today). See [§14 Built so far](#14-built-so-far-for-the-team). Screen-by-screen flow: [docs/APP_FLOW.md](docs/APP_FLOW.md).
+> **Built now:** design system, Lucide icons, brand assets, auth screens, Firebase Auth, `users/{uid}` identity, and OTP via the Vercel API. **Not built:** Profile, Projects, Match Feed, like/skip, Requests, FCM, live Gemini (`POST /matches/generate` is a stub today). See [§14 Built so far](#14-built-so-far-for-the-team). Screen-by-screen flow + prototype: [Brand Task Guide and Prototype](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype).
 
 ---
 
@@ -79,7 +79,7 @@ Open-source discovery is mostly tags and stars. Contributors waste time on repos
 
 ### Solution
 
-A mobile matching path with a scored, explained feed and a built-in request — not another project search page. Course delivery is an Android install link, not an app-store product. Full screen list: [docs/APP_FLOW.md](docs/APP_FLOW.md). Prototype: [docs/index.html](docs/index.html).
+A mobile matching path with a scored, explained feed and a built-in request — not another project search page. Course delivery is an Android install link, not an app-store product. Full screen list and prototype: [Brand Task Guide and Prototype](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype).
 
 ---
 
@@ -172,7 +172,7 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 
 ## 5. System architecture
 
-The app uses **feature-first Clean Architecture** (BLoC/Cubit + GetIt + Firebase). Domain does not import Flutter, Firebase, or GetIt. Auth is the template; copy `lib/features/auth/` for features that talk to Firestore. Full rules: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+The app uses **feature-first Clean Architecture** (BLoC/Cubit + GetIt + Firebase). Domain does not import Flutter, Firebase, or GetIt. Auth is the template; copy `lib/features/auth/` for features that talk to Firestore. Conventions for this section (and the rest of the README) are the team standard — there is no separate `docs/ARCHITECTURE.md`.
 
 ```mermaid
 flowchart TB
@@ -332,10 +332,8 @@ devsync_open_source_collaboration_app/
 │       ├── matching/ profile/ projects/ requests/ tasks/
 ├── test/
 ├── docs/
-│   ├── ARCHITECTURE.md      # Clean Architecture standard
-│   ├── APP_FLOW.md
-│   ├── index.html           # Interactive prototype (v27)
-│   └── …planning PDFs & brand logos
+│   ├── index.html           # Local copy of project hub / prototype
+│   └── …planning PDFs, brand guide, logos
 ├── pubspec.yaml
 └── README.md
 ```
@@ -443,10 +441,9 @@ Course and project documents live under [`docs/`](docs/). Use these as the sourc
 | Project Planning & Management | [DevSync-1-Project-Planning-and-Management.pdf](docs/DevSync-1-Project-Planning-and-Management.pdf) |
 | Literature Review | [DevSync-2-Literature-Review.pdf](docs/DevSync-2-Literature-Review.pdf) |
 | Requirements Gathering | [DevSync-3-Requirements-Gathering.pdf](docs/DevSync-3-Requirements-Gathering.pdf) |
+| System Analysis and Design | [DevSync-4-System-Analysis-and-Design.pdf](docs/DevSync-4-System-Analysis-and-Design.pdf) |
 | Feature Summaries (all members) | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
-| Clean Architecture standard | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Full app flow (screens + owners) | [docs/APP_FLOW.md](docs/APP_FLOW.md) |
-| Interactive prototype + team hub | [docs/index.html](docs/index.html) |
+| Brand Task Guide and Prototype | [GitHub Pages hub `#prototype`](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype) |
 | Brand Guidelines | [DevSync_Brand_Guidelines.pdf](docs/DevSync_Brand_Guidelines.pdf) |
 | Brand Guide (HTML) | [DevSync Brand Guide.html](docs/DevSync%20Brand%20Guide.html) |
 
@@ -483,7 +480,7 @@ Do **not** commit `google-services.json` variants that embed private keys beyond
 |---|---|
 | Project planning & requirements docs | Available in `docs/` |
 | Per-member feature summaries | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
-| Brand guide, logos, prototype | Available in `docs/` (+ `docs/index.html`) |
+| Brand guide, logos, prototype | Available in `docs/` + [GitHub Pages `#prototype`](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype) |
 | Design system (tokens + `Ds*` widgets) | Implemented in `lib/core/` |
 | Global Lucide icons (`AppIcons`) | Implemented — use instead of Material `Icons` |
 | App name + launcher / favicon | DevSync branding on Android / iOS / web / desktop |
@@ -579,7 +576,7 @@ Auth layout helpers (also for reuse): `AuthScaffold`, `AuthInlineHeading`, `Auth
 
 Preview: run the app → Home → **Settings**.
 
-### Auth screens (`lib/features/auth/presentation/screens/`) — matches `docs/index.html`
+### Auth screens (`lib/features/auth/presentation/screens/`) — matches the [prototype](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype)
 
 | Screen | Route | Notes |
 |---|---|---|
@@ -604,7 +601,7 @@ Email/password sign-in is wired through Cubit → use case → Firebase Auth. **
 
 1. UI → `AppColors` / `AppSpacing` / `Ds*` widgets  
 2. Icons → `AppIcons` + `DsIcon` (Lucide)  
-3. Features → `lib/features/<area>/{data,domain,presentation}/` (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)) and replace stubs behind `AppRoutes`
+3. Features → `lib/features/<area>/{data,domain,presentation}/` (see [§5 System architecture](#5-system-architecture); copy `lib/features/auth/`) and replace stubs behind `AppRoutes`
 
 ---
 

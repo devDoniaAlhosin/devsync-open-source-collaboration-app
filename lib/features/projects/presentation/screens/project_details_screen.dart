@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
-import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
+import '../../../requests/presentation/widgets/request_join_sheet.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
-import '../../domain/usecases/get_project_stats.dart';
 import '../../project_layout.dart';
+import '../cubit/projects_cubit.dart';
 import '../project_formatters.dart';
 import '../widgets/match_gauge.dart';
 import '../widgets/metric_tile.dart';
@@ -23,72 +24,72 @@ import '../widgets/project_identity.dart';
 import '../widgets/skill_alignment_bar.dart';
 import '../widgets/tech_tag.dart';
 
-class ProjectDetailsScreen extends StatefulWidget {
-  const ProjectDetailsScreen({
-    required this.project,
-    this.stats,
-    super.key,
-  });
+class ProjectDetailsScreen extends StatelessWidget {
+  const ProjectDetailsScreen({required this.project, this.stats, super.key});
 
   final Project project;
 
-  /// When null, stats are loaded via [GetProjectStats].
+  /// Optional preloaded stats (e.g. from a cached card). When null the cubit
+  /// loads them, including live GitHub metrics.
   final ProjectStats? stats;
 
   @override
-  State<ProjectDetailsScreen> createState() => _ProjectDetailsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          getIt<ProjectsCubit>()..loadProject(project, initialStats: stats),
+      child: _ProjectDetailsView(project: project),
+    );
+  }
 }
 
-class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
-  bool _requested = false;
-  ProjectStats? _stats;
-  bool _loadingStats = false;
-  String? _statsError;
+class _ProjectDetailsView extends StatefulWidget {
+  const _ProjectDetailsView({required this.project});
+
+  final Project project;
 
   @override
-  void initState() {
-    super.initState();
-    _stats = widget.stats;
-    if (_stats == null) {
-      _loadStats();
-    }
-  }
+  State<_ProjectDetailsView> createState() => _ProjectDetailsViewState();
+}
 
-  Future<void> _loadStats() async {
-    setState(() {
-      _loadingStats = true;
-      _statsError = null;
-    });
-    final result = await getIt<GetProjectStats>()(
-      GetProjectStatsParams(widget.project.id),
-    );
-    if (!mounted) return;
-    switch (result) {
-      case Success(:final data):
-        setState(() {
-          _stats = data;
-          _loadingStats = false;
-        });
-      case FailureResult(:final failure):
-        setState(() {
-          _statsError = failure.message;
-          _loadingStats = false;
-        });
-    }
-  }
+class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
+  bool _requesting = false;
 
-  Future<void> _requestCollaboration() async {
-    final stats = _stats;
-    if (stats == null) return;
+  Future<void> _requestCollaboration(
+    Project project,
+    ProjectStats stats,
+  ) async {
+    if (_requesting) return;
+    setState(() => _requesting = true);
+
+    RequestJoinResult? details;
     final sent = await presentCollaborationRequestFlow(
       context,
-      projectName: widget.project.title,
+      projectName: project.title,
       maintainerName: stats.ownerName,
-      initials: initialsFromTitle(widget.project.title),
-      matchPercent: widget.project.matchPercentage,
+      initials: project.initials,
+      matchPercent: project.matchPercentage,
+      onSent: (result) => details = result,
     );
-    if (!mounted || !sent) return;
-    setState(() => _requested = true);
+    if (!mounted) return;
+
+    if (!sent) {
+      setState(() => _requesting = false);
+      return;
+    }
+
+    final error = await context.read<ProjectsCubit>().requestToCollaborate(
+      project,
+      message: details?.message,
+    );
+    if (!mounted) return;
+
+    setState(() => _requesting = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error)));
+    }
   }
 
   void _previewWorkspace() {
@@ -103,109 +104,127 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stats = _stats;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: DsAppBar(
-        title: 'Project details',
-        eyebrow: 'WORKSPACE',
-        onNotifications: () {
-          Navigator.of(context).pushNamed(AppRoutes.notifications);
+    return BlocListener<ProjectsCubit, ProjectsState>(
+      listenWhen: (previous, current) =>
+          current is ProjectOperationSuccess &&
+          (previous is! ProjectOperationSuccess ||
+              previous.operationId != current.operationId),
+      listener: (context, state) {
+        if (state is ProjectOperationSuccess) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      child: BlocBuilder<ProjectsCubit, ProjectsState>(
+        builder: (context, state) {
+          final loaded = state is ProjectsLoaded ? state : null;
+          final project =
+              loaded?.projectById(widget.project.id) ?? widget.project;
+          final stats = loaded?.statsFor(widget.project.id);
+
+          final Widget body;
+          if (state is ProjectsFailure) {
+            body = _DetailsError(
+              message: state.message,
+              onRetry: () =>
+                  context.read<ProjectsCubit>().loadProject(widget.project),
+            );
+          } else if (stats != null) {
+            body = _buildContent(project, stats);
+          } else {
+            body = const Center(child: CircularProgressIndicator());
+          }
+
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: DsAppBar(
+              title: 'Project details',
+              eyebrow: 'WORKSPACE',
+              onNotifications: () {
+                Navigator.of(context).pushNamed(AppRoutes.notifications);
+              },
+            ),
+            body: ProjectBackground(child: body),
+            bottomNavigationBar: _DetailsActionBar(
+              requested: project.hasPendingRequest,
+              isOwner: project.isOwner,
+              isLoading: _requesting,
+              onRequest: stats == null
+                  ? null
+                  : () => _requestCollaboration(project, stats),
+              onClose: () => Navigator.of(context).maybePop(),
+            ),
+          );
         },
-      ),
-      body: ProjectBackground(
-        child: _loadingStats
-            ? const Center(child: CircularProgressIndicator())
-            : _statsError != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(_statsError!),
-                ),
-              )
-            : stats == null
-            ? const SizedBox.shrink()
-            : DsPageFade(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final gutter = ProjectLayout.gutterFor(
-                      constraints.maxWidth,
-                    );
-                    return SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(gutter, 20, gutter, 28),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: ProjectLayout.detailsWidth,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ProjectIdentity(
-                                project: widget.project,
-                                stats: stats,
-                              ),
-                              const SizedBox(height: 20),
-                              _buildMatchCard(stats),
-                              const SizedBox(height: 26),
-                              _SectionHeading(
-                                title: 'About',
-                                trailing: Text(
-                                  'Open source',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium
-                                      ?.copyWith(
-                                        color: AppColors.teal,
-                                        fontSize: 11,
-                                        letterSpacing: 0,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                widget.project.description,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: context.ds.textPrimary
-                                          .withValues(alpha: 0.87),
-                                      height: 1.65,
-                                      fontSize: 14.5,
-                                    ),
-                              ),
-                              const SizedBox(height: 26),
-                              _buildSkills(stats),
-                              const SizedBox(height: 24),
-                              _buildRepoMetrics(stats),
-                              const SizedBox(height: 20),
-                              _buildOwnerCard(stats),
-                              const SizedBox(height: 18),
-                              ProjectActionButton(
-                                label: 'Preview project workspace',
-                                trailingIcon: AppIcons.forward,
-                                variant: ProjectActionButtonVariant.secondary,
-                                onPressed: _previewWorkspace,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-      ),
-      bottomNavigationBar: _DetailsActionBar(
-        requested: _requested,
-        onRequest: _requestCollaboration,
-        onClose: () => Navigator.of(context).maybePop(),
       ),
     );
   }
 
-  Widget _buildMatchCard(ProjectStats stats) {
+  Widget _buildContent(Project project, ProjectStats stats) {
+    return DsPageFade(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(gutter, 20, gutter, 28),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: ProjectLayout.detailsWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ProjectIdentity(project: project, stats: stats),
+                    const SizedBox(height: 20),
+                    _buildMatchCard(project, stats),
+                    const SizedBox(height: 26),
+                    _SectionHeading(
+                      title: 'About',
+                      trailing: Text(
+                        'Open source',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: AppColors.teal,
+                              fontSize: 11,
+                              letterSpacing: 0,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      project.description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: context.ds.textPrimary.withValues(alpha: 0.87),
+                        height: 1.65,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    const SizedBox(height: 26),
+                    _buildSkills(project, stats),
+                    const SizedBox(height: 24),
+                    _buildRepoMetrics(stats),
+                    const SizedBox(height: 20),
+                    _buildOwnerCard(stats),
+                    const SizedBox(height: 18),
+                    ProjectActionButton(
+                      label: 'Preview project workspace',
+                      trailingIcon: AppIcons.forward,
+                      variant: ProjectActionButtonVariant.secondary,
+                      onPressed: _previewWorkspace,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMatchCard(Project project, ProjectStats stats) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final gaugeSize = constraints.maxWidth < 310 ? 84.0 : 98.0;
@@ -230,7 +249,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   MatchGauge(
-                    percentage: widget.project.matchPercentage,
+                    percentage: project.matchPercentage,
                     size: gaugeSize,
                   ),
                   const SizedBox(width: 18),
@@ -239,7 +258,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _fitLabel(widget.project.matchPercentage),
+                          _fitLabel(project.matchPercentage),
                           style: Theme.of(
                             context,
                           ).textTheme.headlineSmall?.copyWith(fontSize: 21),
@@ -272,7 +291,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
-  Widget _buildSkills(ProjectStats stats) {
+  Widget _buildSkills(Project project, ProjectStats stats) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -282,7 +301,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final skill in widget.project.techStack)
+            for (final skill in project.techStack)
               TechTag(
                 label: skill,
                 selected: stats.matchedSkills.contains(skill),
@@ -306,10 +325,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     return Row(
       children: [
         Expanded(
-          child: MetricTile(
-            value: formatNumber(stats.stars),
-            label: 'Stars',
-          ),
+          child: MetricTile(value: formatNumber(stats.stars), label: 'Stars'),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -320,10 +336,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: MetricTile(
-            value: '${stats.openTasks}',
-            label: 'Open tasks',
-          ),
+          child: MetricTile(value: '${stats.openTasks}', label: 'Open tasks'),
         ),
       ],
     );
@@ -340,10 +353,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       ),
       child: Row(
         children: [
-          ProjectAvatar(
-            initials: initialsFromTitle(stats.ownerName),
-            size: 44,
-          ),
+          ProjectAvatar(initials: initialsFromTitle(stats.ownerName), size: 44),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -387,6 +397,40 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   }
 }
 
+class _DetailsError extends StatelessWidget {
+  const _DetailsError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text(
+                'Retry',
+                style: TextStyle(color: AppColors.teal),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({required this.title, this.trailing});
 
@@ -414,18 +458,22 @@ class _SectionHeading extends StatelessWidget {
 class _DetailsActionBar extends StatelessWidget {
   const _DetailsActionBar({
     required this.requested,
+    required this.isOwner,
+    required this.isLoading,
     required this.onRequest,
     required this.onClose,
   });
 
   final bool requested;
-  final VoidCallback onRequest;
+  final bool isOwner;
+  final bool isLoading;
+  final VoidCallback? onRequest;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold uses a transparent background for [ProjectBackground]; without
-    // an opaque bar fill the Android window (black) shows through here.
+    final disabled = requested || isOwner || isLoading;
+
     return Material(
       color: context.ds.background,
       child: SafeArea(
@@ -448,14 +496,19 @@ class _DetailsActionBar extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ProjectActionButton(
-                      label: requested
+                      label: isOwner
+                          ? 'You own this project'
+                          : requested
                           ? 'Request sent'
                           : 'Request to collaborate',
-                      icon: requested ? AppIcons.success : null,
-                      variant: requested
+                      icon: requested
+                          ? AppIcons.success
+                          : (isOwner ? AppIcons.projects : null),
+                      variant: disabled
                           ? ProjectActionButtonVariant.secondary
                           : ProjectActionButtonVariant.primary,
-                      onPressed: requested ? null : onRequest,
+                      isLoading: isLoading,
+                      onPressed: disabled ? null : onRequest,
                     ),
                   ),
                 ],
