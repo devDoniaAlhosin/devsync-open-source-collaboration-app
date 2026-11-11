@@ -8,10 +8,12 @@ import 'package:devsync_open_source_collaboration_app/core/widgets/ds_card.dart'
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_staggered_entrance.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_text_field.dart';
-import 'package:devsync_open_source_collaboration_app/features/profile/data/models/profile_data.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/github_connection_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/skills_editor.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/domain/entities/profile.dart';
 
 class EditProfileResult {
   const EditProfileResult({required this.bio, required this.skills});
@@ -27,9 +29,8 @@ class EditProfileScreen extends StatefulWidget {
     this.asOnboarding = false,
   });
 
-  final ProfileData data;
+  final Profile data;
 
-  /// When true (post Connect GitHub), save clears the stack to Home / Matches.
   final bool asOnboarding;
 
   @override
@@ -83,20 +84,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _save() {
     FocusScope.of(context).unfocus();
-    final result = EditProfileResult(
-      bio: _bio.text.trim(),
+    final bio = _bio.text.trim();
+    if (bio.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Bio cannot be empty')));
+      return;
+    }
+    context.read<ProfileCubit>().save(
+      bio: bio,
       skills: [
         for (final s in _available)
           if (_selected.contains(s)) s,
       ],
     );
-    if (widget.asOnboarding) {
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
-      return;
-    }
-    Navigator.of(context).pop(result);
   }
 
   @override
@@ -104,78 +105,99 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final textTheme = Theme.of(context).textTheme;
     final ds = context.ds;
 
-    return Scaffold(
-      appBar: DsAppBar(
-        title: 'Edit profile and skills',
-        eyebrow: 'WORKSPACE',
-        showBack: true,
-        onBack: () => Navigator.of(context).maybePop(),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              children: [
-                DsStagger(
-                  spacing: AppSpacing.lg,
-                  children: [
-                    GithubConnectionCard(username: widget.data.githubUsername),
-                    DsTextField(
-                      label: 'Short bio',
-                      controller: _bio,
-                      maxLines: 4,
-                      maxLength: _bioLimit,
-                      keyboardType: TextInputType.multiline,
-                      onChanged: (_) => setState(() {}),
-                      helperText: '${_bio.text.length} / $_bioLimit',
-                    ),
-                    SkillsEditor(
-                      available: _available,
-                      selected: _selected,
-                      onToggle: _toggle,
-                      onAdd: _add,
-                    ),
-                    DsCard(
-                      tone: DsCardTone.inset,
-                      borderRadius: AppSpacing.radiusLg,
-                      child: Row(
-                        children: [
-                          const DsIcon(
-                            AppIcons.lock,
-                            size: 20,
-                            color: AppColors.teal,
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Text(
-                              'We only use public GitHub data and the skills '
-                              'you add. You can delete them any time.',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: ds.textPrimary,
-                                fontSize: 14,
+    return BlocListener<ProfileCubit, ProfileState>(
+      listenWhen: (prev, curr) => prev is ProfileSaving,
+      listener: (context, state) {
+        if (state is ProfileLoaded) {
+          if (widget.asOnboarding) {
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+          } else {
+            Navigator.of(context).pop();
+          }
+        } else if (state is ProfileSaveFailure) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      child: Scaffold(
+        appBar: DsAppBar(
+          title: 'Edit profile and skills',
+          eyebrow: 'WORKSPACE',
+          showBack: true,
+          onBack: () => Navigator.of(context).maybePop(),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                children: [
+                  DsStagger(
+                    spacing: AppSpacing.lg,
+                    children: [
+                      GithubConnectionCard(
+                        username: widget.data.githubUsername,
+                      ),
+                      DsTextField(
+                        label: 'Short bio',
+                        controller: _bio,
+                        maxLines: 4,
+                        maxLength: _bioLimit,
+                        keyboardType: TextInputType.multiline,
+                        onChanged: (_) => setState(() {}),
+                        helperText: '${_bio.text.length} / $_bioLimit',
+                      ),
+                      SkillsEditor(
+                        available: _available,
+                        selected: _selected,
+                        onToggle: _toggle,
+                        onAdd: _add,
+                      ),
+                      DsCard(
+                        tone: DsCardTone.inset,
+                        borderRadius: AppSpacing.radiusLg,
+                        child: Row(
+                          children: [
+                            const DsIcon(
+                              AppIcons.lock,
+                              size: 20,
+                              color: AppColors.teal,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Text(
+                                'We only use public GitHub data and the skills '
+                                'you add. You can delete them any time.',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: ds.textPrimary,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPadding,
-              AppSpacing.sm,
-              AppSpacing.screenPadding,
-              AppSpacing.lg,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+                AppSpacing.screenPadding,
+                AppSpacing.lg,
+              ),
+              child: DsButton(label: 'Save and see matches', onPressed: _save),
             ),
-            child: DsButton(label: 'Save and see matches', onPressed: _save),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

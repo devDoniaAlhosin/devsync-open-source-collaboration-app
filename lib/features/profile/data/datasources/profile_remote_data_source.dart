@@ -5,13 +5,10 @@ import '../../../../core/constants/firestore_collections.dart';
 import '../../domain/entities/profile.dart';
 import '../models/profile_model.dart';
 
-/// Thrown when a profile call happens with no signed-in user.
 class NotSignedInException implements Exception {
   const NotSignedInException();
 }
 
-/// Reads / writes the profile fields inside `users/{uid}`.
-/// Uses merge so auth fields (email, authProviders...) are never overwritten.
 class ProfileRemoteDataSource {
   ProfileRemoteDataSource({
     required FirebaseAuth auth,
@@ -41,8 +38,6 @@ class ProfileRemoteDataSource {
     final data = snap.data();
     if (data == null) return Profile.empty(name: fallbackName);
 
-    // The profile fields live under the `profile` key to avoid clashing
-    // with the auth fields stored in the same document.
     final profileMap = data['profile'];
     if (profileMap is! Map) return Profile.empty(name: fallbackName);
 

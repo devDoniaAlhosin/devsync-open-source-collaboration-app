@@ -79,7 +79,8 @@ class _ProfileView extends StatelessWidget {
                 onAction: () => context.read<ProfileCubit>().load(),
               ),
               ProfileLoaded(:final profile) ||
-              ProfileSaving(:final profile) => _ProfileBody(
+              ProfileSaving(:final profile) ||
+              ProfileSaveFailure(:final profile) => _ProfileBody(
                 profile: profile,
                 saving: state is ProfileSaving,
               ),
@@ -145,19 +146,16 @@ class _ProfileBody extends StatelessWidget {
               variant: DsButtonVariant.quiet,
               onPressed: saving
                   ? null
-                  : () async {
-                      final result = await Navigator.of(context)
-                          .push<EditProfileResult>(
-                            DsFadePageRoute(
-                              builder: (_) => EditProfileScreen(data: profile),
-                            ),
-                          );
-                      if (result != null && context.mounted) {
-                        await context.read<ProfileCubit>().save(
-                          bio: result.bio,
-                          skills: result.skills,
-                        );
-                      }
+                  : () {
+                      final cubit = context.read<ProfileCubit>();
+                      Navigator.of(context).push(
+                        DsFadePageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: cubit,
+                            child: EditProfileScreen(data: profile),
+                          ),
+                        ),
+                      );
                     },
             ),
           ),
@@ -166,9 +164,9 @@ class _ProfileBody extends StatelessWidget {
             child: DsButton(
               label: 'Insights',
               variant: DsButtonVariant.primary,
-              onPressed: () => Navigator.of(context).push(
-                DsFadePageRoute(builder: (_) => InsightsScreen()),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(DsFadePageRoute(builder: (_) => InsightsScreen())),
             ),
           ),
         ],

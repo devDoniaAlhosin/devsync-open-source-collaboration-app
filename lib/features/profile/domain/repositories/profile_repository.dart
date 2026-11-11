@@ -8,4 +8,11 @@ abstract class ProfileRepository {
     required String bio,
     required List<String> skills,
   });
+
+  Future<Result<Profile>> saveGithubScan({
+    required String githubUsername,
+    required int repos,
+    required int commits,
+    required List<LanguageShare> languages,
+  });
 }

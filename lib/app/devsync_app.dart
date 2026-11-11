@@ -20,7 +20,6 @@ import '../features/auth/presentation/screens/welcome_screen.dart';
 import '../features/auth/presentation/widgets/auth_gate.dart';
 import '../features/matching/presentation/screens/ai_analytics_screen.dart';
 import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
-import '../features/matching/presentation/screens/connect_github_screen.dart';
 import '../features/matching/presentation/screens/liked_matches_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart'
@@ -171,7 +170,6 @@ class _DevSyncAppState extends State<DevSyncApp> {
       ),
       AppRoutes.feed => const MatchFeedScreen(),
       AppRoutes.likedMatches => const LikedMatchesScreen(),
-      AppRoutes.connectGithub => const ConnectGithubScreen(),
       AppRoutes.editProfile => const EditProfileEntry(),
       AppRoutes.analytics => const AiAnalyticsScreen(),
       AppRoutes.aiStudio => const AiMatchingStudioScreen(),
