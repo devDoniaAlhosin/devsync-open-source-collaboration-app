@@ -20,16 +20,35 @@ class RequestsRepositoryImpl implements RequestsRepository {
   }
 
   @override
+  Future<Result<RequestItem>> createRequest({required RequestItem item}) async {
+    try {
+      return Success(await _local.createRequest(item: item));
+    } on ArgumentError catch (error) {
+      return FailureResult(
+        ValidationFailure(error.message?.toString() ?? 'Invalid request'),
+      );
+    } on StateError catch (error) {
+      return FailureResult(ValidationFailure(error.message));
+    } catch (_) {
+      return const FailureResult(UnexpectedFailure());
+    }
+  }
+
+  @override
   Future<Result<RequestItem>> updateStatus({
-    required RequestItem item,
+    required String requestId,
     required RequestStatus status,
   }) async {
     try {
       return Success(
-        await _local.updateStatus(item: item, status: status),
+        await _local.updateStatus(requestId: requestId, status: status),
       );
-    } on StateError {
-      return const FailureResult(NotFoundFailure('Request not found'));
+    } on StateError catch (e) {
+      return FailureResult(NotFoundFailure(e.message));
+    } on ArgumentError catch (e) {
+      return FailureResult(
+        ValidationFailure(e.message?.toString() ?? 'Invalid status'),
+      );
     } catch (_) {
       return const FailureResult(UnexpectedFailure());
     }

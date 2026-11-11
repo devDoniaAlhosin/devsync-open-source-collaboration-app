@@ -44,6 +44,7 @@ import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
 import '../../features/requests/domain/usecases/update_request_status.dart';
 import '../../features/requests/presentation/cubit/requests_cubit.dart';
+import '../../features/requests/domain/usecases/create_request.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/profile/domain/usecases/save_github_scan.dart';
 
@@ -171,8 +172,13 @@ void _registerRequests() {
     )
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
+    ..registerLazySingleton(() => CreateRequest(getIt()))
     ..registerFactory(
-      () => RequestsCubit(getRequests: getIt(), updateRequestStatus: getIt()),
+      () => RequestsCubit(
+        createRequest: getIt(),
+        getRequests: getIt(),
+        updateRequestStatus: getIt(),
+      ),
     );
 }
 
