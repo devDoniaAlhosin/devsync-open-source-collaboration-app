@@ -130,7 +130,7 @@ void _registerMatching() {
   if (getIt.isRegistered<MatchingRepository>()) return;
 
   getIt
-    ..registerLazySingleton<MatchingRepository>(createDemoMatchingRepository)
+    ..registerLazySingleton<MatchingRepository>(createMatchingRepository)
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
