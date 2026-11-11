@@ -55,7 +55,7 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
           duration: _isDragging ? Duration.zero : AppAnimations.normal,
           curve: AppAnimations.emphasized,
           transform: Matrix4.identity()
-            ..translateByDouble(_dragOffset.dx, _dragOffset.dy, 0, 1)
+            ..setTranslationRaw(_dragOffset.dx, _dragOffset.dy, 0)
             ..rotateZ(rotation),
           transformAlignment: Alignment.center,
           child: Stack(

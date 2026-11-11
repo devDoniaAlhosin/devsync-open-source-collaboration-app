@@ -103,7 +103,7 @@ class _DsStaggerState extends State<DsStagger>
       _controller.value = 1;
       return;
     }
-    if (!TickerMode.valuesOf(context).enabled) return;
+    if (!TickerMode.of(context)) return;
     _started = true;
     _controller.forward();
   }
@@ -142,11 +142,7 @@ class _DsStaggerState extends State<DsStagger>
         children: [
           for (var i = 0; i < kids.length; i++) ...[
             if (i > 0 && widget.spacing > 0) SizedBox(height: widget.spacing),
-            DsItemEnter(
-              index: i,
-              slide: widget.slide,
-              child: kids[i],
-            ),
+            DsItemEnter(index: i, slide: widget.slide, child: kids[i]),
           ],
         ],
       );

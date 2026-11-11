@@ -12,10 +12,13 @@ part 'register_state.dart';
 
 class RegisterCubit extends Cubit<RegisterState> {
   RegisterCubit({
-    required this._registerWithEmail,
-    required this._signInWithGoogle,
-    required this._signInWithGitHub,
-  }) : super(const RegisterInitial());
+    required RegisterWithEmail registerWithEmail,
+    required SignInWithGoogle signInWithGoogle,
+    required SignInWithGitHub signInWithGitHub,
+  }) : _registerWithEmail = registerWithEmail,
+       _signInWithGoogle = signInWithGoogle,
+       _signInWithGitHub = signInWithGitHub,
+       super(const RegisterInitial());
 
   final RegisterWithEmail _registerWithEmail;
   final SignInWithGoogle _signInWithGoogle;

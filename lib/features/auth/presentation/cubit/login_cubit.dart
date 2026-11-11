@@ -13,10 +13,13 @@ part 'login_state.dart';
 
 class LoginCubit extends Cubit<LoginState> {
   LoginCubit({
-    required this._signInWithEmail,
-    required this._signInWithGoogle,
-    required this._signInWithGitHub,
-  }) : super(const LoginInitial());
+    required SignInWithEmail signInWithEmail,
+    required SignInWithGoogle signInWithGoogle,
+    required SignInWithGitHub signInWithGitHub,
+  }) : _signInWithEmail = signInWithEmail,
+       _signInWithGoogle = signInWithGoogle,
+       _signInWithGitHub = signInWithGitHub,
+       super(const LoginInitial());
 
   final SignInWithEmail _signInWithEmail;
   final SignInWithGoogle _signInWithGoogle;

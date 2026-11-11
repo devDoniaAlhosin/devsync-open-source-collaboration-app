@@ -10,19 +10,19 @@ part 'verify_code_state.dart';
 
 class VerifyCodeCubit extends Cubit<VerifyCodeState> {
   VerifyCodeCubit({
-    required this._sendEmailOtp,
-    required this._confirmEmailWithOtp,
-    required this._signInWithEmailOtp,
-  }) : super(const VerifyCodeInitial());
+    required SendEmailOtp sendEmailOtp,
+    required ConfirmEmailWithOtp confirmEmailWithOtp,
+    required SignInWithEmailOtp signInWithEmailOtp,
+  }) : _sendEmailOtp = sendEmailOtp,
+       _confirmEmailWithOtp = confirmEmailWithOtp,
+       _signInWithEmailOtp = signInWithEmailOtp,
+       super(const VerifyCodeInitial());
 
   final SendEmailOtp _sendEmailOtp;
   final ConfirmEmailWithOtp _confirmEmailWithOtp;
   final SignInWithEmailOtp _signInWithEmailOtp;
 
-  Future<void> sendCode(
-    String email, {
-    String purpose = 'verify',
-  }) async {
+  Future<void> sendCode(String email, {String purpose = 'verify'}) async {
     if (state is VerifyCodeLoading) return;
     emit(const VerifyCodeLoading());
     final result = await _sendEmailOtp(
