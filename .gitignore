@@ -10,6 +10,7 @@
 .history
 .svn/
 .swiftpm/
+**/Flutter/ephemeral/
 migrate_working_dir/
 
 # IntelliJ related
