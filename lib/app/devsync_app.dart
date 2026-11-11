@@ -1,3 +1,4 @@
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/connect_github_entry.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/requests_screen.dart';
@@ -19,13 +20,10 @@ import '../features/auth/presentation/screens/welcome_screen.dart';
 import '../features/auth/presentation/widgets/auth_gate.dart';
 import '../features/matching/presentation/screens/ai_analytics_screen.dart';
 import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
-import '../features/matching/presentation/screens/connect_github_screen.dart';
 import '../features/matching/presentation/screens/liked_matches_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart'
     as matching_details;
-import '../features/profile/data/models/profile_data.dart';
-import '../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../features/requests/presentation/screens/connected_celebration_screen.dart';
 import '../features/requests/presentation/screens/notification_permission_screen.dart';
 import '../features/projects/domain/entities/project.dart';
@@ -36,6 +34,7 @@ import '../features/shell/home_shell_screen.dart';
 import '../features/shell/settings_screen.dart';
 import '../features/shell/stub_screen.dart';
 import 'app_routes.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/edit_profile_entry.dart';
 
 /// Root app — **light theme is the default**.
 class DevSyncApp extends StatefulWidget {
@@ -171,16 +170,13 @@ class _DevSyncAppState extends State<DevSyncApp> {
       ),
       AppRoutes.feed => const MatchFeedScreen(),
       AppRoutes.likedMatches => const LikedMatchesScreen(),
-      AppRoutes.connectGithub => const ConnectGithubScreen(),
-      AppRoutes.editProfile => EditProfileScreen(
-        data: ProfileData.sample(),
-        asOnboarding: true,
-      ),
+      AppRoutes.editProfile => const EditProfileEntry(),
       AppRoutes.analytics => const AiAnalyticsScreen(),
       AppRoutes.aiStudio => const AiMatchingStudioScreen(),
       AppRoutes.projects => const ProjectsShell(initialTab: 1),
       AppRoutes.projectDetail => _projectDetailPage(settings.arguments),
       AppRoutes.profile => const ProfileScreen(),
+      AppRoutes.connectGithub => const ConnectGithubEntry(),
       AppRoutes.requests => const RequestsScreen(),
       AppRoutes.notificationPermission => NotificationPermissionScreen(
         args: settings.arguments is NotificationPermissionArgs

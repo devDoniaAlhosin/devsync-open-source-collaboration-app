@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -31,7 +32,6 @@ import '../../features/matching/domain/usecases/get_matching_analytics_usecase.d
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
-import '../../features/profile/data/datasources/profile_local_data_source.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_profile.dart';
@@ -50,12 +50,17 @@ import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
 import '../../features/requests/domain/usecases/update_request_status.dart';
 import '../../features/requests/presentation/cubit/requests_cubit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/profile/domain/usecases/save_github_scan.dart';
 
 final GetIt getIt = GetIt.instance;
 
 /// Composition root. Safe to call more than once (tests / hot restart).
 Future<void> configureDependencies() async {
   if (getIt.isRegistered<AuthRepository>()) return;
+
+  final prefs = await SharedPreferences.getInstance();
+  getIt.registerSingleton<SharedPreferences>(prefs);
 
   getIt
     ..registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance)
@@ -144,16 +149,20 @@ void _registerProfile() {
   if (getIt.isRegistered<ProfileRepository>()) return;
 
   getIt
-    ..registerLazySingleton(ProfileLocalDataSource.new)
+    ..registerLazySingleton(
+      () => ProfileRemoteDataSource(auth: getIt(), firestore: getIt()),
+    )
     ..registerLazySingleton<ProfileRepository>(
-      () => ProfileRepositoryImpl(localDataSource: getIt()),
+      () => ProfileRepositoryImpl(remoteDataSource: getIt()),
     )
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))
+    ..registerLazySingleton(() => SaveGithubScan(getIt()))
     ..registerFactory(
       () => ProfileCubit(
         getProfile: getIt(),
         updateProfile: getIt(),
+        saveGithubScan: getIt(),
       ),
     );
 }
@@ -189,10 +198,7 @@ void _registerRequests() {
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
     ..registerFactory(
-      () => RequestsCubit(
-        getRequests: getIt(),
-        updateRequestStatus: getIt(),
-      ),
+      () => RequestsCubit(getRequests: getIt(), updateRequestStatus: getIt()),
     );
 }
 

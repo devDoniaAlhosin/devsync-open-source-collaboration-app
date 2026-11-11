@@ -41,3 +41,13 @@ final class ProfileFailure extends ProfileState {
   @override
   List<Object?> get props => [message];
 }
+
+final class ProfileSaveFailure extends ProfileState {
+  const ProfileSaveFailure(this.profile, this.message);
+
+  final Profile profile;
+  final String message;
+
+  @override
+  List<Object?> get props => [profile, message];
+}
