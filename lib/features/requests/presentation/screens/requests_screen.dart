@@ -73,8 +73,7 @@ class _RequestsView extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: SegmentedTabs(
                       index: tab,
-                      onChanged: (i) =>
-                          context.read<RequestsCubit>().setTab(i),
+                      onChanged: (i) => context.read<RequestsCubit>().setTab(i),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -84,10 +83,7 @@ class _RequestsView extends StatelessWidget {
                       switchInCurve: AppAnimations.emphasized,
                       switchOutCurve: Curves.easeIn,
                       transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        );
+                        return FadeTransition(opacity: animation, child: child);
                       },
                       child: ListView.builder(
                         key: ValueKey(tab),
@@ -107,9 +103,7 @@ class _RequestsView extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 10),
                             child: DsItemEnter(
                               index: index,
-                              child: ExpandedRequestCard(
-                                item: visible[index],
-                              ),
+                              child: ExpandedRequestCard(item: visible[index]),
                             ),
                           );
                         },

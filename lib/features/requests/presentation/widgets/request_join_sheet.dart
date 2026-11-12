@@ -32,18 +32,13 @@ Future<RequestJoinResult?> showRequestJoinSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _RequestJoinSheet(
-      item: item,
-      maintainerName: maintainerName,
-    ),
+    builder: (context) =>
+        _RequestJoinSheet(item: item, maintainerName: maintainerName),
   );
 }
 
 class _RequestJoinSheet extends StatefulWidget {
-  const _RequestJoinSheet({
-    required this.item,
-    required this.maintainerName,
-  });
+  const _RequestJoinSheet({required this.item, required this.maintainerName});
 
   final RequestItem item;
   final String maintainerName;
@@ -136,17 +131,12 @@ class _RequestJoinSheetState extends State<_RequestJoinSheet> {
                   layoutBuilder: (currentChild, previousChildren) {
                     return Stack(
                       alignment: Alignment.topCenter,
-                      children: [
-                        ...previousChildren,
-                        ?currentChild,
-                      ],
+                      children: [...previousChildren, ?currentChild],
                     );
                   },
                   child: KeyedSubtree(
                     key: ValueKey(_sent ? 'success' : 'form'),
-                    child: _sent
-                        ? _buildSuccess(context)
-                        : _buildForm(context),
+                    child: _sent ? _buildSuccess(context) : _buildForm(context),
                   ),
                 ),
               ],
@@ -277,9 +267,7 @@ class _RequestJoinSheetState extends State<_RequestJoinSheet> {
         DsButton(
           label: 'Send request',
           compact: true,
-          onPressed: _messageController.text.trim().isEmpty
-              ? null
-              : _onSend,
+          onPressed: _messageController.text.trim().isEmpty ? null : _onSend,
         ),
       ],
     );
@@ -295,9 +283,7 @@ class _RequestJoinSheetState extends State<_RequestJoinSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: _SuccessCheckmark(),
-          ),
+          Center(child: _SuccessCheckmark()),
           const SizedBox(height: AppSpacing.xxl),
           DsItemEnter(
             index: 1,

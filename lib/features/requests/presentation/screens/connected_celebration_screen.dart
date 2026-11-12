@@ -29,10 +29,7 @@ class ConnectedCelebrationArgs {
 
 /// Dark celebration after a collaboration request is accepted.
 class ConnectedCelebrationScreen extends StatefulWidget {
-  const ConnectedCelebrationScreen({
-    super.key,
-    required this.args,
-  });
+  const ConnectedCelebrationScreen({super.key, required this.args});
 
   final ConnectedCelebrationArgs args;
 
@@ -54,14 +51,8 @@ class _ConnectedCelebrationScreenState extends State<ConnectedCelebrationScreen>
       vsync: this,
       duration: const Duration(seconds: 18),
     )..repeat();
-    _copy = AnimationController(
-      vsync: this,
-      duration: AppAnimations.handoff,
-    );
-    _check = AnimationController(
-      vsync: this,
-      duration: AppAnimations.slow,
-    );
+    _copy = AnimationController(vsync: this, duration: AppAnimations.handoff);
+    _check = AnimationController(vsync: this, duration: AppAnimations.slow);
 
     // Copy rises in after the merge mark has drawn a bit.
     Future<void>.delayed(const Duration(milliseconds: 520), () {
@@ -237,7 +228,9 @@ class _ConnectedCelebrationScreenState extends State<ConnectedCelebrationScreen>
               _FadeRise(
                 animation: body,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
                   child: Text.rich(
                     TextSpan(
                       style: textTheme.bodyMedium?.copyWith(
@@ -407,7 +400,10 @@ class _OrbitRingsPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2
         ..color = AppColors.teal.withValues(
-          alpha: 0.08 + (i == 1 ? 0.06 : 0) + math.sin(progress * math.pi * 2 + i) * 0.02,
+          alpha:
+              0.08 +
+              (i == 1 ? 0.06 : 0) +
+              math.sin(progress * math.pi * 2 + i) * 0.02,
         );
       canvas.drawCircle(c, r, paint);
 
@@ -418,13 +414,7 @@ class _OrbitRingsPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..color = AppColors.teal.withValues(alpha: 0.22);
       final rect = Rect.fromCircle(center: c, radius: r);
-      canvas.drawArc(
-        rect,
-        progress * math.pi * 2 + i,
-        0.9,
-        false,
-        dash,
-      );
+      canvas.drawArc(rect, progress * math.pi * 2 + i, 0.9, false, dash);
     }
   }
 
