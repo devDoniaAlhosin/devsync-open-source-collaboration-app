@@ -44,7 +44,8 @@ import '../../features/projects/domain/usecases/get_project_stats.dart';
 import '../../features/projects/domain/usecases/get_projects.dart';
 import '../../features/projects/domain/usecases/upsert_project.dart';
 import '../../features/projects/presentation/cubit/projects_cubit.dart';
-import '../../features/requests/data/datasources/requests_local_data_source.dart';
+// import '../../features/requests/data/datasources/requests_local_data_source.dart';
+import '../../features/requests/data/datasources/requests_remote_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
 import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
@@ -180,9 +181,16 @@ void _registerRequests() {
   if (getIt.isRegistered<RequestsRepository>()) return;
 
   getIt
-    ..registerLazySingleton(RequestsLocalDataSource.new)
+    ..registerLazySingleton<RequestsRemoteDataSource>(
+      () => RequestsRemoteDataSource(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
     ..registerLazySingleton<RequestsRepository>(
-      () => RequestsRepositoryImpl(localDataSource: getIt()),
+      () => RequestsRepositoryImpl(
+        remoteDataSource: getIt<RequestsRemoteDataSource>(),
+      ),
     )
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
