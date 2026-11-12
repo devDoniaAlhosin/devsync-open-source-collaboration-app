@@ -58,9 +58,9 @@ class RequestsCubit extends Cubit<RequestsState> {
     }
   }
 
-  Future<void> setStatus(String requestId, RequestStatus status) async {
+  Future<bool> setStatus(String requestId, RequestStatus status) async {
     final current = state;
-    if (current is! RequestsLoaded) return;
+    if (current is! RequestsLoaded) return false;
 
     final result = await _updateRequestStatus(
       UpdateRequestStatusParams(requestId: requestId, status: status),
@@ -74,9 +74,10 @@ class RequestsCubit extends Cubit<RequestsState> {
         ];
 
         emit(current.copyWith(items: items));
-
+        return true;
       case FailureResult(:final failure):
         emit(RequestsFailure(failure.message));
+        return false;
     }
   }
 }
