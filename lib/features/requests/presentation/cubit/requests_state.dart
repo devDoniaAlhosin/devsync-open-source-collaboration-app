@@ -33,10 +33,7 @@ final class RequestsLoaded extends RequestsState {
   }
 
   RequestsLoaded copyWith({List<RequestItem>? items, int? tab}) {
-    return RequestsLoaded(
-      items: items ?? this.items,
-      tab: tab ?? this.tab,
-    );
+    return RequestsLoaded(items: items ?? this.items, tab: tab ?? this.tab);
   }
 
   @override

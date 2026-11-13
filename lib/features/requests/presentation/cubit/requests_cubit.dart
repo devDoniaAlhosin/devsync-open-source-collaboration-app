@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../domain/entities/collaboration_request.dart';
+import '../../domain/usecases/create_request.dart';
 import '../../domain/usecases/get_requests.dart';
 import '../../domain/usecases/update_request_status.dart';
 
@@ -12,15 +13,19 @@ part 'requests_state.dart';
 class RequestsCubit extends Cubit<RequestsState> {
   RequestsCubit({
     required this._getRequests,
+    required this._createRequest,
     required this._updateRequestStatus,
   }) : super(const RequestsInitial());
 
   final GetRequests _getRequests;
+  final CreateRequest _createRequest;
   final UpdateRequestStatus _updateRequestStatus;
 
   Future<void> load() async {
     emit(const RequestsLoading());
+
     final result = await _getRequests(const NoParams());
+
     switch (result) {
       case Success(:final data):
         emit(RequestsLoaded(items: data));
@@ -32,30 +37,47 @@ class RequestsCubit extends Cubit<RequestsState> {
   void setTab(int tab) {
     final current = state;
     if (current is! RequestsLoaded) return;
+
     emit(current.copyWith(tab: tab));
   }
 
-  Future<void> setStatus(RequestItem item, RequestStatus status) async {
+  Future<RequestItem?> create(RequestItem item) async {
+    final result = await _createRequest(CreateRequestParams(item: item));
+
+    switch (result) {
+      case Success(:final data):
+        final current = state;
+        if (current is RequestsLoaded) {
+          emit(current.copyWith(items: [...current.items, data]));
+        }
+        return data;
+
+      case FailureResult(:final failure):
+        emit(RequestsFailure(failure.message));
+        return null;
+    }
+  }
+
+  Future<bool> setStatus(String requestId, RequestStatus status) async {
     final current = state;
-    if (current is! RequestsLoaded) return;
+    if (current is! RequestsLoaded) return false;
 
     final result = await _updateRequestStatus(
-      UpdateRequestStatusParams(item: item, status: status),
+      UpdateRequestStatusParams(requestId: requestId, status: status),
     );
+
     switch (result) {
       case Success(:final data):
         final items = [
-          for (final r in current.items)
-            if (r.title == item.title &&
-                r.type == item.type &&
-                r.displayName == item.displayName)
-              data
-            else
-              r,
+          for (final request in current.items)
+            if (request.id == requestId) data else request,
         ];
+
         emit(current.copyWith(items: items));
+        return true;
       case FailureResult(:final failure):
         emit(RequestsFailure(failure.message));
+        return false;
     }
   }
 }
