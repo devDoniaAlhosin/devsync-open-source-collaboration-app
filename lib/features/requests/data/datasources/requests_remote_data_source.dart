@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -38,7 +40,9 @@ class RequestsRemoteDataSource {
       }
     }
 
-    final items = docs.values.map(RequestModel.fromFirestore).toList();
+    final items = docs.values
+        .map((doc) => RequestModel.fromFirestore(doc, currentUserId: uid))
+        .toList();
 
     items.sort((a, b) {
       final aDate = a.createdAt ?? DateTime(2000);
@@ -62,19 +66,24 @@ class RequestsRemoteDataSource {
       throw ArgumentError('You cannot request to join your own project.');
     }
 
-    final duplicate = await _requests
+    final requestId = '${uid}_${item.projectId}';
+    if (utf8.encode(requestId).length > 1500) {
+      throw ArgumentError('Project ID is too long.');
+    }
+
+    final legacyDuplicate = await _requests
         .where('projectId', isEqualTo: item.projectId)
         .where('senderId', isEqualTo: uid)
         .where('status', whereIn: ['pending', 'isNew'])
         .limit(1)
         .get();
-
-    if (duplicate.docs.isNotEmpty) {
+    if (legacyDuplicate.docs.isNotEmpty &&
+        legacyDuplicate.docs.single.id != requestId) {
       throw StateError('You already have a pending request.');
     }
 
     final model = RequestModel(
-      id: '',
+      id: requestId,
       projectId: item.projectId,
       senderId: uid,
       ownerId: item.ownerId,
@@ -94,10 +103,24 @@ class RequestsRemoteDataSource {
       skills: item.skills,
     );
 
-    final ref = await _requests.add(model.toFirestore());
-    final saved = await ref.get();
+    final ref = _requests.doc(requestId);
+    await _firestore.runTransaction<void>((transaction) async {
+      final existing = await transaction.get(ref);
+      if (existing.exists) {
+        final status = existing.data()?['status'];
+        if (status == 'pending' || status == 'isNew') {
+          throw StateError('You already have a pending request.');
+        }
+        if (status != 'declined') {
+          throw StateError('You have already been accepted for this project.');
+        }
+      }
 
-    return RequestModel.fromFirestore(saved);
+      transaction.set(ref, model.toFirestore());
+    });
+
+    final saved = await ref.get();
+    return RequestModel.fromFirestore(saved, currentUserId: uid);
   }
 
   Future<RequestItem> updateStatus({
@@ -108,6 +131,7 @@ class RequestsRemoteDataSource {
       throw ArgumentError('Invalid request status.');
     }
 
+    final uid = _uid;
     final ref = _requests.doc(requestId);
 
     return _firestore.runTransaction((transaction) async {
@@ -118,7 +142,7 @@ class RequestsRemoteDataSource {
       }
 
       final data = snapshot.data()!;
-      if (data['ownerId'] != _uid) {
+      if (data['ownerId'] != uid) {
         throw StateError('You cannot respond to this request.');
       }
 
@@ -133,6 +157,7 @@ class RequestsRemoteDataSource {
 
       return RequestModel.fromFirestore(
         snapshot,
+        currentUserId: uid,
       ).copyWith(status: status, respondedAt: DateTime.now());
     });
   }

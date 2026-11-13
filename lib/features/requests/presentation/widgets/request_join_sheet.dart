@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -9,6 +10,9 @@ import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_item_enter.dart';
 import '../../domain/entities/collaboration_request.dart';
+
+typedef RequestSendCallback =
+    Future<Result<RequestItem>> Function(String message);
 
 /// Result after the user confirms send on the join sheet success step.
 class RequestJoinResult {
@@ -26,22 +30,31 @@ class RequestJoinResult {
 Future<RequestJoinResult?> showRequestJoinSheet(
   BuildContext context, {
   required RequestItem item,
+  required RequestSendCallback onSend,
   String maintainerName = 'Karim',
 }) {
   return showModalBottomSheet<RequestJoinResult>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) =>
-        _RequestJoinSheet(item: item, maintainerName: maintainerName),
+    builder: (context) => _RequestJoinSheet(
+      item: item,
+      maintainerName: maintainerName,
+      onSend: onSend,
+    ),
   );
 }
 
 class _RequestJoinSheet extends StatefulWidget {
-  const _RequestJoinSheet({required this.item, required this.maintainerName});
+  const _RequestJoinSheet({
+    required this.item,
+    required this.maintainerName,
+    required this.onSend,
+  });
 
   final RequestItem item;
   final String maintainerName;
+  final RequestSendCallback onSend;
 
   @override
   State<_RequestJoinSheet> createState() => _RequestJoinSheetState();
@@ -53,6 +66,8 @@ class _RequestJoinSheetState extends State<_RequestJoinSheet> {
 
   int? _selectedSuggestion = 0;
   bool _sent = false;
+  bool _sending = false;
+  String? _sendError;
   String _sentMessage = '';
 
   @override
@@ -264,10 +279,19 @@ class _RequestJoinSheetState extends State<_RequestJoinSheet> {
           ),
         ),
         const SizedBox(height: 12),
+        if (_sendError != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _sendError!,
+            style: textTheme.bodySmall?.copyWith(color: colors.error),
+          ),
+        ],
         DsButton(
-          label: 'Send request',
+          label: _sending ? 'Sending...' : 'Send request',
           compact: true,
-          onPressed: _messageController.text.trim().isEmpty ? null : _onSend,
+          onPressed: _sending || _messageController.text.trim().isEmpty
+              ? null
+              : _onSend,
         ),
       ],
     );
@@ -331,11 +355,29 @@ class _RequestJoinSheetState extends State<_RequestJoinSheet> {
     );
   }
 
-  void _onSend() {
+  Future<void> _onSend() async {
+    final message = _messageController.text.trim();
     setState(() {
-      _sentMessage = _messageController.text.trim();
-      _sent = true;
+      _sending = true;
+      _sendError = null;
     });
+
+    final result = await widget.onSend(message);
+    if (!mounted) return;
+
+    switch (result) {
+      case Success(:final data):
+        setState(() {
+          _sentMessage = data.message ?? message;
+          _sending = false;
+          _sent = true;
+        });
+      case FailureResult(:final failure):
+        setState(() {
+          _sending = false;
+          _sendError = failure.message;
+        });
+    }
   }
 
   void _selectSuggestion(int index) {

@@ -27,15 +27,18 @@ class RequestModel extends RequestItem {
   });
 
   factory RequestModel.fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+    DocumentSnapshot<Map<String, dynamic>> doc, {
+    required String currentUserId,
+  }) {
     final data = doc.data()!;
+    final senderId = data['senderId'] as String?;
+    final ownerId = data['ownerId'] as String?;
 
     return RequestModel(
       id: doc.id,
       projectId: data['projectId'] ?? '',
-      senderId: data['senderId'],
-      ownerId: data['ownerId'],
+      senderId: senderId,
+      ownerId: ownerId,
       initials: data['initials'] ?? '',
       title: data['title'] ?? '',
       subtitle: data['subtitle'] ?? '',
@@ -43,10 +46,9 @@ class RequestModel extends RequestItem {
         (e) => e.name == data['status'],
         orElse: () => RequestStatus.pending,
       ),
-      type: RequestType.values.firstWhere(
-        (e) => e.name == data['type'],
-        orElse: () => RequestType.sent,
-      ),
+      type: ownerId == currentUserId && senderId != currentUserId
+          ? RequestType.received
+          : RequestType.sent,
       message: data['message'],
       displayName: data['displayName'] ?? 'Contributor',
       targetName: data['targetName'] ?? '',

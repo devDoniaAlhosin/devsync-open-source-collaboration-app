@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/project.dart';
@@ -6,10 +8,14 @@ import '../../domain/repositories/projects_repository.dart';
 import '../datasources/projects_local_data_source.dart';
 
 class ProjectsRepositoryImpl implements ProjectsRepository {
-  ProjectsRepositoryImpl({required ProjectsLocalDataSource localDataSource})
-    : _local = localDataSource;
+  ProjectsRepositoryImpl({
+    required ProjectsLocalDataSource localDataSource,
+    required FirebaseAuth firebaseAuth,
+  }) : _local = localDataSource,
+       _auth = firebaseAuth;
 
   final ProjectsLocalDataSource _local;
+  final FirebaseAuth _auth;
 
   @override
   Future<Result<List<Project>>> getProjects() async {
@@ -37,7 +43,11 @@ class ProjectsRepositoryImpl implements ProjectsRepository {
           ValidationFailure('Project title is required'),
         );
       }
-      return Success(await _local.upsert(project));
+      final currentUserId = _auth.currentUser?.uid;
+      final projectToSave = project.isOwner && project.ownerId == null
+          ? project.copyWith(ownerId: currentUserId)
+          : project;
+      return Success(await _local.upsert(projectToSave));
     } catch (_) {
       return const FailureResult(UnexpectedFailure());
     }

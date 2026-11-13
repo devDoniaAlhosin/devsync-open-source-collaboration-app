@@ -18,7 +18,7 @@ class ExpandedRequestCard extends StatefulWidget {
 }
 
 class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
-  late bool _expanded = widget.item.status == RequestStatus.isNew;
+  late bool _expanded = widget.item.isReceived && widget.item.isPending;
 
   RequestStatus get _status => widget.item.status;
 
@@ -34,9 +34,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
         children: [
           InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap:
-                _status == RequestStatus.isNew &&
-                    widget.item.type == RequestType.received
+            onTap: widget.item.isReceived && widget.item.isPending
                 ? _openDetails
                 : _toggle,
             child: Row(
@@ -96,7 +94,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
           ),
         const SizedBox(height: 12),
 
-        if (_status == RequestStatus.pending)
+        if (_status == RequestStatus.pending && widget.item.isSent)
           _ActionButton(
             label: 'View project',
             background: Colors.transparent,
@@ -115,7 +113,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
               const SnackBar(content: Text('Open project details')),
             ),
           )
-        else if (_status == RequestStatus.isNew)
+        else if (widget.item.isReceived && widget.item.isPending)
           Row(
             children: [
               Expanded(

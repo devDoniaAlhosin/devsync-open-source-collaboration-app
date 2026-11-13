@@ -10,6 +10,7 @@ class Project {
     required this.requestsCount,
     required this.matchPercentage,
     required this.isOwner,
+    this.ownerId,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class Project {
   final int requestsCount;
   final int matchPercentage;
   final bool isOwner;
+  final String? ownerId;
 
   String get initials => initialsFromTitle(title);
 
@@ -53,6 +55,7 @@ class Project {
     int? requestsCount,
     int? matchPercentage,
     bool? isOwner,
+    String? ownerId,
   }) {
     return Project(
       id: id ?? this.id,
@@ -65,6 +68,7 @@ class Project {
       requestsCount: requestsCount ?? this.requestsCount,
       matchPercentage: matchPercentage ?? this.matchPercentage,
       isOwner: isOwner ?? this.isOwner,
+      ownerId: ownerId ?? this.ownerId,
     );
   }
 }

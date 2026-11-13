@@ -163,7 +163,10 @@ void _registerProjects() {
   getIt
     ..registerLazySingleton(ProjectsLocalDataSource.new)
     ..registerLazySingleton<ProjectsRepository>(
-      () => ProjectsRepositoryImpl(localDataSource: getIt()),
+      () => ProjectsRepositoryImpl(
+        localDataSource: getIt(),
+        firebaseAuth: getIt<FirebaseAuth>(),
+      ),
     )
     ..registerLazySingleton(() => GetProjects(getIt()))
     ..registerLazySingleton(() => GetProjectStats(getIt()))

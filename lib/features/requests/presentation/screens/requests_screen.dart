@@ -54,66 +54,86 @@ class _RequestsView extends StatelessWidget {
         notificationBadge: true,
       ),
       body: DsPageFade(
-        child: BlocBuilder<RequestsCubit, RequestsState>(
-          builder: (context, state) {
-            return switch (state) {
-              RequestsInitial() || RequestsLoading() => const Center(
-                child: CircularProgressIndicator(color: AppColors.teal),
-              ),
-              RequestsFailure(:final message) => DsEmptyState(
-                icon: AppIcons.error,
-                title: 'Could not load requests',
-                message: message,
-                actionLabel: 'Retry',
-                onAction: () => context.read<RequestsCubit>().load(),
-              ),
-              RequestsLoaded(:final tab, :final visible) => Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: SegmentedTabs(
-                      index: tab,
-                      onChanged: (i) => context.read<RequestsCubit>().setTab(i),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: AppAnimations.normal,
-                      switchInCurve: AppAnimations.emphasized,
-                      switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                      child: ListView.builder(
-                        key: ValueKey(tab),
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        itemCount: visible.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == visible.length) {
-                            return const Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: DsItemEnter(
-                                index: 0,
-                                child: TeamMessagesButton(),
-                              ),
-                            );
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: DsItemEnter(
-                              index: index,
-                              child: ExpandedRequestCard(item: visible[index]),
-                            ),
-                          );
-                        },
+        child: BlocListener<RequestsCubit, RequestsState>(
+          listenWhen: (previous, current) =>
+              current is RequestsLoaded &&
+              current.actionError != null &&
+              current.actionError !=
+                  (previous is RequestsLoaded ? previous.actionError : null),
+          listener: (context, state) {
+            if (state case RequestsLoaded(actionError: final message?)) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(content: Text(message)));
+            }
+          },
+          child: BlocBuilder<RequestsCubit, RequestsState>(
+            builder: (context, state) {
+              return switch (state) {
+                RequestsInitial() || RequestsLoading() => const Center(
+                  child: CircularProgressIndicator(color: AppColors.teal),
+                ),
+                RequestsFailure(:final message) => DsEmptyState(
+                  icon: AppIcons.error,
+                  title: 'Could not load requests',
+                  message: message,
+                  actionLabel: 'Retry',
+                  onAction: () => context.read<RequestsCubit>().load(),
+                ),
+                RequestsLoaded(:final tab, :final visible) => Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: SegmentedTabs(
+                        index: tab,
+                        onChanged: (i) =>
+                            context.read<RequestsCubit>().setTab(i),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            };
-          },
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: AppAnimations.normal,
+                        switchInCurve: AppAnimations.emphasized,
+                        switchOutCurve: Curves.easeIn,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        child: ListView.builder(
+                          key: ValueKey(tab),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          itemCount: visible.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == visible.length) {
+                              return const Padding(
+                                padding: EdgeInsets.only(top: 10),
+                                child: DsItemEnter(
+                                  index: 0,
+                                  child: TeamMessagesButton(),
+                                ),
+                              );
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: DsItemEnter(
+                                index: index,
+                                child: ExpandedRequestCard(
+                                  item: visible[index],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              };
+            },
+          ),
         ),
       ),
     );
