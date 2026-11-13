@@ -14,7 +14,7 @@ dependencies:
   lucide_icons_flutter: ^3.1.24
   firebase_core: ^5.0.0
   firebase_auth: ^7.0.0
-  cloud_firestore: ^7.0.0
+  cloud_firestore: ^7.1.0
   google_sign_in: ^7.2.0
   shared_preferences: ^2.5.6
   app_links: ^7.2.2
@@ -22,6 +22,7 @@ dependencies:
   get_it: ^8.2.0
   equatable: ^2.0.7
   flutter_svg: ^2.3.2
+  firebase_messaging: ^17.0.1
 
 dev_dependencies:
   flutter_test:

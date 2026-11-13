@@ -80,6 +80,8 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
       projectName: project.title,
       maintainerName: 'Karim',
       initials: project.initials,
+      projectId: project.id,
+      ownerId: project.ownerId,
       matchPercent: project.matchPercentage,
     );
     if (!mounted || !sent) return;
@@ -110,93 +112,94 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ProjectSearchField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _query = value),
-                  ),
-                  const SizedBox(height: 14),
-                  ProjectFilterBar(
-                    selected: _filter,
-                    onSelected: (filter) => setState(() => _filter = filter),
-                  ),
-                  const SizedBox(height: 28),
-                  DsPageHeader(
-                    style: DsPageHeaderStyle.page,
-                    title: 'Discover',
-                    eyebrow: '${projects.length} listed',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 11,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.ds.surface.withValues(alpha: 0.58),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: context.ds.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            AppIcons.sparkle,
-                            size: 13,
-                            color: AppColors.teal,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Smart match',
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(
-                                  fontSize: 11,
-                                  color: context.ds.textPrimary,
-                                  letterSpacing: 0,
-                                ),
-                          ),
-                        ],
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _query = value),
+                    ),
+                    const SizedBox(height: 14),
+                    ProjectFilterBar(
+                      selected: _filter,
+                      onSelected: (filter) => setState(() => _filter = filter),
+                    ),
+                    const SizedBox(height: 28),
+                    DsPageHeader(
+                      style: DsPageHeaderStyle.page,
+                      title: 'Discover',
+                      eyebrow: '${projects.length} listed',
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.ds.surface.withValues(alpha: 0.58),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: context.ds.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              AppIcons.sparkle,
+                              size: 13,
+                              color: AppColors.teal,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Smart match',
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(
+                                    fontSize: 11,
+                                    color: context.ds.textPrimary,
+                                    letterSpacing: 0,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (projects.isEmpty)
-                    _EmptyDiscoverState(
-                      hasQuery: _query.trim().isNotEmpty,
-                      onReset: () {
-                        _searchController.clear();
-                        setState(() {
-                          _query = '';
-                          _filter = ProjectFilter.forYou;
-                        });
-                      },
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, listConstraints) {
-                        if (listConstraints.maxWidth >= 860) {
-                          final cardWidth = (listConstraints.maxWidth - 16) / 2;
-                          return Wrap(
-                            spacing: 16,
-                            runSpacing: 16,
+                    const SizedBox(height: 16),
+                    if (projects.isEmpty)
+                      _EmptyDiscoverState(
+                        hasQuery: _query.trim().isNotEmpty,
+                        onReset: () {
+                          _searchController.clear();
+                          setState(() {
+                            _query = '';
+                            _filter = ProjectFilter.forYou;
+                          });
+                        },
+                      )
+                    else
+                      LayoutBuilder(
+                        builder: (context, listConstraints) {
+                          if (listConstraints.maxWidth >= 860) {
+                            final cardWidth =
+                                (listConstraints.maxWidth - 16) / 2;
+                            return Wrap(
+                              spacing: 16,
+                              runSpacing: 16,
+                              children: [
+                                for (final project in projects)
+                                  SizedBox(
+                                    width: cardWidth,
+                                    child: _card(project),
+                                  ),
+                              ],
+                            );
+                          }
+                          return Column(
                             children: [
-                              for (final project in projects)
-                                SizedBox(
-                                  width: cardWidth,
-                                  child: _card(project),
+                              for (var i = 0; i < projects.length; i++) ...[
+                                if (i > 0) const SizedBox(height: 14),
+                                DsItemEnter(
+                                  index: i,
+                                  child: _card(projects[i]),
                                 ),
+                              ],
                             ],
                           );
-                        }
-                        return Column(
-                          children: [
-                            for (var i = 0; i < projects.length; i++) ...[
-                              if (i > 0) const SizedBox(height: 14),
-                              DsItemEnter(
-                                index: i,
-                                child: _card(projects[i]),
-                              ),
-                            ],
-                          ],
-                        );
-                      },
-                    ),
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -243,10 +246,7 @@ class _EmptyDiscoverState extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: context.ds.border),
             ),
-            child: const Icon(
-              AppIcons.search,
-              color: AppColors.teal,
-            ),
+            child: const Icon(AppIcons.search, color: AppColors.teal),
           ),
           const SizedBox(height: 16),
           Text(
@@ -268,9 +268,9 @@ class _EmptyDiscoverState extends StatelessWidget {
             onPressed: onReset,
             child: Text(
               'Clear filters',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.teal,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: AppColors.teal),
             ),
           ),
         ],

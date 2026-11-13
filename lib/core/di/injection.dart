@@ -44,12 +44,14 @@ import '../../features/projects/domain/usecases/get_project_stats.dart';
 import '../../features/projects/domain/usecases/get_projects.dart';
 import '../../features/projects/domain/usecases/upsert_project.dart';
 import '../../features/projects/presentation/cubit/projects_cubit.dart';
-import '../../features/requests/data/datasources/requests_local_data_source.dart';
+// import '../../features/requests/data/datasources/requests_local_data_source.dart';
+import '../../features/requests/data/datasources/requests_remote_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
 import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
 import '../../features/requests/domain/usecases/update_request_status.dart';
 import '../../features/requests/presentation/cubit/requests_cubit.dart';
+import '../../features/requests/domain/usecases/create_request.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -151,10 +153,7 @@ void _registerProfile() {
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))
     ..registerFactory(
-      () => ProfileCubit(
-        getProfile: getIt(),
-        updateProfile: getIt(),
-      ),
+      () => ProfileCubit(getProfile: getIt(), updateProfile: getIt()),
     );
 }
 
@@ -164,7 +163,10 @@ void _registerProjects() {
   getIt
     ..registerLazySingleton(ProjectsLocalDataSource.new)
     ..registerLazySingleton<ProjectsRepository>(
-      () => ProjectsRepositoryImpl(localDataSource: getIt()),
+      () => ProjectsRepositoryImpl(
+        localDataSource: getIt(),
+        firebaseAuth: getIt<FirebaseAuth>(),
+      ),
     )
     ..registerLazySingleton(() => GetProjects(getIt()))
     ..registerLazySingleton(() => GetProjectStats(getIt()))
@@ -182,14 +184,23 @@ void _registerRequests() {
   if (getIt.isRegistered<RequestsRepository>()) return;
 
   getIt
-    ..registerLazySingleton(RequestsLocalDataSource.new)
+    ..registerLazySingleton<RequestsRemoteDataSource>(
+      () => RequestsRemoteDataSource(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
     ..registerLazySingleton<RequestsRepository>(
-      () => RequestsRepositoryImpl(localDataSource: getIt()),
+      () => RequestsRepositoryImpl(
+        remoteDataSource: getIt<RequestsRemoteDataSource>(),
+      ),
     )
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
+    ..registerLazySingleton(() => CreateRequest(getIt()))
     ..registerFactory(
       () => RequestsCubit(
+        createRequest: getIt(),
         getRequests: getIt(),
         updateRequestStatus: getIt(),
       ),

@@ -4,5 +4,124 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    match /requests/{requestId} {
+      function projectOwnedBy(projectId, ownerId) {
+        let projectPath = /databases/$(database)/documents/projects/$(projectId);
+        return exists(projectPath) && get(projectPath).data.ownerId == ownerId;
+      }
+
+      function validRequestData(data) {
+        return data.keys().hasAll([
+            'projectId',
+            'senderId',
+            'ownerId',
+            'initials',
+            'title',
+            'subtitle',
+            'status',
+            'type',
+            'message',
+            'displayName',
+            'targetName',
+            'matchPercent',
+            'matchSummary',
+            'repositoryCount',
+            'commitCount',
+            'languageCount',
+            'skills',
+            'createdAt',
+            'respondedAt'
+          ])
+          && data.keys().hasOnly([
+            'projectId',
+            'senderId',
+            'ownerId',
+            'initials',
+            'title',
+            'subtitle',
+            'status',
+            'type',
+            'message',
+            'displayName',
+            'targetName',
+            'matchPercent',
+            'matchSummary',
+            'repositoryCount',
+            'commitCount',
+            'languageCount',
+            'skills',
+            'createdAt',
+            'respondedAt'
+          ])
+          && data.projectId is string
+          && data.projectId.size() > 0
+          && data.senderId is string
+          && data.ownerId is string
+          && data.ownerId.size() > 0
+          && data.initials is string
+          && data.title is string
+          && data.subtitle is string
+          && (data.message == null || data.message is string)
+          && (data.message == null || data.message.size() <= 280)
+          && data.displayName is string
+          && data.targetName is string
+          && data.matchPercent is int
+          && data.matchPercent >= 0
+          && data.matchPercent <= 100
+          && data.matchSummary is string
+          && data.repositoryCount is int
+          && data.repositoryCount >= 0
+          && data.commitCount is int
+          && data.commitCount >= 0
+          && data.languageCount is int
+          && data.languageCount >= 0
+          && data.skills is list
+          && data.status == 'pending'
+          && data.type == 'sent'
+          && data.createdAt == request.time
+          && data.respondedAt == null;
+      }
+
+      allow read: if request.auth != null
+        && (resource.data.senderId == request.auth.uid
+          || resource.data.ownerId == request.auth.uid);
+
+      allow create: if request.auth != null
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.ownerId != request.auth.uid
+        && requestId == request.auth.uid + '_' + request.resource.data.projectId
+        && projectOwnedBy(
+          request.resource.data.projectId,
+          request.resource.data.ownerId
+        )
+        && validRequestData(request.resource.data);
+
+      allow update: if request.auth != null
+        && (
+          (
+            resource.data.ownerId == request.auth.uid
+            && projectOwnedBy(resource.data.projectId, request.auth.uid)
+            && resource.data.status in ['pending', 'isNew']
+            && request.resource.data.status in ['accepted', 'declined']
+            && request.resource.data.respondedAt == request.time
+            && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['status', 'respondedAt'])
+          )
+          || (
+            resource.data.senderId == request.auth.uid
+            && resource.data.status == 'declined'
+            && request.resource.data.senderId == resource.data.senderId
+            && request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.projectId == resource.data.projectId
+            && requestId == request.auth.uid + '_' + request.resource.data.projectId
+            && projectOwnedBy(
+              request.resource.data.projectId,
+              request.resource.data.ownerId
+            )
+            && validRequestData(request.resource.data)
+          )
+        );
+    }
   }
 }

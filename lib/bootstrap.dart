@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import 'core/notifications/fcm_scrvice.dart';
 import 'app/devsync_app.dart';
 import 'core/di/injection.dart';
 import 'core/theme/app_colors.dart';
@@ -21,6 +23,11 @@ Future<void> bootstrap() async {
     if (e.code != 'duplicate-app') rethrow;
   }
   await configureDependencies();
+
+  await FcmService(
+    auth: FirebaseAuth.instance,
+    firestore: FirebaseFirestore.instance,
+  ).initialize();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

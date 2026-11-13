@@ -24,11 +24,7 @@ import '../widgets/skill_alignment_bar.dart';
 import '../widgets/tech_tag.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
-  const ProjectDetailsScreen({
-    required this.project,
-    this.stats,
-    super.key,
-  });
+  const ProjectDetailsScreen({required this.project, this.stats, super.key});
 
   final Project project;
 
@@ -85,6 +81,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       projectName: widget.project.title,
       maintainerName: stats.ownerName,
       initials: initialsFromTitle(widget.project.title),
+      projectId: widget.project.id,
+      ownerId: widget.project.ownerId,
       matchPercent: widget.project.matchPercentage,
     );
     if (!mounted || !sent) return;
@@ -152,9 +150,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 title: 'About',
                                 trailing: Text(
                                   'Open source',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium
+                                  style: Theme.of(context).textTheme.labelMedium
                                       ?.copyWith(
                                         color: AppColors.teal,
                                         fontSize: 11,
@@ -165,12 +161,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 widget.project.description,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: context.ds.textPrimary
-                                          .withValues(alpha: 0.87),
+                                      color: context.ds.textPrimary.withValues(
+                                        alpha: 0.87,
+                                      ),
                                       height: 1.65,
                                       fontSize: 14.5,
                                     ),
@@ -306,10 +301,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     return Row(
       children: [
         Expanded(
-          child: MetricTile(
-            value: formatNumber(stats.stars),
-            label: 'Stars',
-          ),
+          child: MetricTile(value: formatNumber(stats.stars), label: 'Stars'),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -320,10 +312,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: MetricTile(
-            value: '${stats.openTasks}',
-            label: 'Open tasks',
-          ),
+          child: MetricTile(value: '${stats.openTasks}', label: 'Open tasks'),
         ),
       ],
     );
@@ -340,10 +329,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       ),
       child: Row(
         children: [
-          ProjectAvatar(
-            initials: initialsFromTitle(stats.ownerName),
-            size: 44,
-          ),
+          ProjectAvatar(initials: initialsFromTitle(stats.ownerName), size: 44),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
