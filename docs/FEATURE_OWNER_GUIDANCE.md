@@ -18,6 +18,29 @@ Claude / team notes source. Staging tip after Mohey requests merge: use `git log
 Expected collections (`lib/core/constants/firestore_collections.dart`):  
 `users` · `projects` · `views` · `matches` · `feedback` · `requests` · `tasks`
 
+## Firestore Console checklist (why you only see some collections)
+
+Firestore **does not create empty collections**. A name in `FirestoreCollections` is not enough — the collection appears in Firebase Console only after the **first successful document write**.
+
+| Collection | In code? | App writes it? | Why Console may be empty |
+|---|---|---|---|
+| `users` | Yes | Yes (auth + profile; FCM under `users/{uid}/fcmTokens`) | Usually visible after first sign-in |
+| `projects` | Yes | Yes (create/edit project) | Visible after first project upsert |
+| `views` | Yes | Yes (`recordView` on project open) | Empty until someone opens project detail that records a view |
+| `requests` | Yes | Yes (Mohey remote DS + join flow) | Empty until a send succeeds — project needs non-empty `ownerId` + rules deployed |
+| `matches` | Declared | **No** — matching uses Vercel HTTP + RAM cache | Stays invisible until Emad persists match cache |
+| `feedback` | Declared | **No** | Unused — stays invisible |
+| `tasks` | Declared | **No** — feature not built | Unused — stays invisible |
+
+**Per-owner actions to populate Console**
+
+- **Bishay:** open a project detail (view recorded) → expect `views`
+- **Mohey:** send a collaboration request (project must have `ownerId`) + deploy `firestore.rules` → expect `requests`
+- **Emad:** persist to `matches` / `feedback`, or accept they stay invisible while HTTP-only
+- **Donia:** `tasks` only when task board ships; keep `users` healthy via auth
+
+Seeing only `users` + `projects` today is **normal** if no one has successfully written views/requests yet and matching/tasks never write.
+
 ---
 
 ## Auth — Donia — `feature/auth`
