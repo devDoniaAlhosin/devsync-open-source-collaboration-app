@@ -33,7 +33,12 @@ class RequestsCubit extends Cubit<RequestsState> {
       case Success(:final data):
         emit(RequestsLoaded(items: data));
       case FailureResult(:final failure):
-        emit(RequestsFailure(failure.message));
+        final current = state;
+        if (current is RequestsLoaded) {
+          emit(current.copyWith(actionError: failure.message));
+        } else {
+          emit(RequestsFailure(failure.message));
+        }
     }
   }
 
@@ -44,26 +49,44 @@ class RequestsCubit extends Cubit<RequestsState> {
     emit(current.copyWith(tab: tab));
   }
 
-  Future<RequestItem?> create(RequestItem item) async {
+  Future<Result<RequestItem>> create(RequestItem item) async {
+    final previous = state;
+    if (previous is RequestsLoaded && previous.actionError != null) {
+      emit(previous.copyWith(clearActionError: true));
+    }
+
     final result = await _createRequest(CreateRequestParams(item: item));
 
     switch (result) {
       case Success(:final data):
         final current = state;
         if (current is RequestsLoaded) {
-          emit(current.copyWith(items: [...current.items, data]));
+          emit(
+            current.copyWith(
+              items: [...current.items, data],
+              clearActionError: true,
+            ),
+          );
         }
-        return data;
+        return Success(data);
 
       case FailureResult(:final failure):
-        emit(RequestsFailure(failure.message));
-        return null;
+        final current = state;
+        if (current is RequestsLoaded) {
+          emit(current.copyWith(actionError: failure.message));
+        } else {
+          emit(RequestsFailure(failure.message));
+        }
+        return FailureResult(failure);
     }
   }
 
-  Future<void> setStatus(String requestId, RequestStatus status) async {
+  Future<bool> setStatus(String requestId, RequestStatus status) async {
     final current = state;
-    if (current is! RequestsLoaded) return;
+    if (current is! RequestsLoaded) return false;
+    if (current.actionError != null) {
+      emit(current.copyWith(clearActionError: true));
+    }
 
     final result = await _updateRequestStatus(
       UpdateRequestStatusParams(requestId: requestId, status: status),
@@ -76,10 +99,11 @@ class RequestsCubit extends Cubit<RequestsState> {
             if (request.id == requestId) data else request,
         ];
 
-        emit(current.copyWith(items: items));
-
+        emit(current.copyWith(items: items, clearActionError: true));
+        return true;
       case FailureResult(:final failure):
-        emit(RequestsFailure(failure.message));
+        emit(current.copyWith(actionError: failure.message));
+        return false;
     }
   }
 }

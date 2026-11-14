@@ -16,10 +16,11 @@ final class RequestsLoading extends RequestsState {
 }
 
 final class RequestsLoaded extends RequestsState {
-  const RequestsLoaded({required this.items, this.tab = 0});
+  const RequestsLoaded({required this.items, this.tab = 0, this.actionError});
 
   final List<RequestItem> items;
   final int tab;
+  final String? actionError;
 
   List<RequestItem> get visible {
     switch (tab) {
@@ -32,15 +33,21 @@ final class RequestsLoaded extends RequestsState {
     }
   }
 
-  RequestsLoaded copyWith({List<RequestItem>? items, int? tab}) {
+  RequestsLoaded copyWith({
+    List<RequestItem>? items,
+    int? tab,
+    String? actionError,
+    bool clearActionError = false,
+  }) {
     return RequestsLoaded(
       items: items ?? this.items,
       tab: tab ?? this.tab,
+      actionError: clearActionError ? null : actionError ?? this.actionError,
     );
   }
 
   @override
-  List<Object?> get props => [items, tab];
+  List<Object?> get props => [items, tab, actionError];
 }
 
 final class RequestsFailure extends RequestsState {

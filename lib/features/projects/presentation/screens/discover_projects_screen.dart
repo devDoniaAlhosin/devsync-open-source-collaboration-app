@@ -7,7 +7,6 @@ import '../../../../core/widgets/ds_item_enter.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_page_header.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
-import '../../../requests/presentation/widgets/request_join_sheet.dart';
 import '../../domain/entities/project.dart';
 import '../../project_layout.dart';
 import '../cubit/projects_cubit.dart';
@@ -77,7 +76,6 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
   }
 
   Future<void> _requestToJoin(Project project) async {
-    RequestJoinResult? details;
     final sent = await presentCollaborationRequestFlow(
       context,
       projectName: project.title,
@@ -85,20 +83,11 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
           ? 'the maintainer'
           : project.ownerName,
       initials: project.initials,
+      projectId: project.id,
+      ownerId: project.ownerId,
       matchPercent: project.matchPercentage,
-      onSent: (result) => details = result,
     );
     if (!mounted || !sent) return;
-
-    final error = await context.read<ProjectsCubit>().requestToCollaborate(
-      project,
-      message: details?.message,
-    );
-    if (!mounted || error == null) return;
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(error)));
   }
 
   @override

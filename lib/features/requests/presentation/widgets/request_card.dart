@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:devsync_open_source_collaboration_app/app/app_routes.dart';
 import 'package:devsync_open_source_collaboration_app/core/theme/app_animations.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_avatar.dart';
@@ -8,6 +6,8 @@ import 'package:devsync_open_source_collaboration_app/features/requests/domain/e
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/connected_celebration_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../cubit/requests_cubit.dart';
 
 class ExpandedRequestCard extends StatefulWidget {
   const ExpandedRequestCard({super.key, required this.item});
@@ -18,10 +18,9 @@ class ExpandedRequestCard extends StatefulWidget {
 }
 
 class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
-  late bool _expanded = widget.item.status == RequestStatus.isNew;
-  RequestStatus? _statusOverride;
+  late bool _expanded = widget.item.isReceived && widget.item.isPending;
 
-  RequestStatus get _status => _statusOverride ?? widget.item.status;
+  RequestStatus get _status => widget.item.status;
 
   void _toggle() => setState(() => _expanded = !_expanded);
 
@@ -35,9 +34,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
         children: [
           InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap:
-                _status == RequestStatus.isNew &&
-                    widget.item.type == RequestType.received
+            onTap: widget.item.isReceived && widget.item.isPending
                 ? _openDetails
                 : _toggle,
             child: Row(
@@ -97,7 +94,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
           ),
         const SizedBox(height: 12),
 
-        if (_status == RequestStatus.pending)
+        if (_status == RequestStatus.pending && widget.item.isSent)
           _ActionButton(
             label: 'View project',
             background: Colors.transparent,
@@ -116,7 +113,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
               const SnackBar(content: Text('Open project details')),
             ),
           )
-        else if (_status == RequestStatus.isNew)
+        else if (widget.item.isReceived && widget.item.isPending)
           Row(
             children: [
               Expanded(
@@ -125,7 +122,12 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
                   label: 'Decline',
                   background: colors.surfaceContainerHighest,
                   foreground: colors.onSurfaceVariant,
-                  onTap: () => log('Decline'),
+                  onTap: () async {
+                    await context.read<RequestsCubit>().setStatus(
+                      widget.item.id,
+                      RequestStatus.declined,
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -135,7 +137,15 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
                   label: 'Accept',
                   background: colors.primary,
                   foreground: colors.onPrimary,
-                  onTap: () => _acceptAndCelebrate(context, widget.item),
+                  onTap: () async {
+                    final success = await context
+                        .read<RequestsCubit>()
+                        .setStatus(widget.item.id, RequestStatus.accepted);
+
+                    if (!mounted || !success) return;
+
+                    await _pushConnected(widget.item);
+                  },
                 ),
               ),
             ],
@@ -167,23 +177,19 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
 
   Future<void> _openDetails() async {
     final status = await Navigator.of(context).push<RequestStatus>(
-      DsFadePageRoute(
-        builder: (_) => RequestDetailsScreen(item: widget.item),
-      ),
+      DsFadePageRoute(builder: (_) => RequestDetailsScreen(item: widget.item)),
     );
     if (!mounted || status == null) return;
-    setState(() => _statusOverride = status);
+
+    final success = await context.read<RequestsCubit>().setStatus(
+      widget.item.id,
+      status,
+    );
+    if (!mounted || !success) return;
+
     if (status == RequestStatus.accepted) {
       await _pushConnected(widget.item);
     }
-  }
-
-  Future<void> _acceptAndCelebrate(
-    BuildContext context,
-    RequestItem item,
-  ) async {
-    setState(() => _statusOverride = RequestStatus.accepted);
-    await _pushConnected(item);
   }
 
   Future<void> _pushConnected(RequestItem item) {
@@ -196,7 +202,6 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
       ),
     );
   }
-
 }
 
 class _ActionButton extends StatelessWidget {
