@@ -56,7 +56,7 @@ class _DsChipState extends State<DsChip> {
         ),
         decoration: BoxDecoration(
           color: style.background,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           border: style.border == null ? null : Border.fromBorderSide(style.border!),
         ),
         child: Row(

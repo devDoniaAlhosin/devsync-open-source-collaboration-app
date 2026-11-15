@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import 'tech_tag.dart';
 
 class SkillSelector extends StatelessWidget {
@@ -79,12 +80,12 @@ class _AddSkillChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             border: Border.all(
               color: context.ds.textMuted.withValues(alpha: 0.38),
             ),

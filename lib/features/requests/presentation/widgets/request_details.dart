@@ -39,8 +39,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen>
     super.dispose();
   }
 
-  bool get _canRespond =>
-      item.type == RequestType.received && item.status == RequestStatus.isNew;
+  bool get _canRespond => item.isReceived && item.isPending;
 
   @override
   Widget build(BuildContext context) {

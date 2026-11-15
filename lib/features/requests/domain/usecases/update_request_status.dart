@@ -5,11 +5,11 @@ import '../repositories/requests_repository.dart';
 
 class UpdateRequestStatusParams {
   const UpdateRequestStatusParams({
-    required this.item,
+    required this.requestId,
     required this.status,
   });
 
-  final RequestItem item;
+  final String requestId;
   final RequestStatus status;
 }
 
@@ -22,7 +22,7 @@ class UpdateRequestStatus
   @override
   Future<Result<RequestItem>> call(UpdateRequestStatusParams params) {
     return _repository.updateStatus(
-      item: params.item,
+      requestId: params.requestId,
       status: params.status,
     );
   }
