@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -8,135 +9,144 @@ import '../../../../core/widgets/ds_page_header.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
 import '../../project_layout.dart';
+import '../cubit/projects_cubit.dart';
 import '../widgets/project_action_button.dart';
 import '../widgets/metric_tile.dart';
 import '../widgets/owner_project_card.dart';
 
 class MyProjectsScreen extends StatelessWidget {
   const MyProjectsScreen({
-    required this.projects,
-    required this.stats,
-    required this.joinedContributors,
     required this.onOpenProject,
     required this.onEditProject,
     required this.onCreateProject,
     super.key,
   });
 
-  final List<Project> projects;
-  final Map<String, ProjectStats> stats;
-  final int joinedContributors;
   final ValueChanged<Project> onOpenProject;
   final ValueChanged<Project> onEditProject;
   final VoidCallback onCreateProject;
 
   @override
   Widget build(BuildContext context) {
-    final owned = projects.where((project) => project.isOwner).toList();
-    final views = owned.fold<int>(
-      0,
-      (sum, project) => sum + project.viewsCount,
-    );
-    final requests = owned.fold<int>(
-      0,
-      (sum, project) => sum + project.requestsCount,
-    );
+    return BlocBuilder<ProjectsCubit, ProjectsState>(
+      builder: (context, state) {
+        final loaded = state is ProjectsLoaded ? state : null;
+        final owned = loaded?.ownedProjects ?? const <Project>[];
+        final stats = loaded?.stats ?? const <String, ProjectStats>{};
+        final joinedContributors = loaded?.joinedContributors ?? 0;
 
-    return DsPageFade(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
-          return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              gutter,
-              18,
-              gutter,
-              ProjectLayout.bottomNavSpace,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: ProjectLayout.maxWidth,
+        final views = owned.fold<int>(
+          0,
+          (sum, project) => sum + project.viewsCount,
+        );
+        final requests = owned.fold<int>(
+          0,
+          (sum, project) => sum + project.requestsCount,
+        );
+
+        return DsPageFade(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  gutter,
+                  18,
+                  gutter,
+                  ProjectLayout.bottomNavSpace,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DsPageHeader(
-                      style: DsPageHeaderStyle.page,
-                      title: 'My projects',
-                      eyebrow: '${owned.length} listed',
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: ProjectLayout.maxWidth,
                     ),
-                    const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: MetricTile(value: '$views', label: 'Views'),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: MetricTile(
-                          value: '$requests',
-                          label: 'Requests',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DsPageHeader(
+                          style: DsPageHeaderStyle.page,
+                          title: 'My projects',
+                          eyebrow: '${owned.length} listed',
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: MetricTile(
-                          value: '$joinedContributors',
-                          label: 'Joined',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (owned.isEmpty)
-                    _EmptyOwnedState(onCreate: onCreateProject)
-                  else
-                    LayoutBuilder(
-                      builder: (context, listConstraints) {
-                        if (listConstraints.maxWidth >= 860) {
-                          final cardWidth = (listConstraints.maxWidth - 16) / 2;
-                          return Wrap(
-                            spacing: 16,
-                            runSpacing: 16,
-                            children: [
-                              for (final project in owned)
-                                SizedBox(
-                                  width: cardWidth,
-                                  child: _card(project),
-                                ),
-                            ],
-                          );
-                        }
-                        return Column(
+                        const SizedBox(height: 18),
+                        Row(
                           children: [
-                            for (var i = 0; i < owned.length; i++) ...[
-                              if (i > 0) const SizedBox(height: 14),
-                              DsItemEnter(
-                                index: i,
-                                child: _card(owned[i]),
+                            Expanded(
+                              child: MetricTile(
+                                value: '$views',
+                                label: 'Views',
                               ),
-                            ],
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: MetricTile(
+                                value: '$requests',
+                                label: 'Requests',
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: MetricTile(
+                                value: '$joinedContributors',
+                                label: 'Joined',
+                              ),
+                            ),
                           ],
-                        );
-                      },
+                        ),
+                        const SizedBox(height: 20),
+                        if (owned.isEmpty)
+                          _EmptyOwnedState(onCreate: onCreateProject)
+                        else
+                          LayoutBuilder(
+                            builder: (context, listConstraints) {
+                              if (listConstraints.maxWidth >= 860) {
+                                final cardWidth =
+                                    (listConstraints.maxWidth - 16) / 2;
+                                return Wrap(
+                                  spacing: 16,
+                                  runSpacing: 16,
+                                  children: [
+                                    for (final project in owned)
+                                      SizedBox(
+                                        width: cardWidth,
+                                        child: _card(project, stats),
+                                      ),
+                                  ],
+                                );
+                              }
+                              return Column(
+                                children: [
+                                  for (var i = 0; i < owned.length; i++) ...[
+                                    if (i > 0) const SizedBox(height: 14),
+                                    DsItemEnter(
+                                      index: i,
+                                      child: _card(owned[i], stats),
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 18),
+                        const _CommunityCallout(),
+                      ],
                     ),
-                    const SizedBox(height: 18),
-                    const _CommunityCallout(),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _card(Project project) {
+  Widget _card(Project project, Map<String, ProjectStats> stats) {
     return OwnerProjectCard(
       project: project,
-      weeklyViews: stats[project.id]?.weeklyViews ?? const [0, 0, 1, 1, 2, 2, 3],
+      // Empty until the first view lands; never show a fabricated trend.
+      weeklyViews:
+          stats[project.id]?.weeklyViews ?? const [0, 0, 0, 0, 0, 0, 0],
       onTap: () => onOpenProject(project),
       onEdit: () => onEditProject(project),
     );
@@ -238,11 +248,7 @@ class _CommunityCallout extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(
-                AppIcons.forward,
-                size: 17,
-                color: context.ds.textMuted,
-              ),
+              Icon(AppIcons.forward, size: 17, color: context.ds.textMuted),
             ],
           ),
         ),

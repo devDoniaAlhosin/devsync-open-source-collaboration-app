@@ -11,9 +11,11 @@ part 'profile_state.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit({
-    required this._getProfile,
-    required this._updateProfile,
-  }) : super(const ProfileInitial());
+    required GetProfile getProfile,
+    required UpdateProfile updateProfile,
+  }) : _getProfile = getProfile,
+       _updateProfile = updateProfile,
+       super(const ProfileInitial());
 
   final GetProfile _getProfile;
   final UpdateProfile _updateProfile;

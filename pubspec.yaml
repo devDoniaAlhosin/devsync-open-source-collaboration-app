@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.12.2
+  sdk: '>=3.8.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -16,12 +16,13 @@ dependencies:
   firebase_auth: ^7.0.0
   cloud_firestore: ^7.0.0
   google_sign_in: ^7.2.0
-  shared_preferences: ^2.5.6
-  app_links: ^7.2.2
+  shared_preferences: ^2.5.3
+  app_links: ^6.4.1
   flutter_bloc: ^9.1.1
   get_it: ^8.2.0
   equatable: ^2.0.7
-  flutter_svg: ^2.3.2
+  http: ^1.6.0
+  flutter_svg: ^2.2.3
 
 dev_dependencies:
   flutter_test:

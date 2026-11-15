@@ -10,12 +10,16 @@ import 'widgets/request_join_sheet.dart';
 ///
 /// Returns `true` when the user completed send (reached Done). Dismissing the
 /// sheet without Done returns `false` and does not navigate.
+///
+/// [onSent] exposes the message the user wrote so callers can persist the
+/// request in the data layer after the flow finishes.
 Future<bool> presentCollaborationRequestFlow(
   BuildContext context, {
   required String projectName,
   required String maintainerName,
   String? initials,
   int matchPercent = 0,
+  ValueChanged<RequestJoinResult>? onSent,
 }) async {
   final result = await showRequestJoinSheet(
     context,
@@ -32,6 +36,8 @@ Future<bool> presentCollaborationRequestFlow(
   );
 
   if (!context.mounted || result == null) return false;
+
+  onSent?.call(result);
 
   await Navigator.of(context).pushNamed(
     AppRoutes.notificationPermission,

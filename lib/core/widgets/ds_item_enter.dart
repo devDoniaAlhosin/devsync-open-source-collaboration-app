@@ -65,7 +65,7 @@ class _DsItemEnterState extends State<DsItemEnter>
       _controller.value = 1;
       return;
     }
-    if (!TickerMode.valuesOf(context).enabled) return;
+    if (!TickerMode.of(context)) return;
 
     _started = true;
     final slots = widget.index.clamp(0, widget.maxDelaySlots);
@@ -74,7 +74,7 @@ class _DsItemEnterState extends State<DsItemEnter>
       _controller.forward();
     } else {
       Future<void>.delayed(delay, () {
-        if (mounted && TickerMode.valuesOf(context).enabled) {
+        if (mounted && TickerMode.of(context)) {
           _controller.forward();
         }
       });
