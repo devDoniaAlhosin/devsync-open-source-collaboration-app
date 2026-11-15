@@ -32,9 +32,11 @@ import '../../features/matching/domain/usecases/get_matching_analytics_usecase.d
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
+import '../../features/profile/data/datasources/github_profile_remote_data_source.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_profile.dart';
+import '../../features/profile/domain/usecases/scan_github_profile.dart';
 import '../../features/profile/domain/usecases/update_profile.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
 import '../../features/projects/projects_dependencies.dart';
@@ -147,17 +149,23 @@ void _registerProfile() {
     ..registerLazySingleton(
       () => ProfileRemoteDataSource(auth: getIt(), firestore: getIt()),
     )
+    ..registerLazySingleton(GithubProfileRemoteDataSource.new)
     ..registerLazySingleton<ProfileRepository>(
-      () => ProfileRepositoryImpl(remoteDataSource: getIt()),
+      () => ProfileRepositoryImpl(
+        remoteDataSource: getIt(),
+        githubRemoteDataSource: getIt(),
+      ),
     )
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))
     ..registerLazySingleton(() => SaveGithubScan(getIt()))
+    ..registerLazySingleton(() => ScanGithubProfile(getIt()))
     ..registerFactory(
       () => ProfileCubit(
         getProfile: getIt(),
         updateProfile: getIt(),
         saveGithubScan: getIt(),
+        scanGithubProfile: getIt(),
       ),
     );
 }

@@ -32,7 +32,7 @@ DevSync helps a developer find an open-source project that actually fits them, a
 | **Backend** | Firebase Auth + Firestore + [DevSync API (Vercel)](https://devsync-backend-two.vercel.app) for OTP / email / Gemini matching (no Cloud Functions · Spark-safe) |
 | **Methodology** | Agile Scrum (Jira + GitHub pull requests) |
 
-> **Built now:** design system, Lucide icons, brand assets, auth screens, Firebase Auth, `users/{uid}` identity, and OTP via the Vercel API. **Not built:** Profile, Projects, Match Feed, like/skip, Requests, FCM, live Gemini (`POST /matches/generate` is a stub today). See [§14 Built so far](#14-built-so-far-for-the-team). Screen-by-screen flow + prototype: [Brand Task Guide and Prototype](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype).
+> **Built on main:** Auth (OTP), Profile (live GitHub scan), Projects/`views`, Requests + FCM bootstrap, Matching via Vercel `POST /matches/generate` (RAM cache). **What each owner still owes** (not in this README): [`docs/FEATURE_MISSING_REPORT.md`](docs/FEATURE_MISSING_REPORT.md). Prototype: [Brand Task Guide](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype).
 
 ---
 
@@ -443,6 +443,8 @@ Course and project documents live under [`docs/`](docs/). Use these as the sourc
 | Requirements Gathering | [DevSync-3-Requirements-Gathering.pdf](docs/DevSync-3-Requirements-Gathering.pdf) |
 | System Analysis and Design | [DevSync-4-System-Analysis-and-Design.pdf](docs/DevSync-4-System-Analysis-and-Design.pdf) |
 | Feature Summaries (all members) | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
+| **Missing work per feature (owners / Claude)** | [FEATURE_MISSING_REPORT.md](docs/FEATURE_MISSING_REPORT.md) |
+| Projects Firestore schema | [projects-firestore-schema.md](docs/projects-firestore-schema.md) |
 | Brand Task Guide and Prototype | [GitHub Pages hub `#prototype`](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype) |
 | Brand Guidelines | [DevSync_Brand_Guidelines.pdf](docs/DevSync_Brand_Guidelines.pdf) |
 | Brand Guide (HTML) | [DevSync Brand Guide.html](docs/DevSync%20Brand%20Guide.html) |

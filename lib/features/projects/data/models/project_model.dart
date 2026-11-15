@@ -139,7 +139,9 @@ class ProjectModel extends Project {
     final now = DateTime.now();
     return {
       'ownerId': ownerId,
-      if (ownerName.trim().isNotEmpty) 'ownerName': ownerName.trim(),
+      'ownerName': ownerName.trim().isNotEmpty
+          ? ownerName.trim()
+          : 'Maintainer',
       'title': title.trim(),
       'description': description.trim(),
       'githubUrl': githubUrl.trim(),

@@ -51,3 +51,25 @@ final class ProfileSaveFailure extends ProfileState {
   @override
   List<Object?> get props => [profile, message];
 }
+
+final class ProfileGithubScanning extends ProfileState {
+  const ProfileGithubScanning();
+}
+
+final class ProfileGithubScanReady extends ProfileState {
+  const ProfileGithubScanReady(this.scan);
+
+  final GithubScanResult scan;
+
+  @override
+  List<Object?> get props => [scan];
+}
+
+final class ProfileGithubScanFailure extends ProfileState {
+  const ProfileGithubScanFailure(this.message);
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}

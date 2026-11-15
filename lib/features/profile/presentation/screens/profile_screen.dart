@@ -68,7 +68,11 @@ class _ProfileView extends StatelessWidget {
         child: BlocBuilder<ProfileCubit, ProfileState>(
           builder: (context, state) {
             return switch (state) {
-              ProfileInitial() || ProfileLoading() => const Center(
+              ProfileInitial() ||
+              ProfileLoading() ||
+              ProfileGithubScanning() ||
+              ProfileGithubScanReady() ||
+              ProfileGithubScanFailure() => const Center(
                 child: CircularProgressIndicator(color: AppColors.teal),
               ),
               ProfileFailure(:final message) => DsEmptyState(

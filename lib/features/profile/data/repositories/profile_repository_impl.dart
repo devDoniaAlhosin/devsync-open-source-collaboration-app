@@ -2,15 +2,26 @@ import 'package:firebase_core/firebase_core.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
+import '../../../matching/domain/entities/github_scan_result.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/repositories/profile_repository.dart';
+import '../datasources/github_profile_remote_data_source.dart';
 import '../datasources/profile_remote_data_source.dart';
+import '../exceptions/github_profile_exceptions.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
-  ProfileRepositoryImpl({required ProfileRemoteDataSource remoteDataSource})
-    : _remote = remoteDataSource;
+  ProfileRepositoryImpl({
+    required ProfileRemoteDataSource remoteDataSource,
+    required GithubProfileRemoteDataSource githubRemoteDataSource,
+  }) : _remote = remoteDataSource,
+       _github = githubRemoteDataSource;
 
   final ProfileRemoteDataSource _remote;
+  final GithubProfileRemoteDataSource _github;
+
+  static final _usernameRule = RegExp(
+    r'^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$',
+  );
 
   static const int _bioLimit = 140;
   static const int _maxSkills = 30;
@@ -70,6 +81,22 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
+  Future<Result<GithubScanResult>> scanGithub(String username) async {
+    final trimmed = username.trim();
+    if (trimmed.isEmpty || !_usernameRule.hasMatch(trimmed)) {
+      return const FailureResult(
+        ValidationFailure('Enter a valid GitHub username', field: 'github'),
+      );
+    }
+
+    try {
+      return Success(await _github.scan(trimmed));
+    } catch (e) {
+      return FailureResult(_mapError(e));
+    }
+  }
+
+  @override
   Future<Result<Profile>> saveGithubScan({
     required String githubUsername,
     required int repos,
@@ -117,6 +144,15 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Failure _mapError(Object e) {
     if (e is NotSignedInException) {
       return const AuthFailure('Please sign in again');
+    }
+    if (e is GithubUserNotFoundException) {
+      return const NotFoundFailure('GitHub user not found');
+    }
+    if (e is GithubProfileNetworkException) {
+      return const NetworkFailure();
+    }
+    if (e is GithubProfileException) {
+      return const UnexpectedFailure();
     }
     if (e is FirebaseException) {
       switch (e.code) {

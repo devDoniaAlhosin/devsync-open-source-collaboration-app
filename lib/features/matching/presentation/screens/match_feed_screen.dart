@@ -15,6 +15,8 @@ import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../domain/entities/match_item.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
@@ -216,6 +218,29 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     ];
   }
 
+  String _greetingName(BuildContext context) {
+    AppUser? user;
+    final auth = context.read<AuthCubit>().state;
+    if (auth is AuthAuthenticated) {
+      user = auth.user;
+    } else if (auth is AuthNeedsVerification) {
+      user = auth.user;
+    }
+
+    final display = user?.displayName?.trim() ?? '';
+    if (display.isNotEmpty) {
+      return display.split(RegExp(r'\s+')).first;
+    }
+
+    final email = user?.email?.trim() ?? '';
+    if (email.contains('@')) {
+      final local = email.split('@').first.trim();
+      if (local.isNotEmpty) return local;
+    }
+
+    return 'there';
+  }
+
   Widget _buildPageContent(MatchingState state) {
     return Center(
       child: ConstrainedBox(
@@ -228,7 +253,14 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               mainAxisSize: MainAxisSize.min,
               spacing: AppSpacing.sm,
               children: [
-                const MatchFeedGreeting(userName: 'Nour'),
+                BlocBuilder<AuthCubit, AuthState>(
+                  buildWhen: (prev, next) => prev.runtimeType != next.runtimeType ||
+                      (prev is AuthAuthenticated &&
+                          next is AuthAuthenticated &&
+                          prev.user.displayName != next.user.displayName),
+                  builder: (context, _) =>
+                      MatchFeedGreeting(userName: _greetingName(context)),
+                ),
                 ExploreDevSyncSection(items: _buildExploreItems()),
               ],
             ),

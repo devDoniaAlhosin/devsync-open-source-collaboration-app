@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/result/result.dart';
 import '../../../../core/usecase/usecase.dart';
+import '../../../matching/domain/entities/github_scan_result.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/usecases/get_profile.dart';
 import '../../domain/usecases/save_github_scan.dart';
+import '../../domain/usecases/scan_github_profile.dart';
 import '../../domain/usecases/update_profile.dart';
 
 part 'profile_state.dart';
@@ -15,14 +17,17 @@ class ProfileCubit extends Cubit<ProfileState> {
     required GetProfile getProfile,
     required UpdateProfile updateProfile,
     required SaveGithubScan saveGithubScan,
+    required ScanGithubProfile scanGithubProfile,
   }) : _getProfile = getProfile,
        _updateProfile = updateProfile,
        _saveGithubScan = saveGithubScan,
+       _scanGithubProfile = scanGithubProfile,
        super(const ProfileInitial());
 
   final GetProfile _getProfile;
   final UpdateProfile _updateProfile;
   final SaveGithubScan _saveGithubScan;
+  final ScanGithubProfile _scanGithubProfile;
 
   Profile? get _current => switch (state) {
     ProfileLoaded(:final profile) ||
@@ -55,6 +60,24 @@ class ProfileCubit extends Cubit<ProfileState> {
         emit(ProfileLoaded(data));
       case FailureResult(:final failure):
         emit(ProfileSaveFailure(current, failure.message));
+    }
+  }
+
+  Future<void> scanGithub(String username) async {
+    if (state is ProfileGithubScanning || state is ProfileLoading) return;
+    emit(const ProfileGithubScanning());
+    final result = await _scanGithubProfile(ScanGithubProfileParams(username));
+    switch (result) {
+      case Success(:final data):
+        emit(ProfileGithubScanReady(data));
+      case FailureResult(:final failure):
+        emit(ProfileGithubScanFailure(failure.message));
+    }
+  }
+
+  void clearGithubScan() {
+    if (state is ProfileGithubScanReady || state is ProfileGithubScanFailure) {
+      emit(const ProfileInitial());
     }
   }
 
