@@ -145,10 +145,7 @@ class AuthRemoteDataSource {
     await _emailApi.sendOtp(email: trimmed, purpose: 'reset');
   }
 
-  Future<void> sendEmailOtp(
-    String email, {
-    String purpose = 'verify',
-  }) {
+  Future<void> sendEmailOtp(String email, {String purpose = 'verify'}) {
     return _emailApi.sendOtp(email: email.trim(), purpose: purpose);
   }
 
@@ -246,7 +243,7 @@ class AuthRemoteDataSource {
         );
       }
       final credential = GoogleAuthProvider.credential(idToken: idToken);
-      return _afterSignIn(await _auth.signInWithCredential(credential));
+      return await _afterSignIn(await _auth.signInWithCredential(credential));
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         throw const AuthCancelledException();
@@ -262,7 +259,7 @@ class AuthRemoteDataSource {
     provider.addScope('read:user');
     provider.addScope('user:email');
     try {
-      return _afterSignIn(await _auth.signInWithProvider(provider));
+      return await _afterSignIn(await _auth.signInWithProvider(provider));
     } on FirebaseAuthException catch (e) {
       if (e.code == 'web-context-canceled' || e.code == 'canceled') {
         throw const AuthCancelledException();

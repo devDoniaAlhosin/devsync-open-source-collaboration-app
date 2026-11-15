@@ -3,12 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/ds_page_fade.dart';
 import '../../domain/entities/project.dart';
 import '../../project_layout.dart';
 import '../cubit/projects_cubit.dart';
 import '../widgets/project_action_button.dart';
-import '../widgets/project_background.dart';
 import '../widgets/project_form_field.dart';
 import '../widgets/project_preview_card.dart';
 import '../widgets/skill_selector.dart';
@@ -234,69 +232,65 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: ProjectBackground(
-          child: DsPageFade(
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  WorkspaceHeader(
-                    title: 'Add or edit project',
-                    maxContentWidth: ProjectLayout.formWidth,
-                    onBack: () => Navigator.of(context).maybePop(),
-                  ),
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final gutter = ProjectLayout.gutterFor(
-                          constraints.maxWidth,
-                        );
-                        return SingleChildScrollView(
-                          padding: EdgeInsets.fromLTRB(gutter, 18, gutter, 28),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: ProjectLayout.formWidth,
-                              ),
-                              child: LayoutBuilder(
-                                builder: (context, contentConstraints) {
-                                  final isWide =
-                                      contentConstraints.maxWidth >= 880;
-                                  if (isWide) {
-                                    return Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-                                          width: 350,
-                                          child: _buildPreview(),
-                                        ),
-                                        const SizedBox(width: 24),
-                                        Expanded(child: _buildForm()),
-                                      ],
-                                    );
-                                  }
-                                  return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _buildPreview(),
-                                      const SizedBox(height: 20),
-                                      _buildForm(),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+        backgroundColor: context.ds.background,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              WorkspaceHeader(
+                title: widget.initialProject == null
+                    ? 'Add project'
+                    : 'Edit project',
+                maxContentWidth: ProjectLayout.formWidth,
+                onBack: () => Navigator.of(context).maybePop(),
               ),
-            ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final gutter = ProjectLayout.gutterFor(
+                      constraints.maxWidth,
+                    );
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(gutter, 18, gutter, 28),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: ProjectLayout.formWidth,
+                          ),
+                          child: LayoutBuilder(
+                            builder: (context, contentConstraints) {
+                              final isWide =
+                                  contentConstraints.maxWidth >= 880;
+                              if (isWide) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: 350,
+                                      child: _buildPreview(),
+                                    ),
+                                    const SizedBox(width: 24),
+                                    Expanded(child: _buildForm()),
+                                  ],
+                                );
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildPreview(),
+                                  const SizedBox(height: 20),
+                                  _buildForm(),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
         bottomNavigationBar: _SaveBar(

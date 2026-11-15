@@ -9,7 +9,6 @@ import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
-import '../../../requests/presentation/widgets/request_join_sheet.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
 import '../../project_layout.dart';
@@ -62,33 +61,26 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
     if (_requesting) return;
     setState(() => _requesting = true);
 
-    RequestJoinResult? details;
     final sent = await presentCollaborationRequestFlow(
       context,
       projectName: project.title,
       maintainerName: stats.ownerName,
       initials: project.initials,
+      projectId: project.id,
+      ownerId: project.ownerId,
       matchPercent: project.matchPercentage,
-      onSent: (result) => details = result,
-    );
-    if (!mounted) return;
-
-    if (!sent) {
-      setState(() => _requesting = false);
-      return;
-    }
-
-    final error = await context.read<ProjectsCubit>().requestToCollaborate(
-      project,
-      message: details?.message,
     );
     if (!mounted) return;
 
     setState(() => _requesting = false);
-    if (error != null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(error)));
+    if (!sent) return;
+
+    // Mohey's flow persists via RequestsCubit; refresh UI pending flag.
+    if (!project.hasPendingRequest) {
+      context.read<ProjectsCubit>().loadProject(
+        project.copyWith(hasPendingRequest: true),
+        initialStats: stats,
+      );
     }
   }
 

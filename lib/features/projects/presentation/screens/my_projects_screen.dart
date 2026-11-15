@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/ds_item_enter.dart';
-import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_page_header.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
@@ -44,30 +43,29 @@ class MyProjectsScreen extends StatelessWidget {
           (sum, project) => sum + project.requestsCount,
         );
 
-        return DsPageFade(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
-              return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  gutter,
-                  18,
-                  gutter,
-                  ProjectLayout.bottomNavSpace,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: ProjectLayout.maxWidth,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        DsPageHeader(
-                          style: DsPageHeaderStyle.page,
-                          title: 'My projects',
-                          eyebrow: '${owned.length} listed',
-                        ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                gutter,
+                18,
+                gutter,
+                ProjectLayout.bottomNavSpace,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: ProjectLayout.maxWidth,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DsPageHeader(
+                        style: DsPageHeaderStyle.page,
+                        title: 'Projects',
+                        eyebrow: '${owned.length} listed',
+                      ),
                         const SizedBox(height: 18),
                         Row(
                           children: [
@@ -127,15 +125,14 @@ class MyProjectsScreen extends StatelessWidget {
                               );
                             },
                           ),
-                        const SizedBox(height: 18),
-                        const _CommunityCallout(),
-                      ],
-                    ),
+                      const SizedBox(height: 18),
+                      const _CommunityCallout(),
+                    ],
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );

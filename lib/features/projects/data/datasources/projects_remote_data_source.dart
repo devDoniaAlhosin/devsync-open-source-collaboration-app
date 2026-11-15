@@ -108,7 +108,10 @@ class ProjectsRemoteDataSource {
       }
     }
 
-    final displayName = _auth.currentUser?.displayName?.trim() ?? '';
+    final ownerName = await _resolveOwnerName(
+      preferred: project.ownerName,
+      uid: uid,
+    );
     final model = ProjectModel(
       id: ref.id,
       title: project.title.trim(),
@@ -121,9 +124,7 @@ class ProjectsRemoteDataSource {
       matchPercentage: project.matchPercentage,
       isOwner: true,
       ownerId: uid,
-      ownerName: project.ownerName.trim().isNotEmpty
-          ? project.ownerName.trim()
-          : displayName,
+      ownerName: ownerName,
       createdAt: project.createdAt ?? (isNew ? DateTime.now() : null),
       hasPendingRequest: project.hasPendingRequest,
     );
@@ -285,7 +286,7 @@ class ProjectsRemoteDataSource {
     final cachedName = project.ownerName.trim();
     final fallbackName = cachedName.isNotEmpty
         ? cachedName
-        : (project.isOwner ? 'You' : 'Project owner');
+        : (project.isOwner ? 'You' : 'Maintainer');
 
     if (project.ownerId.isEmpty) {
       return _OwnerProfile(fallbackName, 'Usually replies in 1 day');
@@ -294,15 +295,56 @@ class ProjectsRemoteDataSource {
     try {
       final snapshot = await _users.doc(project.ownerId).get();
       final data = snapshot.data();
-      final displayName = _string(data?['displayName']);
+      final resolved = _nameFromUserDoc(data);
       final responseTime = _string(data?['responseTime'] ?? data?['replyTime']);
       return _OwnerProfile(
-        displayName.isNotEmpty ? displayName : fallbackName,
+        resolved.isNotEmpty ? resolved : fallbackName,
         responseTime.isNotEmpty ? responseTime : 'Usually replies in 1 day',
       );
     } catch (_) {
       return _OwnerProfile(fallbackName, 'Usually replies in 1 day');
     }
+  }
+
+  /// Auth displayName → users.displayName → users.profile.name → email local → Maintainer.
+  Future<String> _resolveOwnerName({
+    required String preferred,
+    required String uid,
+  }) async {
+    final fromProject = preferred.trim();
+    if (fromProject.isNotEmpty) return fromProject;
+
+    final authName = _auth.currentUser?.displayName?.trim() ?? '';
+    if (authName.isNotEmpty) return authName;
+
+    try {
+      final snapshot = await _users.doc(uid).get();
+      final fromDoc = _nameFromUserDoc(snapshot.data());
+      if (fromDoc.isNotEmpty) return fromDoc;
+    } catch (_) {
+      // Fall through to email / default.
+    }
+
+    final email = _auth.currentUser?.email?.trim() ?? '';
+    if (email.contains('@')) {
+      final local = email.split('@').first.trim();
+      if (local.isNotEmpty) return local;
+    }
+
+    return 'Maintainer';
+  }
+
+  String _nameFromUserDoc(Map<String, dynamic>? data) {
+    if (data == null) return '';
+    final displayName = _string(data['displayName']);
+    if (displayName.isNotEmpty) return displayName;
+
+    final profile = data['profile'];
+    if (profile is Map) {
+      final profileName = _string(profile['name']);
+      if (profileName.isNotEmpty) return profileName;
+    }
+    return '';
   }
 
   Future<GithubMetricsModel> _resolveGithub(ProjectModel project) async {

@@ -25,16 +25,9 @@ class ProjectPreviewCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: context.ds.surface.withValues(alpha: 0.78),
+        color: context.ds.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: context.ds.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.16),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
