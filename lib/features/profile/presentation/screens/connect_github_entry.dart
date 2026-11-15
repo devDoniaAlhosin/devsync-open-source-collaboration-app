@@ -15,6 +15,8 @@ class ConnectGithubEntry extends StatelessWidget {
     return BlocProvider(
       create: (_) => getIt<ProfileCubit>(),
       child: BlocListener<ProfileCubit, ProfileState>(
+        listenWhen: (previous, current) =>
+            current is ProfileLoaded || current is ProfileFailure,
         listener: (context, state) {
           if (state is ProfileLoaded) {
             Navigator.of(context).pushReplacementNamed(AppRoutes.editProfile);
@@ -41,26 +43,31 @@ class ConnectGithubEntry extends StatelessWidget {
 
 List<LanguageShare> _toLanguageShares(GithubScanResult result) {
   const palette = [0xFF2EE0C8, 0xFF8FBFB4, 0xFF3E5A57, 0xFF5BA8A0, 0xFF1F7A72];
-  const weights = [50, 25, 12, 8, 5];
 
-  final names = result.languages.take(weights.length).toList();
-  if (names.isEmpty) return const [];
+  if (result.languages.isEmpty) return const [];
 
-  final total = weights.take(names.length).reduce((a, b) => a + b);
-  var used = 0;
   return [
-    for (var i = 0; i < names.length; i++)
-      () {
-        final isLast = i == names.length - 1;
-        final percent = isLast
-            ? 100 - used
-            : (weights[i] * 100 / total).round();
-        used += percent;
-        return LanguageShare(
-          name: names[i],
-          percent: percent,
-          colorArgb: palette[i],
-        );
-      }(),
+    for (var i = 0; i < result.languages.length && i < palette.length; i++)
+      LanguageShare(
+        name: result.languages[i],
+        percent: result.languagePercents[result.languages[i]] ??
+            _fallbackPercent(result, i),
+        colorArgb: palette[i],
+      ),
   ];
+}
+
+int _fallbackPercent(GithubScanResult result, int index) {
+  const weights = [50, 25, 12, 8, 5];
+  final names = result.languages.take(weights.length).toList();
+  final total = weights.take(names.length).reduce((a, b) => a + b);
+  final isLast = index == names.length - 1;
+  if (isLast) {
+    var used = 0;
+    for (var i = 0; i < names.length - 1; i++) {
+      used += (weights[i] * 100 / total).round();
+    }
+    return 100 - used;
+  }
+  return (weights[index] * 100 / total).round();
 }

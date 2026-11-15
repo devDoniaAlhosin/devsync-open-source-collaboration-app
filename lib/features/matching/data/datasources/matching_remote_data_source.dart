@@ -46,7 +46,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
           score: 92,
           reason:
               'Strong Dart and Flutter activity with CI contributions matching project needs.',
-          maintainerId: 'maintainer-1',
         ),
         MatchItemModel(
           projectId: 'sample-2',
@@ -58,7 +57,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
           score: 78,
           reason:
               'Flutter SDK experience aligns well; REST API skills are a bonus.',
-          maintainerId: 'maintainer-2',
         ),
         MatchItemModel(
           projectId: 'sample-3',
@@ -70,7 +68,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
           score: 55,
           reason:
               'REST API overlap; Go is a growth opportunity given your backend interest.',
-          maintainerId: 'maintainer-3',
         ),
       ],
     );
@@ -97,7 +94,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
           neededSkills: ['Testing', 'Docs', 'Dart'],
           score: 95,
           reason: 'Clear beginner issues and friendly review mentorship.',
-          maintainerId: 'maintainer-nova',
         ),
         MatchItemModel(
           projectId: 'flutter-charts',
@@ -108,7 +104,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
           neededSkills: ['Flutter UI', 'Animations'],
           score: 88,
           reason: 'Well-documented repository with dedicated starter labels.',
-          maintainerId: 'maintainer-charts',
         ),
         MatchItemModel(
           projectId: 'firebase-auth-kit',
@@ -119,7 +114,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
           neededSkills: ['Firebase', 'Flutter UI'],
           score: 82,
           reason: 'Step-by-step contribution guide for first-time authors.',
-          maintainerId: 'maintainer-firebase',
         ),
       ];
     }
@@ -135,7 +129,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
         score: 92,
         reason:
             'Strong Flutter UI and animation overlap. Active maintainer seeking chart transitions.',
-        maintainerId: 'maintainer-charts',
       ),
       const MatchItemModel(
         projectId: 'nova-cli',
@@ -146,7 +139,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
         neededSkills: ['Testing', 'Dart', 'CLI'],
         score: 86,
         reason: 'Testing and documentation tasks align with your recent work.',
-        maintainerId: 'maintainer-nova',
       ),
       const MatchItemModel(
         projectId: 'firebase-auth-kit',
@@ -157,7 +149,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
         neededSkills: ['Firebase', 'Dart', 'Security Rules'],
         score: 81,
         reason: 'Auth and Firestore rules are relevant to your GitHub skills.',
-        maintainerId: 'maintainer-firebase',
       ),
       if (tagList.isNotEmpty)
         MatchItemModel(
@@ -168,7 +159,6 @@ class MockMatchingRemoteDataSource implements MatchingRemoteDataSource {
           neededSkills: tagList,
           score: 79,
           reason: 'Direct skill alignment with selected filter tags.',
-          maintainerId: 'maintainer-devkit',
         ),
     ];
   }

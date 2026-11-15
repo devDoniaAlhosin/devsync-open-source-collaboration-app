@@ -91,6 +91,8 @@ class LikedMatchesScreen extends StatelessWidget {
                               projectName: match.projectName,
                               maintainerName: 'Karim',
                               initials: initialsFromTitle(match.projectName),
+                              projectId: match.projectId,
+                              ownerId: match.maintainerId,
                               matchPercent: match.score.round(),
                             );
                           },
@@ -158,9 +160,7 @@ class _LikedMatchCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       match.description,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: ds.textMuted,
-                      ),
+                      style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
                     ),
                   ],
                 ),
