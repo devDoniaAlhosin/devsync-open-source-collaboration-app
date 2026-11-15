@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:devsync_open_source_collaboration_app/app/app_routes.dart';
 import 'package:devsync_open_source_collaboration_app/app/devsync_app.dart';
 import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
@@ -7,12 +8,12 @@ import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dar
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_button.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_text_field.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/fake_github_scan_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/github_scan_result.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/github_scan_button.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/github_scan_summary_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/privacy_note_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/setup_scaffold.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/cubit/profile_cubit.dart';
 
 class ConnectGithubScreen extends StatefulWidget {
   const ConnectGithubScreen({
@@ -30,16 +31,12 @@ class ConnectGithubScreen extends StatefulWidget {
 }
 
 class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
-  final _source = const FakeGithubScanDataSource();
-
   static final _usernameRule = RegExp(
     r'^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$',
   );
 
   late final TextEditingController _controller;
-  GithubScanResult? _result;
-  bool _scanning = false;
-  String? _error;
+  String? _localError;
 
   String get _username => _controller.text.trim();
   bool get _valid => _usernameRule.hasMatch(_username);
@@ -57,42 +54,31 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
   }
 
   void _onChanged(String _) {
-    setState(() {
-      _error = null;
-      if (_result != null && _result!.username != _username) _result = null;
-    });
+    setState(() => _localError = null);
+    final cubit = context.read<ProfileCubit>();
+    final state = cubit.state;
+    if (state is ProfileGithubScanReady && state.scan.username != _username) {
+      cubit.clearGithubScan();
+    } else if (state is ProfileGithubScanFailure) {
+      cubit.clearGithubScan();
+    }
   }
 
-  Future<void> _scan() async {
+  void _scan() {
     FocusScope.of(context).unfocus();
     if (!_valid) {
-      setState(() => _error = 'Enter a valid GitHub username');
+      setState(() => _localError = 'Enter a valid GitHub username');
       return;
     }
-    setState(() {
-      _scanning = true;
-      _error = null;
-    });
-    try {
-      final result = await _source.scan(_username);
-      if (!mounted) return;
-      setState(() => _result = result);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _error = "Couldn't scan this profile. Try again.");
-    } finally {
-      if (mounted) setState(() => _scanning = false);
-    }
+    setState(() => _localError = null);
+    context.read<ProfileCubit>().scanGithub(_username);
   }
 
-  void _continue() {
-    final result = _result;
-    if (result == null) return;
+  void _continue(GithubScanResult result) {
     if (widget.onContinue != null) {
       widget.onContinue!(result);
       return;
     }
-    // Default onboarding: step 3 edit profile / skills → home feed.
     Navigator.of(context).pushReplacementNamed(AppRoutes.editProfile);
   }
 
@@ -101,71 +87,82 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
     final textTheme = Theme.of(context).textTheme;
     final ds = context.ds;
 
-    return SetupScaffold(
-      eyebrow: 'Account setup',
-      title: 'Connect GitHub',
-      stepLabel: '02 / 03',
-      onThemeToggle: DevSyncApp.toggleTheme,
-      bottom: DsButton(
-        label: 'Continue',
-        onPressed: _result == null ? null : _continue,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Connect your GitHub',
-            style: textTheme.headlineMedium?.copyWith(
-              color: ds.textPrimary,
-              fontSize: 28,
-            ),
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, state) {
+        final scanning = state is ProfileGithubScanning;
+        final result = state is ProfileGithubScanReady ? state.scan : null;
+        final scanError = state is ProfileGithubScanFailure
+            ? state.message
+            : null;
+        final errorText = _localError ?? scanError;
+
+        return SetupScaffold(
+          eyebrow: 'Account setup',
+          title: 'Connect GitHub',
+          stepLabel: '02 / 03',
+          onThemeToggle: DevSyncApp.toggleTheme,
+          bottom: DsButton(
+            label: 'Continue',
+            onPressed: result == null ? null : () => _continue(result),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Your public repos and languages become your match profile.',
-            style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Connect your GitHub',
+                style: textTheme.headlineMedium?.copyWith(
+                  color: ds.textPrimary,
+                  fontSize: 28,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Your public repos and languages become your match profile.',
+                style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              DsTextField(
+                label: 'GitHub username',
+                controller: _controller,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.done,
+                errorText: errorText,
+                onChanged: _onChanged,
+                onSubmitted: (_) => _scan(),
+                suffix: _valid
+                    ? const Padding(
+                        padding: EdgeInsets.only(right: AppSpacing.md),
+                        child: DsIcon(
+                          AppIcons.success,
+                          size: 20,
+                          color: AppColors.teal,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              GithubScanButton(isLoading: scanning, onPressed: _scan),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: result == null
+                    ? const SizedBox(width: double.infinity)
+                    : Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.lg),
+                        child: GithubScanSummaryCard(result: result),
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const PrivacyNoteCard(
+                message:
+                    'We never read private repos or code. '
+                    'You can disconnect any time.',
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xl),
-          DsTextField(
-            label: 'GitHub username',
-            controller: _controller,
-            keyboardType: TextInputType.text,
-            textInputAction: TextInputAction.done,
-            errorText: _error,
-            onChanged: _onChanged,
-            onSubmitted: (_) => _scan(),
-            suffix: _valid
-                ? const Padding(
-                    padding: EdgeInsets.only(right: AppSpacing.md),
-                    child: DsIcon(
-                      AppIcons.success,
-                      size: 20,
-                      color: AppColors.teal,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          GithubScanButton(isLoading: _scanning, onPressed: _scan),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: _result == null
-                ? const SizedBox(width: double.infinity)
-                : Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.lg),
-                    child: GithubScanSummaryCard(result: _result!),
-                  ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const PrivacyNoteCard(
-            message:
-                'We never read private repos or code. '
-                'You can disconnect any time.',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

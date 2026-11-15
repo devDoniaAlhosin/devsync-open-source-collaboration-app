@@ -30,6 +30,11 @@ class DiscoverProjectCard extends StatefulWidget {
 class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
   bool _hovered = false;
 
+  String _maintainerLabel(Project project) {
+    final name = project.ownerName.trim();
+    return name.isNotEmpty ? name : 'Maintainer';
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -86,28 +91,44 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                               ).textTheme.titleLarge?.copyWith(fontSize: 17),
                             ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  AppIcons.atSign,
-                                  size: 12,
-                                  color: context.ds.textMuted,
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    widget.project.cleanGithubUrl,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: context.ds.textMuted,
-                                          fontSize: 11.5,
-                                        ),
+                            Text(
+                              'by ${_maintainerLabel(widget.project)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: context.ds.textMuted,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                ),
-                              ],
                             ),
+                            if (widget.project.cleanGithubUrl.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(
+                                    AppIcons.code,
+                                    size: 12,
+                                    color: context.ds.textMuted,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      widget.project.cleanGithubUrl,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: context.ds.textMuted,
+                                            fontSize: 11.5,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),

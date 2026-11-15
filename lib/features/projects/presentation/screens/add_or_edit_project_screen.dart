@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/ds_page_fade.dart';
 import '../../domain/entities/project.dart';
 import '../../project_layout.dart';
+import '../cubit/projects_cubit.dart';
 import '../widgets/project_action_button.dart';
-import '../widgets/project_background.dart';
 import '../widgets/project_form_field.dart';
 import '../widgets/project_preview_card.dart';
 import '../widgets/skill_selector.dart';
@@ -42,6 +42,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
   late final Set<String> _selectedSkills;
   final _customSkills = <String>[];
   String? _skillsError;
+  bool _saving = false;
 
   List<String> get _availableSkills => [..._baseSkills, ..._customSkills];
 
@@ -134,7 +135,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
     });
   }
 
-  void _saveProject() {
+  Future<void> _saveProject() async {
     FocusScope.of(context).unfocus();
     final isValid = _formKey.currentState?.validate() ?? false;
     final hasSkills = _selectedSkills.isNotEmpty;
@@ -145,7 +146,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
       });
     }
 
-    if (!isValid || !hasSkills) {
+    if (!isValid || !hasSkills || _saving) {
       return;
     }
 
@@ -160,7 +161,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
     final existing = widget.initialProject;
     final project = existing == null
         ? Project(
-            id: 'project-${DateTime.now().microsecondsSinceEpoch}',
+            id: '',
             title: title,
             description: description,
             githubUrl: githubUrl,
@@ -168,7 +169,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
             requiredContributors: 2,
             viewsCount: 0,
             requestsCount: 0,
-            matchPercentage: 92,
+            matchPercentage: 0,
             isOwner: true,
           )
         : existing.copyWith(
@@ -178,7 +179,22 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
             techStack: skills,
           );
 
-    Navigator.of(context).pop(project);
+    setState(() => _saving = true);
+    final error = await context.read<ProjectsCubit>().upsert(
+      project,
+      isNew: existing == null,
+    );
+    if (!mounted) return;
+
+    if (error == null) {
+      // The BlocListener pops with `true` so the shell can switch tabs.
+      return;
+    }
+
+    setState(() => _saving = false);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(error)));
   }
 
   String _normalizeGithub(String value) {
@@ -205,20 +221,30 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: ProjectBackground(
-        child: DsPageFade(
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                WorkspaceHeader(
-                  title: 'Add or edit project',
-                  maxContentWidth: ProjectLayout.formWidth,
-                  onBack: () => Navigator.of(context).maybePop(),
-                ),
-                Expanded(
+    return BlocListener<ProjectsCubit, ProjectsState>(
+      listenWhen: (previous, current) =>
+          current is ProjectOperationSuccess &&
+          (previous is! ProjectOperationSuccess ||
+              previous.operationId != current.operationId),
+      listener: (context, state) {
+        if (state is ProjectOperationSuccess) {
+          Navigator.of(context).pop(true);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: context.ds.background,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              WorkspaceHeader(
+                title: widget.initialProject == null
+                    ? 'Add project'
+                    : 'Edit project',
+                maxContentWidth: ProjectLayout.formWidth,
+                onBack: () => Navigator.of(context).maybePop(),
+              ),
+              Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final gutter = ProjectLayout.gutterFor(
@@ -233,7 +259,8 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
                           ),
                           child: LayoutBuilder(
                             builder: (context, contentConstraints) {
-                              final isWide = contentConstraints.maxWidth >= 880;
+                              final isWide =
+                                  contentConstraints.maxWidth >= 880;
                               if (isWide) {
                                 return Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,11 +293,11 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
             ],
           ),
         ),
+        bottomNavigationBar: _SaveBar(
+          label: _saving ? 'Saving project…' : 'Save project',
+          isLoading: _saving,
+          onPressed: _saving ? null : () => _saveProject(),
         ),
-      ),
-      bottomNavigationBar: _SaveBar(
-        label: 'Save project',
-        onPressed: _saveProject,
       ),
     );
   }
@@ -366,10 +393,15 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
 }
 
 class _SaveBar extends StatelessWidget {
-  const _SaveBar({required this.label, required this.onPressed});
+  const _SaveBar({
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+  });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -383,7 +415,11 @@ class _SaveBar extends StatelessWidget {
             constraints: const BoxConstraints(
               maxWidth: ProjectLayout.formWidth,
             ),
-            child: ProjectActionButton(label: label, onPressed: onPressed),
+            child: ProjectActionButton(
+              label: label,
+              onPressed: onPressed,
+              isLoading: isLoading,
+            ),
           ),
         ),
       ),

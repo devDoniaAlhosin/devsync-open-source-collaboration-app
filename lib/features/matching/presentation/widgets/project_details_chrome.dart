@@ -26,6 +26,8 @@ class CollaborationAction extends StatelessWidget {
       projectName: match.projectName,
       maintainerName: maintainerName,
       initials: initialsFromTitle(match.projectName),
+      projectId: match.projectId,
+      ownerId: match.maintainerId,
       matchPercent: match.score.round(),
     );
   }
