@@ -8,7 +8,7 @@ import 'cubit/requests_cubit.dart';
 import 'screens/notification_permission_screen.dart';
 import 'widgets/request_join_sheet.dart';
 
-/// Saves the collaboration request before showing the success step.
+/// Saves the collaboration request (Firestore) before showing the success step.
 Future<bool> presentCollaborationRequestFlow(
   BuildContext context, {
   required String projectName,

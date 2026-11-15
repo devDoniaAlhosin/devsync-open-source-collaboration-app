@@ -175,11 +175,11 @@ class _PushDropInState extends State<_PushDropIn>
       _controller.value = 1;
       return;
     }
-    if (!TickerMode.valuesOf(context).enabled) return;
+    if (!TickerMode.of(context)) return;
 
     _started = true;
     Future<void>.delayed(_PushDropIn._delay, () {
-      if (mounted && TickerMode.valuesOf(context).enabled) {
+      if (mounted && TickerMode.of(context)) {
         _controller.forward();
       }
     });

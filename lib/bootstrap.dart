@@ -24,10 +24,13 @@ Future<void> bootstrap() async {
   }
   await configureDependencies();
 
-  await FcmService(
-    auth: FirebaseAuth.instance,
-    firestore: FirebaseFirestore.instance,
-  ).initialize();
+  // FCM must not block app launch if permission / Play Services fail.
+  try {
+    await FcmService(
+      auth: FirebaseAuth.instance,
+      firestore: FirebaseFirestore.instance,
+    ).initialize();
+  } catch (_) {}
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
