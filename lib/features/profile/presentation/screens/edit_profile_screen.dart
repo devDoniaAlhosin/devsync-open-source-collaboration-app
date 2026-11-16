@@ -194,7 +194,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 AppSpacing.screenPadding,
                 AppSpacing.lg,
               ),
-              child: DsButton(label: 'Save and see matches', onPressed: _save),
+              child: BlocBuilder<ProfileCubit, ProfileState>(
+                buildWhen: (p, c) =>
+                    (p is ProfileSaving) != (c is ProfileSaving),
+                builder: (context, state) {
+                  final saving = state is ProfileSaving;
+                  return DsButton(
+                    label: saving ? 'Saving…' : 'Save and see matches',
+                    onPressed: saving ? null : _save,
+                  );
+                },
+              ),
             ),
           ],
         ),
