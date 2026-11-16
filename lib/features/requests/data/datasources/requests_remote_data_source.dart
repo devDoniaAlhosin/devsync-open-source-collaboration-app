@@ -59,38 +59,34 @@ class RequestsRemoteDataSource {
 
   Future<RequestItem> createRequest({required RequestItem item}) async {
     final uid = _uid;
+    final projectId = item.projectId.trim();
+    final ownerId = item.ownerId?.trim() ?? '';
 
-    if (item.projectId.isEmpty ||
-        item.ownerId == null ||
-        item.ownerId!.isEmpty) {
+    if (projectId.isEmpty || ownerId.isEmpty) {
       throw ArgumentError('Project ID and owner ID are required.');
     }
 
-    if (item.ownerId == uid) {
+    if (ownerId == uid) {
       throw ArgumentError('You cannot request to join your own project.');
     }
 
-    final requestId = '${uid}_${item.projectId}';
+    // Deterministic id: one request document per (sender, project), enforced
+    // by Firestore itself instead of a "query then write" race.
+    final requestId = '${uid}_$projectId';
     if (utf8.encode(requestId).length > 1500) {
       throw ArgumentError('Project ID is too long.');
     }
 
-    final legacyDuplicate = await _requests
-        .where('projectId', isEqualTo: item.projectId)
-        .where('senderId', isEqualTo: uid)
-        .where('status', whereIn: ['pending', 'isNew'])
-        .limit(1)
-        .get();
-    if (legacyDuplicate.docs.isNotEmpty &&
-        legacyDuplicate.docs.single.id != requestId) {
-      throw StateError('You already have a pending request.');
-    }
+    final ref = _requests.doc(requestId);
+    final projectRef = _firestore
+        .collection(FirestoreCollections.projects)
+        .doc(projectId);
 
     final model = RequestModel(
       id: requestId,
-      projectId: item.projectId,
+      projectId: projectId,
       senderId: uid,
-      ownerId: item.ownerId,
+      ownerId: ownerId,
       initials: item.initials,
       title: item.title,
       subtitle: item.subtitle,
@@ -107,9 +103,24 @@ class RequestsRemoteDataSource {
       skills: item.skills,
     );
 
-    final ref = _requests.doc(requestId);
     await _firestore.runTransaction<void>((transaction) async {
+      // Read both documents before any write (Firestore transaction rule).
+      final projectSnapshot = await transaction.get(projectRef);
       final existing = await transaction.get(ref);
+
+      if (!projectSnapshot.exists) {
+        throw StateError('Project not found.');
+      }
+
+      final projectData = projectSnapshot.data() ?? const <String, dynamic>{};
+      final projectOwnerId = (projectData['ownerId'] as String?)?.trim() ?? '';
+      if (projectOwnerId.isEmpty) {
+        throw StateError('This project has no owner yet.');
+      }
+      if (projectOwnerId != ownerId) {
+        throw StateError('The project owner changed. Refresh and try again.');
+      }
+
       if (existing.exists) {
         final status = existing.data()?['status'];
         if (status == 'pending' || status == 'isNew') {
@@ -121,6 +132,15 @@ class RequestsRemoteDataSource {
       }
 
       transaction.set(ref, model.toFirestore());
+
+      if (!existing.exists) {
+        // One counter increment per request document. A declined request is
+        // re-opened on the same deterministic document, so it never
+        // double-counts. Rules allow this single counter-only diff.
+        transaction.update(projectRef, {
+          'requestsCount': FieldValue.increment(1),
+        });
+      }
     });
 
     final saved = await ref.get();

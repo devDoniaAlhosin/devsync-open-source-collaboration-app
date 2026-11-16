@@ -1,6 +1,5 @@
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
-import '../../domain/entities/collaboration_request_receipt.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
 import '../../domain/repositories/projects_repository.dart';
@@ -82,24 +81,21 @@ class ProjectsRepositoryImpl implements ProjectsRepository {
       );
     }
 
-    return _guard(() => _remote.upsert(project));
-  }
-
-  @override
-  Future<Result<CollaborationRequestReceipt>> requestToCollaborate({
-    required Project project,
-    String? message,
-  }) {
-    if (project.id.trim().isEmpty) {
+    // Editing an existing document is owner-guarded in the data source. A
+    // stored project with no owner can never be edited back into a valid
+    // state, so reject it here before touching Firestore.
+    if (project.id.trim().isNotEmpty && project.ownerId.trim().isEmpty) {
       return Future.value(
-        const FailureResult<CollaborationRequestReceipt>(
-          ValidationFailure('Pick a project before requesting to collaborate'),
+        const FailureResult<Project>(
+          ValidationFailure(
+            'This project has no owner. Re-create it before editing.',
+            field: 'ownerId',
+          ),
         ),
       );
     }
-    return _guard(
-      () => _remote.requestToCollaborate(project: project, message: message),
-    );
+
+    return _guard(() => _remote.upsert(project));
   }
 
   @override
