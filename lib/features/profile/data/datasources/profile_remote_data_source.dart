@@ -49,10 +49,19 @@ class ProfileRemoteDataSource {
 
   Future<Profile> save(Profile profile) async {
     final user = _requireUser();
-    await _doc(user.uid).set({
-      'profile': ProfileModel.toMap(profile),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    await _doc(user.uid)
+        .set({
+          'profile': ProfileModel.toMap(profile),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true))
+        .timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => throw FirebaseException(
+            plugin: 'cloud_firestore',
+            code: 'unavailable',
+            message: 'No connection. Check your internet and try again.',
+          ),
+        );
     return profile;
   }
 }
