@@ -19,10 +19,11 @@ class MatchingCubit extends Cubit<MatchingState> {
   MatchingCubit({
     required MatchingRepository repository,
     required LikedMatchesLocalDataSource likedMatchesDataSource,
+    required GetRankedMatchesUseCase getRankedMatchesUseCase,
     MatchingProfileRepository? profileRepository,
     UserProfile? profile,
   }) : _repository = repository,
-       _getRankedMatchesUseCase = GetRankedMatchesUseCase(repository),
+       _getRankedMatchesUseCase = getRankedMatchesUseCase,
        _likedMatchesDataSource = likedMatchesDataSource,
        _profileRepository = profileRepository,
        super(MatchingState(profile: profile ?? UserProfile.empty));

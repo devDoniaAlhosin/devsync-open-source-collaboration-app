@@ -3,6 +3,7 @@ import 'package:devsync_open_source_collaboration_app/features/matching/data/dat
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/matching_priority.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/user_profile.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/ai_analytics_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
@@ -20,14 +21,18 @@ const _testProfile = UserProfile(
   totalContributions: 200,
 );
 
-MatchingCubit _buildCubit() => MatchingCubit(
-  repository: MatchingRepositoryImpl(
+MatchingCubit _buildCubit() {
+  final repository = MatchingRepositoryImpl(
     remoteDataSource: MockMatchingRemoteDataSource(),
     localDataSource: InMemoryMatchingLocalDataSource(),
-  ),
-  likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
-  profile: _testProfile,
-);
+  );
+  return MatchingCubit(
+    repository: repository,
+    likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
+    getRankedMatchesUseCase: GetRankedMatchesUseCase(repository),
+    profile: _testProfile,
+  );
+}
 
 void main() {
   group('MatchingCubit Clean Architecture & State Management', () {

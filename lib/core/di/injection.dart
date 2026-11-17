@@ -157,6 +157,7 @@ void _registerMatching() {
       () => MatchingCubit(
         repository: getIt<MatchingRepository>(),
         likedMatchesDataSource: getIt<LikedMatchesLocalDataSource>(),
+        getRankedMatchesUseCase: getIt<GetRankedMatchesUseCase>(),
         profileRepository: getIt<MatchingProfileRepository>(),
       ),
     );

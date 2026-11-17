@@ -78,10 +78,11 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
           child: BlocConsumer<MatchingCubit, MatchingState>(
             bloc: _cubit,
             listener: (context, state) {
-              if (!_edited)
+              if (!_edited) {
                 _skillsController.text = state.profile.declaredSkills.join(
                   ', ',
                 );
+              }
             },
             builder: (context, state) {
               final profile = state.profile;
