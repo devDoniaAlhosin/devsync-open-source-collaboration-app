@@ -131,40 +131,46 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
                       padding: EdgeInsets.all(AppSpacing.md),
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                  const SizedBox(height: AppSpacing.xl),
-                  DsCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recorded GitHub data',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        if (profile.githubUrl?.isNotEmpty == true)
-                          SelectableText(profile.githubUrl!),
-                        if (profile.githubLanguages.isNotEmpty)
+                  if (profile.githubUrl?.isNotEmpty == true ||
+                      profile.githubLanguages.isNotEmpty ||
+                      profile.publicRepoCount > 0 ||
+                      profile.totalContributions > 0 ||
+                      profile.topRepositories.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    DsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            'Languages: ${profile.githubLanguages.keys.join(', ')}',
+                            'Recorded GitHub data',
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
-                        if (profile.publicRepoCount > 0)
-                          Text(
-                            'Public repositories: ${profile.publicRepoCount}',
-                          ),
-                        if (profile.totalContributions > 0)
-                          Text('Contributions: ${profile.totalContributions}'),
-                        if (profile.topRepositories.isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.sm),
-                          for (final repository in profile.topRepositories)
-                            SelectableText(repository),
+                          if (profile.githubUrl?.isNotEmpty == true)
+                            SelectableText(profile.githubUrl!),
+                          if (profile.githubLanguages.isNotEmpty)
+                            Text(
+                              'Languages: ${profile.githubLanguages.keys.join(', ')}',
+                            ),
+                          if (profile.publicRepoCount > 0)
+                            Text(
+                              'Public repositories: ${profile.publicRepoCount}',
+                            ),
+                          if (profile.totalContributions > 0)
+                            Text('Contributions: ${profile.totalContributions}'),
+                          if (profile.topRepositories.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            for (final repository in profile.topRepositories)
+                              SelectableText(repository),
+                          ],
+                          const SizedBox(height: AppSpacing.md),
+                          const Text(
+                            'This shows public GitHub data already saved to your account. GitHub linking and live scans are not available here. You can find matches using your declared skills.',
+                          ),
                         ],
-                        const SizedBox(height: AppSpacing.md),
-                        const Text(
-                          'This shows public GitHub data already saved to your account. GitHub linking and live scans are not available here. You can find matches using your declared skills.',
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               );
             },

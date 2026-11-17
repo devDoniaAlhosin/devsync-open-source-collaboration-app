@@ -71,6 +71,7 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
 
     try {
       await _users.doc(user.uid).set({
+        'skills': normalized,
         'declaredSkills': normalized,
         'matchingProfileUpdatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -95,16 +96,26 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
       _firestore.collection(FirestoreCollections.users);
 
   UserProfile _profileFromData(User user, Map<String, dynamic> data) {
-    final storedSkills = data['declaredSkills'];
-    final legacySkills = data['skills'];
-    final skills = _readStringList(
-      storedSkills is List ? storedSkills : legacySkills,
+    final skillsFromUsersDoc = _readStringList(
+      data['skills'],
       maxItems: 100,
       maxLength: 100,
     );
+    final declaredSkillsList = _readStringList(
+      data['declaredSkills'],
+      maxItems: 100,
+      maxLength: 100,
+    );
+
+    // Merge skills from both fields in users/{uid} so skills are always retrieved.
+    final mergedSkills = <String>{
+      ...skillsFromUsersDoc,
+      ...declaredSkillsList,
+    }.toList();
+
     return UserProfile(
       uid: user.uid,
-      declaredSkills: skills,
+      declaredSkills: mergedSkills,
       githubLanguages: _readLanguages(data['githubLanguages']),
       publicRepoCount: _readNonNegativeInt(data['publicRepoCount']),
       totalContributions: _readNonNegativeInt(data['totalContributions']),
