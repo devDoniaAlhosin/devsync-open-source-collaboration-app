@@ -5,7 +5,7 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       match /fcmTokens/{tokenId} {
     allow read, write: if request.auth != null && request.auth.uid == userId;
-  }
+      }
     }
 
     // Projects are created and edited by their owner. Any signed-in user can
