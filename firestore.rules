@@ -5,6 +5,45 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    match /feedback/{feedbackId} {
+      function validFeedback(data) {
+        return data.keys().hasAll([
+            'userId',
+            'projectId',
+            'action',
+            'updatedAt'
+          ])
+          && data.keys().hasOnly([
+            'userId',
+            'projectId',
+            'action',
+            'updatedAt'
+          ])
+          && data.userId == request.auth.uid
+          && data.projectId is string
+          && data.projectId.size() > 0
+          && data.action in ['like', 'skip']
+          && data.updatedAt == request.time;
+      }
+
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      allow create: if request.auth != null
+        && feedbackId == request.auth.uid + '_' + request.resource.data.projectId
+        && validFeedback(request.resource.data);
+
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.projectId == resource.data.projectId
+        && feedbackId == request.auth.uid + '_' + request.resource.data.projectId
+        && validFeedback(request.resource.data);
+
+      allow delete: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && feedbackId == request.auth.uid + '_' + resource.data.projectId;
+    }
+
     match /requests/{requestId} {
       function projectOwnedBy(projectId, ownerId) {
         let projectPath = /databases/$(database)/documents/projects/$(projectId);
