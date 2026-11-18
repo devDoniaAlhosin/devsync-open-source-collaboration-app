@@ -72,7 +72,11 @@ service cloud.firestore {
     match /requests/{requestId} {
       function projectOwnedBy(projectId, ownerId) {
         let projectPath = /databases/$(database)/documents/projects/$(projectId);
-        return exists(projectPath) && get(projectPath).data.ownerId == ownerId;
+        return exists(projectPath)
+          && (
+            get(projectPath).data.get('ownerId', '') == ownerId
+            || get(projectPath).data.get('ownerUid', '') == ownerId
+          );
       }
 
       function validRequestData(data) {
@@ -148,7 +152,8 @@ service cloud.firestore {
       }
 
       allow read: if request.auth != null
-        && (resource.data.senderId == request.auth.uid
+        && (resource == null
+          || resource.data.senderId == request.auth.uid
           || resource.data.ownerId == request.auth.uid);
 
       allow create: if request.auth != null
