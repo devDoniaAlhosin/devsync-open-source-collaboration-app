@@ -8,7 +8,11 @@ import '../../domain/entities/collaboration_request.dart';
 import '../models/request_model.dart';
 
 class RequestsRemoteDataSource {
-  RequestsRemoteDataSource({required this._firestore, required this._auth});
+  RequestsRemoteDataSource({
+    required FirebaseFirestore firestore,
+    required FirebaseAuth auth,
+  }) : _firestore = firestore,
+       _auth = auth;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;

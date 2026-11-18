@@ -1,12 +1,8 @@
 import '../domain/entities/match_item.dart';
 
-/// In-memory liked / hearted matches until Firestore likes land.
-///
-/// Feed "request" (heart) actions append here; [LikedMatchesScreen] reads it.
+/// Current-session display cache; Firestore stores the durable feedback.
 class LikedMatchesStore {
-  LikedMatchesStore._() {
-    _items.addAll(_seed);
-  }
+  LikedMatchesStore._();
 
   static final LikedMatchesStore instance = LikedMatchesStore._();
 
@@ -19,15 +15,7 @@ class LikedMatchesStore {
     _items.insert(0, match);
   }
 
-  static const _seed = [
-    MatchItem(
-      projectId: 'flutter-oss-charts',
-      projectName: 'flutter-oss/charts',
-      description: 'Needs a Dart contributor',
-      githubUrl: 'https://github.com/flutter-oss/charts',
-      neededSkills: ['Dart', 'Firebase', 'Animation'],
-      score: 92,
-      reason: 'Strong Dart + animation overlap with your profile.',
-    ),
-  ];
+  void remove(String projectId) {
+    _items.removeWhere((match) => match.projectId == projectId);
+  }
 }

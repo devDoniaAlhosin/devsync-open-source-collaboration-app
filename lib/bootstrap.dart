@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:developer';
+
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'core/notifications/fcm_scrvice.dart';
+import 'core/notifications/fcm_service.dart';
 import 'app/devsync_app.dart';
 import 'core/di/injection.dart';
 import 'core/theme/app_colors.dart';
@@ -22,12 +22,19 @@ Future<void> bootstrap() async {
   } on FirebaseException catch (e) {
     if (e.code != 'duplicate-app') rethrow;
   }
-  await configureDependencies();
-
-  await FcmService(
-    auth: FirebaseAuth.instance,
-    firestore: FirebaseFirestore.instance,
-  ).initialize();
+  await configureDependencies(
+    onForegroundMessage: DevSyncApp.showNotification,
+    onNotificationOpened: DevSyncApp.openRequests,
+  );
+  try {
+    await getIt<FcmService>().initialize();
+  } on FirebaseException catch (error, stackTrace) {
+    log(
+      'Could not initialize Firebase Messaging.',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

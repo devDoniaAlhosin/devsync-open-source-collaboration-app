@@ -3,6 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /fcmTokens/{tokenId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid == userId;
+      }
     }
 
     match /feedback/{feedbackId} {
@@ -42,6 +47,26 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.userId == request.auth.uid
         && feedbackId == request.auth.uid + '_' + resource.data.projectId;
+    }
+
+    // Projects are created and edited by their owner. Any signed-in user can
+    // read the catalogue. View/request counters are incremented by other
+    // users' transactions, so authenticated updates stay allowed for now;
+    // tighten this to owner + counter-only diffs once counters move to a
+    // Cloud Function.
+    match /projects/{projectId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    // One document per viewer per day: `{projectId}_{uid}_{yyyy-MM-dd}`.
+    match /views/{viewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.viewerId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /requests/{requestId} {
@@ -161,6 +186,8 @@ service cloud.firestore {
             && validRequestData(request.resource.data)
           )
         );
+
+      allow delete: if false;
     }
   }
 }

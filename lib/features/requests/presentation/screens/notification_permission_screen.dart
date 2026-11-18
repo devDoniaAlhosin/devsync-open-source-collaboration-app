@@ -1,7 +1,12 @@
+import 'dart:developer';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../app/app_routes.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/notifications/fcm_service.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -35,6 +40,23 @@ class NotificationPermissionScreen extends StatelessWidget {
       (route) => false,
       arguments: requestsTabIndex,
     );
+  }
+
+  Future<void> _allowNotifications(BuildContext context) async {
+    try {
+      await getIt<FcmService>().requestPermission();
+    } on FirebaseException catch (error) {
+      log('Could not request notification permission.', error: error);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not enable notifications. Please try again.'),
+        ),
+      );
+      return;
+    }
+
+    if (context.mounted) _goToRequests(context);
   }
 
   @override
@@ -99,7 +121,7 @@ class NotificationPermissionScreen extends StatelessWidget {
                   children: [
                     DsButton(
                       label: 'Allow notifications',
-                      onPressed: () => _goToRequests(context),
+                      onPressed: () => _allowNotifications(context),
                     ),
                     DsButton(
                       label: 'Not now',
@@ -175,11 +197,11 @@ class _PushDropInState extends State<_PushDropIn>
       _controller.value = 1;
       return;
     }
-    if (!TickerMode.valuesOf(context).enabled) return;
+    if (!TickerMode.of(context)) return;
 
     _started = true;
     Future<void>.delayed(_PushDropIn._delay, () {
-      if (mounted && TickerMode.valuesOf(context).enabled) {
+      if (mounted && TickerMode.of(context)) {
         _controller.forward();
       }
     });

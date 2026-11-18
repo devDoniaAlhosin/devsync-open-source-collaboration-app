@@ -35,6 +35,7 @@ class _DsItemEnterState extends State<DsItemEnter>
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
   bool _started = false;
+  bool _pendingDelay = false;
 
   @override
   void initState() {
@@ -58,27 +59,53 @@ class _DsItemEnterState extends State<DsItemEnter>
   }
 
   void _tryStart() {
-    if (_started) return;
+    if (_controller.isCompleted || _controller.isAnimating) {
+      _started = true;
+      _pendingDelay = false;
+      return;
+    }
+
     if (WidgetsBinding.instance.disableAnimations ||
         MediaQuery.disableAnimationsOf(context)) {
       _started = true;
+      _pendingDelay = false;
       _controller.value = 1;
       return;
     }
-    if (!TickerMode.valuesOf(context).enabled) return;
 
-    _started = true;
+    if (!TickerMode.of(context)) {
+      // Stay unstarted so we retry when the pane becomes tickable again.
+      return;
+    }
+
+    if (_pendingDelay) {
+      _pendingDelay = false;
+      _started = true;
+      _controller.forward();
+      return;
+    }
+
+    if (_started) return;
+
     final slots = widget.index.clamp(0, widget.maxDelaySlots);
     final delay = AppAnimations.itemStagger * slots;
     if (delay == Duration.zero) {
+      _started = true;
       _controller.forward();
-    } else {
-      Future<void>.delayed(delay, () {
-        if (mounted && TickerMode.valuesOf(context).enabled) {
-          _controller.forward();
-        }
-      });
+      return;
     }
+
+    _pendingDelay = true;
+    Future<void>.delayed(delay, () {
+      if (!mounted) return;
+      if (!TickerMode.of(context)) {
+        // Leave _pendingDelay true so didChangeDependencies can finish later.
+        return;
+      }
+      _pendingDelay = false;
+      _started = true;
+      _controller.forward();
+    });
   }
 
   @override

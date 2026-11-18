@@ -55,7 +55,7 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
           duration: _isDragging ? Duration.zero : AppAnimations.normal,
           curve: AppAnimations.emphasized,
           transform: Matrix4.identity()
-            ..translateByDouble(_dragOffset.dx, _dragOffset.dy, 0, 1)
+            ..setTranslationRaw(_dragOffset.dx, _dragOffset.dy, 0)
             ..rotateZ(rotation),
           transformAlignment: Alignment.center,
           child: Stack(
@@ -102,6 +102,15 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
     await Future<void>.delayed(AppAnimations.normal);
     if (!mounted) return;
     widget.onAction(action);
+  }
+
+  void restoreAfterFailedAction() {
+    if (!mounted) return;
+    setState(() {
+      _isCompleting = false;
+      _isDragging = false;
+      _dragOffset = Offset.zero;
+    });
   }
 
   @override
