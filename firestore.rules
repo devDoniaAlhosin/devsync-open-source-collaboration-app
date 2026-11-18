@@ -9,15 +9,69 @@ service cloud.firestore {
     }
 
     // Projects are created and edited by their owner. Any signed-in user can
-    // read the catalogue. View/request counters are incremented by other
-    // users' transactions, so authenticated updates stay allowed for now;
-    // tighten this to owner + counter-only diffs once counters move to a
-    // Cloud Function.
+    // read the catalogue.
+    //
+    // Counters (`requestsCount`, `viewsCount`) are the only fields a non-owner
+    // may touch, and only through a single +1 diff. Project content, ownership
+    // and deletion stay owner-only. Move these counters to Cloud Functions
+    // when the team enables them, then this exception can be removed.
     match /projects/{projectId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null;
-      allow delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner() {
+        return isSignedIn() && resource.data.ownerId == request.auth.uid;
+      }
+
+      // The request feature creates `requests/{uid}_{projectId}` in the same
+      // transaction, so a request-counter bump can be tied to that write.
+      function requestCreatedByViewer() {
+        let requestPath = /databases/$(database)/documents/requests/$(request.auth.uid + '_' + projectId);
+        return existsAfter(requestPath)
+          && getAfter(requestPath).data.projectId == projectId
+          && getAfter(requestPath).data.senderId == request.auth.uid
+          && getAfter(requestPath).data.ownerId == resource.data.ownerId;
+      }
+
+      function onlyIncrementsRequestsCount() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['requestsCount'])
+          && request.resource.data.requestsCount is int
+          && request.resource.data.requestsCount == resource.data.get('requestsCount', 0) + 1;
+      }
+
+      function onlyIncrementsViewsCount() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewsCount'])
+          && request.resource.data.viewsCount is int
+          && request.resource.data.viewsCount == resource.data.get('viewsCount', 0) + 1;
+      }
+
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId is string
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId.size() > 0
+        && request.resource.data.ownerName is string
+        && request.resource.data.ownerName.size() > 0;
+
+      allow update: if (
+        // Owner content edits must keep the owner fields intact.
+        isOwner()
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.ownerName is string
+          && request.resource.data.ownerName.size() > 0
+      ) || (
+        // Counter-only diffs written by other users' transactions.
+        isSignedIn()
+          && onlyIncrementsRequestsCount()
+          && requestCreatedByViewer()
+      ) || (
+        isSignedIn()
+          && onlyIncrementsViewsCount()
+      );
+
+      allow delete: if isOwner();
     }
 
     // One document per viewer per day: `{projectId}_{uid}_{yyyy-MM-dd}`.
@@ -107,8 +161,14 @@ service cloud.firestore {
       }
 
       allow read: if request.auth != null
-        && (resource.data.senderId == request.auth.uid
-          || resource.data.ownerId == request.auth.uid);
+        && (
+          // The create transaction probes the deterministic request id before
+          // writing it. Reading a missing document returns no data, so allow
+          // that probe without exposing other users' requests.
+          !exists(/databases/$(database)/documents/requests/$(requestId))
+          || resource.data.senderId == request.auth.uid
+          || resource.data.ownerId == request.auth.uid
+        );
 
       allow create: if request.auth != null
         && request.resource.data.senderId == request.auth.uid

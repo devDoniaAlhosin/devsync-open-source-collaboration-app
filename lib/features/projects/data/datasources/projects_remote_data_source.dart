@@ -2,15 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../core/constants/firestore_collections.dart';
-import '../../domain/entities/collaboration_request_receipt.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
-import '../datasources/devsync_api_data_source.dart';
 import '../datasources/github_remote_data_source.dart';
 import '../exceptions/projects_exceptions.dart';
 import '../models/project_model.dart';
 
-/// Firestore-facing source for projects, views and collaboration requests.
+/// Firestore-facing source for projects, views and the owner dashboard.
 ///
 /// Collection layout:
 /// * `projects/{projectId}` — project document. AI fields (`matchPercentage`,
@@ -18,23 +16,23 @@ import '../models/project_model.dart';
 ///   are written by the DevSync API, never by the client.
 /// * `views/{projectId}_{uid}_{yyyy-MM-dd}` — one deterministic document per
 ///   viewer per day, so refreshing details does not inflate view counts.
-/// * `requests/{requestId}` — collaboration requests shared with the requests
-///   feature inbox (`requesterId`, `ownerId`, `status`, `matchPercentage`).
+///
+/// Collaboration requests are **not** written here. The requests feature
+/// (`RequestsCubit` / `RequestModel`) is the single create path; this source
+/// only reads `requests` to resolve viewer-relative pending flags and the
+/// owner dashboard counters.
 class ProjectsRemoteDataSource {
   ProjectsRemoteDataSource({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     GithubRemoteDataSource? github,
-    DevSyncApiDataSource? devsyncApi,
   }) : _firestore = firestore,
        _auth = auth,
-       _github = github ?? GithubRemoteDataSource(),
-       _devsyncApi = devsyncApi ?? DevSyncApiDataSource();
+       _github = github ?? GithubRemoteDataSource();
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final GithubRemoteDataSource _github;
-  final DevSyncApiDataSource _devsyncApi;
 
   String? get _currentUserId => _auth.currentUser?.uid;
 
@@ -94,24 +92,19 @@ class ProjectsRemoteDataSource {
     final uid = _currentUserId;
     if (uid == null) throw const AuthRequiredException();
 
-    final isNew = _isNewProject(project);
-    final ref = isNew ? _projects.doc() : _projects.doc(project.id);
-
-    if (!isNew) {
-      final snapshot = await ref.get();
-      if (!snapshot.exists) throw const ProjectNotFoundException();
-      final ownerId = _string(
-        snapshot.data()?['ownerId'] ?? snapshot.data()?['ownerUid'],
-      );
-      if (ownerId.isNotEmpty && ownerId != uid) {
-        throw const ProjectForbiddenException();
-      }
-    }
+    final isNew = project.id.trim().isEmpty;
+    final ref = isNew ? _projects.doc() : _projects.doc(project.id.trim());
 
     final ownerName = await _resolveOwnerName(
       preferred: project.ownerName,
       uid: uid,
     );
+    if (ownerName.trim().isEmpty) {
+      throw const ProjectValidationException(
+        'A project owner name is required before saving.',
+      );
+    }
+
     final model = ProjectModel(
       id: ref.id,
       title: project.title.trim(),
@@ -129,97 +122,44 @@ class ProjectsRemoteDataSource {
       hasPendingRequest: project.hasPendingRequest,
     );
 
+    if (!isNew) {
+      // Create/edit are guarded in one transaction so a concurrent owner
+      // change cannot be overwritten between the read and the write.
+      Project saved = model;
+      await _firestore.runTransaction<void>((transaction) async {
+        final snapshot = await transaction.get(ref);
+        if (!snapshot.exists) throw const ProjectNotFoundException();
+
+        final data = snapshot.data() ?? const <String, dynamic>{};
+        final ownerId = _string(data['ownerId'] ?? data['ownerUid']);
+        if (ownerId.isEmpty) {
+          throw const ProjectValidationException(
+            'This project has no owner. Re-create it before editing.',
+          );
+        }
+        if (ownerId != uid) throw const ProjectForbiddenException();
+
+        // Keep the original createdAt in the returned entity; `toFirestore`
+        // deliberately does not rewrite it on edits.
+        final existing = ProjectModel.fromFirestore(
+          snapshot,
+          currentUserId: uid,
+        );
+        saved = model.copyWith(createdAt: existing.createdAt);
+
+        transaction.set(
+          ref,
+          model.toFirestore(ownerId: uid, ownerName: ownerName, isNew: false),
+          SetOptions(merge: true),
+        );
+      });
+      return saved;
+    }
+
     await ref.set(
-      model.toFirestore(ownerId: uid, isNew: isNew),
-      SetOptions(merge: true),
+      model.toFirestore(ownerId: uid, ownerName: ownerName, isNew: true),
     );
     return model;
-  }
-
-  Future<CollaborationRequestReceipt> requestToCollaborate({
-    required Project project,
-    String? message,
-  }) async {
-    final uid = _currentUserId;
-    if (uid == null) throw const AuthRequiredException();
-
-    final projectRef = _projects.doc(project.id);
-    final snapshot = await projectRef.get();
-    if (!snapshot.exists) throw const ProjectNotFoundException();
-
-    final data = snapshot.data() ?? const <String, dynamic>{};
-    final ownerId = _string(data['ownerId'] ?? data['ownerUid']);
-    if (ownerId.isEmpty) {
-      throw const ProjectValidationException('This project has no owner yet');
-    }
-    if (ownerId == uid) {
-      throw const ProjectValidationException('You already own this project');
-    }
-
-    final existing = await _requests
-        .where('projectId', isEqualTo: project.id)
-        .where('requesterId', isEqualTo: uid)
-        .where('status', isEqualTo: 'pending')
-        .limit(1)
-        .get();
-
-    if (existing.docs.isNotEmpty) {
-      return CollaborationRequestReceipt(
-        requestId: existing.docs.first.id,
-        projectId: project.id,
-        created: false,
-      );
-    }
-
-    final user = _auth.currentUser;
-    final requesterName = _string(user?.displayName).isEmpty
-        ? 'Contributor'
-        : _string(user?.displayName);
-    final projectTitle = _string(data['title']).isEmpty
-        ? project.title
-        : _string(data['title']);
-    final requestRef = _requests.doc();
-
-    final batch = _firestore.batch();
-    batch.set(requestRef, {
-      'projectId': project.id,
-      'projectTitle': projectTitle,
-      'ownerId': ownerId,
-      if (_string(data['ownerName']).isNotEmpty)
-        'ownerName': _string(data['ownerName']),
-      'requesterId': uid,
-      'requesterName': requesterName,
-      if (_string(user?.email).isNotEmpty) 'requesterEmail': user?.email,
-      'message': _truncate(message?.trim() ?? '', 1000),
-      'matchPercentage': project.matchPercentage,
-      'status': 'pending',
-      'type': 'sent',
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    batch.update(projectRef, {'requestsCount': FieldValue.increment(1)});
-    await batch.commit();
-
-    // Push is best-effort and server-owned; the request itself is committed.
-    try {
-      await _devsyncApi.notifyCollaborationRequest(
-        requestId: requestRef.id,
-        projectId: project.id,
-        projectTitle: projectTitle,
-        ownerId: ownerId,
-        requesterId: uid,
-        requesterName: requesterName,
-        message: message,
-      );
-    } catch (_) {
-      // The notification can be retried by the API's own queue/cron.
-    }
-
-    return CollaborationRequestReceipt(
-      requestId: requestRef.id,
-      projectId: project.id,
-      created: true,
-    );
   }
 
   Future<int> fetchJoinedContributions() async {
@@ -268,7 +208,7 @@ class ProjectsRemoteDataSource {
   Future<Set<String>> _pendingProjectIds(String uid) async {
     try {
       final snapshot = await _requests
-          .where('requesterId', isEqualTo: uid)
+          .where('senderId', isEqualTo: uid)
           .where('status', isEqualTo: 'pending')
           .get();
       return {
@@ -395,12 +335,6 @@ class ProjectsRemoteDataSource {
     }
   }
 
-  static bool _isNewProject(Project project) {
-    return project.id.trim().isEmpty ||
-        project.id.startsWith('project-') ||
-        project.id.startsWith('draft-');
-  }
-
   static int _newestFirst(Project a, Project b) {
     final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -411,11 +345,6 @@ class ProjectsRemoteDataSource {
   static String _string(Object? value) => value is String ? value.trim() : '';
 
   static String _two(int value) => value.toString().padLeft(2, '0');
-
-  static String _truncate(String value, int maxLength) {
-    if (value.length <= maxLength) return value;
-    return value.substring(0, maxLength);
-  }
 }
 
 class _OwnerProfile {

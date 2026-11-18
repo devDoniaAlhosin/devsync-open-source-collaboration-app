@@ -2,7 +2,6 @@ import 'package:devsync_open_source_collaboration_app/core/error/failures.dart';
 import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/data/models/project_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/data/models/project_stats_model.dart';
-import 'package:devsync_open_source_collaboration_app/features/projects/domain/entities/collaboration_request_receipt.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/entities/project.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/entities/project_stats.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/repositories/projects_repository.dart';
@@ -10,7 +9,6 @@ import 'package:devsync_open_source_collaboration_app/features/projects/domain/u
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/get_project_stats.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/get_projects.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/record_project_view.dart';
-import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/request_to_collaborate.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/upsert_project.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/presentation/cubit/projects_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -81,13 +79,38 @@ void main() {
         'github': const {'stars': 99},
       });
 
-      final payload = model.toFirestore(ownerId: 'u1', isNew: false);
+      final payload = model.toFirestore(
+        ownerId: 'u1',
+        ownerName: 'Sara',
+        isNew: false,
+      );
 
+      expect(payload['ownerId'], 'u1');
+      expect(payload['ownerName'], 'Sara');
       expect(payload.containsKey('matchPercentage'), isFalse);
       expect(payload.containsKey('matchSummary'), isFalse);
       expect(payload.containsKey('github'), isFalse);
       expect(payload.containsKey('createdAt'), isFalse);
       expect(payload['githubRepo'], 'devsync/mint-ui');
+    });
+
+    test('write payload rejects missing owner fields', () {
+      final model = ProjectModel.fromMap('p1', {
+        'title': 'mint-ui',
+        'description': 'UI kit',
+        'githubUrl': 'https://github.com/devsync/mint-ui',
+        'techStack': const ['Dart'],
+        'requiredContributors': 1,
+      });
+
+      expect(
+        () => model.toFirestore(ownerId: '', ownerName: 'Sara', isNew: true),
+        throwsStateError,
+      );
+      expect(
+        () => model.toFirestore(ownerId: 'u1', ownerName: '  ', isNew: true),
+        throwsStateError,
+      );
     });
   });
 
@@ -105,42 +128,25 @@ void main() {
       expect(loaded.discoverProjects.single.id, 'discover');
     });
 
-    test('requestToCollaborate updates pending state and counter', () async {
+    test('markRequestPending mirrors the requests feature locally', () async {
       final repository = _FakeProjectsRepository();
       final cubit = _cubitFor(repository);
       await cubit.load();
 
-      final error = await cubit.requestToCollaborate(
-        repository.discoverProject,
-        message: 'I can help',
-      );
+      cubit.markRequestPending('discover');
 
-      expect(error, isNull);
-      final success = cubit.state as ProjectOperationSuccess;
-      final updated = success.projects.firstWhere((p) => p.id == 'discover');
+      final updated = (cubit.state as ProjectsLoaded).projectById('discover')!;
       expect(updated.hasPendingRequest, isTrue);
       expect(
         updated.requestsCount,
         repository.discoverProject.requestsCount + 1,
       );
-      expect(repository.lastMessage, 'I can help');
+
+      // Tapping again must not inflate the counter.
+      cubit.markRequestPending('discover');
+      final again = (cubit.state as ProjectsLoaded).projectById('discover')!;
+      expect(again.requestsCount, repository.discoverProject.requestsCount + 1);
     });
-
-    test(
-      'requestToCollaborate is idempotent when a pending request exists',
-      () async {
-        final repository = _FakeProjectsRepository(created: false);
-        final cubit = _cubitFor(repository);
-        await cubit.load();
-
-        await cubit.requestToCollaborate(repository.discoverProject);
-
-        final success = cubit.state as ProjectOperationSuccess;
-        final updated = success.projects.firstWhere((p) => p.id == 'discover');
-        expect(updated.requestsCount, repository.discoverProject.requestsCount);
-        expect(updated.hasPendingRequest, isTrue);
-      },
-    );
 
     test('upsert emits a success state with the saved project', () async {
       final repository = _FakeProjectsRepository();
@@ -192,7 +198,6 @@ ProjectsCubit _cubitFor(ProjectsRepository repository) {
     getProjects: GetProjects(repository),
     getProjectStats: GetProjectStats(repository),
     upsertProject: UpsertProject(repository),
-    requestToCollaborate: RequestToCollaborate(repository),
     getJoinedContributions: GetJoinedContributions(repository),
     recordProjectView: RecordProjectView(repository),
   );
@@ -214,11 +219,9 @@ Project _newProject() {
 }
 
 class _FakeProjectsRepository implements ProjectsRepository {
-  _FakeProjectsRepository({this.created = true, this.failUpsert = false});
+  _FakeProjectsRepository({this.failUpsert = false});
 
-  final bool created;
   final bool failUpsert;
-  String? lastMessage;
 
   Project get ownedProject => Project(
     id: 'owned',
@@ -281,21 +284,6 @@ class _FakeProjectsRepository implements ProjectsRepository {
     }
     return Success(
       project.copyWith(id: 'new-project', isOwner: true, ownerId: 'u1'),
-    );
-  }
-
-  @override
-  Future<Result<CollaborationRequestReceipt>> requestToCollaborate({
-    required Project project,
-    String? message,
-  }) async {
-    lastMessage = message;
-    return Success(
-      CollaborationRequestReceipt(
-        requestId: 'r1',
-        projectId: project.id,
-        created: created,
-      ),
     );
   }
 
