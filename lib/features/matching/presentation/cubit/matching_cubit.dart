@@ -1,11 +1,15 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
+import '../../../../core/result/result.dart';
 import '../../domain/entities/match_item.dart';
+import '../../domain/entities/match_feedback_action.dart';
 import '../../domain/entities/matching_analytics.dart';
 import '../../domain/entities/matching_preferences.dart';
 import '../../domain/entities/matching_priority.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../domain/usecases/save_match_feedback.dart';
 import '../../domain/repositories/matching_repository.dart';
 import '../../domain/usecases/generate_matches_usecase.dart';
 import '../../domain/usecases/get_matching_analytics_usecase.dart';
@@ -28,17 +32,18 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   MatchingCubit({
     required MatchingRepository repository,
+    required SaveMatchFeedback saveMatchFeedback,
     UserProfile? profile,
   }) : _getRankedMatchesUseCase = GetRankedMatchesUseCase(repository),
        _generateMatchesUseCase = GenerateMatchesUseCase(repository),
        _getMatchingAnalyticsUseCase = GetMatchingAnalyticsUseCase(repository),
-       super(
-         MatchingState(profile: profile ?? defaultProfile),
-       );
+       _saveMatchFeedback = saveMatchFeedback,
+       super(MatchingState(profile: profile ?? defaultProfile));
 
   final GetRankedMatchesUseCase _getRankedMatchesUseCase;
   final GenerateMatchesUseCase _generateMatchesUseCase;
   final GetMatchingAnalyticsUseCase _getMatchingAnalyticsUseCase;
+  final SaveMatchFeedback _saveMatchFeedback;
 
   Future<void> generateMatches() async {
     if (state.isGenerating) return;
@@ -96,10 +101,29 @@ class MatchingCubit extends Cubit<MatchingState> {
     }
   }
 
-  void performDeckAction(MatchItem match, MatchSwipeAction action) {
+  Future<Result<void>> performDeckAction(
+    MatchItem match,
+    MatchSwipeAction action,
+  ) async {
     if (state.currentDeckIndex >= state.matches.length ||
         state.matches[state.currentDeckIndex].projectId != match.projectId) {
-      return;
+      return const FailureResult(
+        ValidationFailure('This match is no longer active.'),
+      );
+    }
+
+    final feedbackResult = await _saveMatchFeedback(
+      projectId: match.projectId,
+      action: action == MatchSwipeAction.request
+          ? MatchFeedbackAction.like
+          : MatchFeedbackAction.skip,
+    );
+    final MatchFeedbackAction? previousFeedback;
+    switch (feedbackResult) {
+      case Success(:final data):
+        previousFeedback = data;
+      case FailureResult(:final failure):
+        return FailureResult(failure);
     }
 
     final history = List<MatchActionRecord>.from(state.actionHistory)
@@ -108,11 +132,14 @@ class MatchingCubit extends Cubit<MatchingState> {
           index: state.currentDeckIndex,
           action: action,
           match: match,
+          previousFeedback: previousFeedback,
         ),
       );
 
     if (action == MatchSwipeAction.request) {
       LikedMatchesStore.instance.add(match);
+    } else {
+      LikedMatchesStore.instance.remove(match.projectId);
     }
 
     emit(
@@ -121,6 +148,7 @@ class MatchingCubit extends Cubit<MatchingState> {
         currentDeckIndex: state.currentDeckIndex + 1,
       ),
     );
+    return const Success(null);
   }
 
   void refinePromptWithPriority(MatchingPriority priority) {
@@ -162,24 +190,40 @@ class MatchingCubit extends Cubit<MatchingState> {
     );
   }
 
-  void undoLastDeckAction() {
-    if (state.actionHistory.isEmpty) return;
+  Future<Result<void>> undoLastDeckAction() async {
+    if (state.actionHistory.isEmpty) return const Success(null);
+
     final history = List<MatchActionRecord>.from(state.actionHistory);
     final last = history.removeLast();
-    emit(
-      state.copyWith(
-        actionHistory: history,
-        currentDeckIndex: last.index,
-      ),
-    );
+
+    final previousFeedback = last.previousFeedback;
+    if (previousFeedback == null) {
+      final result = await _saveMatchFeedback.clear(
+        projectId: last.match.projectId,
+      );
+      if (result case FailureResult<void>()) return result;
+    } else {
+      final result = await _saveMatchFeedback(
+        projectId: last.match.projectId,
+        action: previousFeedback,
+      );
+      if (result case FailureResult<MatchFeedbackAction?>(:final failure)) {
+        return FailureResult(failure);
+      }
+    }
+
+    if (previousFeedback == MatchFeedbackAction.like) {
+      LikedMatchesStore.instance.add(last.match);
+    } else {
+      LikedMatchesStore.instance.remove(last.match.projectId);
+    }
+
+    emit(state.copyWith(actionHistory: history, currentDeckIndex: last.index));
+    return const Success(null);
   }
 
   void updatePrompt(String text) {
     if (state.preferences.prompt == text) return;
-    emit(
-      state.copyWith(
-        preferences: state.preferences.copyWith(prompt: text),
-      ),
-    );
+    emit(state.copyWith(preferences: state.preferences.copyWith(prompt: text)));
   }
 }

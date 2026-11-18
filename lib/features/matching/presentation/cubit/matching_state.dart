@@ -7,14 +7,16 @@ class MatchActionRecord extends Equatable {
     required this.index,
     required this.action,
     required this.match,
+    required this.previousFeedback,
   });
 
   final int index;
   final MatchSwipeAction action;
   final MatchItem match;
+  final MatchFeedbackAction? previousFeedback;
 
   @override
-  List<Object?> get props => [index, action, match];
+  List<Object?> get props => [index, action, match, previousFeedback];
 }
 
 final class MatchingState extends Equatable {

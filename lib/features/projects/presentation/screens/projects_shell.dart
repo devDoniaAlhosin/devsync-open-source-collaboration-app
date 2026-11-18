@@ -18,6 +18,7 @@ import '../widgets/project_background.dart';
 import 'add_or_edit_project_screen.dart';
 import 'discover_projects_screen.dart';
 import 'my_projects_screen.dart';
+import 'project_details_screen.dart';
 
 class ProjectsShell extends StatelessWidget {
   const ProjectsShell({
@@ -107,34 +108,38 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
   }
 
   void _openProject(Project project) {
-    Navigator.of(
-      context,
-    ).pushNamed(AppRoutes.projectDetail, arguments: project);
+    final cubit = context.read<ProjectsCubit>();
+    Navigator.of(context)
+        .push<void>(
+          DsFadePageRoute<void>(
+            builder: (_) => ProjectDetailsScreen(project: project),
+          ),
+        )
+        .then((_) {
+          if (!mounted) return;
+          cubit.refresh();
+        });
   }
 
   Future<void> _openEditor([Project? initialProject]) async {
     final wasEditing = initialProject != null;
-    final result = await Navigator.of(context).push<Project>(
-      DsFadePageRoute<Project>(
-        builder: (context) =>
-            AddOrEditProjectScreen(initialProject: initialProject),
+    final cubit = context.read<ProjectsCubit>();
+    final saved = await Navigator.of(context).push<bool>(
+      DsFadePageRoute<bool>(
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: AddOrEditProjectScreen(initialProject: initialProject),
+        ),
       ),
     );
 
-    if (!mounted || result == null) {
+    if (!mounted || saved != true) {
       return;
     }
-
-    await context.read<ProjectsCubit>().upsert(result);
-    if (!mounted) return;
 
     if (!wasEditing) {
       setState(() => _selectedIndex = 1);
     }
-
-    _showSnackBar(
-      wasEditing ? 'Project updated.' : 'Project published to Discover.',
-    );
   }
 
   void _showSnackBar(String message) {
@@ -277,37 +282,36 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
               ],
             ),
             Expanded(
-              child: BlocBuilder<ProjectsCubit, ProjectsState>(
-                builder: (context, state) {
-                  return switch (state) {
-                    ProjectsInitial() || ProjectsLoading() => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    ProjectsFailure(:final message) => DsEmptyState(
-                      icon: AppIcons.projects,
-                      title: 'Could not load projects',
-                      message: message,
-                      actionLabel: 'Retry',
-                      onAction: () => context.read<ProjectsCubit>().load(),
-                    ),
-                    ProjectsLoaded(
-                      :final projects,
-                      :final stats,
-                      :final joinedContributors,
-                    ) =>
-                      DsTabSwitcher(
+              child: BlocListener<ProjectsCubit, ProjectsState>(
+                listenWhen: (previous, current) =>
+                    current is ProjectOperationSuccess &&
+                    (previous is! ProjectOperationSuccess ||
+                        previous.operationId != current.operationId),
+                listener: (context, state) {
+                  if (state is ProjectOperationSuccess) {
+                    _showSnackBar(state.message);
+                  }
+                },
+                child: BlocBuilder<ProjectsCubit, ProjectsState>(
+                  builder: (context, state) {
+                    return switch (state) {
+                      ProjectsInitial() || ProjectsLoading() => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      ProjectsFailure(:final message) => DsEmptyState(
+                        icon: AppIcons.projects,
+                        title: 'Could not load projects',
+                        message: message,
+                        actionLabel: 'Retry',
+                        onAction: () => context.read<ProjectsCubit>().load(),
+                      ),
+                      ProjectsLoaded() => DsTabSwitcher(
                         index: widget.showBottomNav
                             ? _selectedIndex.clamp(0, 3)
                             : _selectedIndex.clamp(0, 1),
                         children: [
-                          DiscoverProjectsScreen(
-                            projects: projects,
-                            onOpenProject: _openProject,
-                          ),
+                          DiscoverProjectsScreen(onOpenProject: _openProject),
                           MyProjectsScreen(
-                            projects: projects,
-                            stats: stats,
-                            joinedContributors: joinedContributors,
                             onOpenProject: _openProject,
                             onEditProject: (project) => _openEditor(project),
                             onCreateProject: _openEditor,
@@ -332,8 +336,9 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
                           ],
                         ],
                       ),
-                  };
-                },
+                    };
+                  },
+                ),
               ),
             ),
           ],

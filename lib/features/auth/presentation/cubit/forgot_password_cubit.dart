@@ -10,10 +10,13 @@ part 'forgot_password_state.dart';
 
 class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
   ForgotPasswordCubit({
-    required this._sendPasswordResetEmail,
-    required this._verifyOtp,
-    required this._resetPasswordWithOtp,
-  }) : super(const ForgotPasswordInitial());
+    required SendPasswordResetEmail sendPasswordResetEmail,
+    required VerifyOtp verifyOtp,
+    required ResetPasswordWithOtp resetPasswordWithOtp,
+  }) : _sendPasswordResetEmail = sendPasswordResetEmail,
+       _verifyOtp = verifyOtp,
+       _resetPasswordWithOtp = resetPasswordWithOtp,
+       super(const ForgotPasswordInitial());
 
   final SendPasswordResetEmail _sendPasswordResetEmail;
   final VerifyOtp _verifyOtp;
@@ -31,10 +34,7 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
     }
   }
 
-  Future<void> verifyCode({
-    required String email,
-    required String code,
-  }) async {
+  Future<void> verifyCode({required String email, required String code}) async {
     if (state is ForgotPasswordLoading) return;
     emit(const ForgotPasswordLoading());
     final result = await _verifyOtp(

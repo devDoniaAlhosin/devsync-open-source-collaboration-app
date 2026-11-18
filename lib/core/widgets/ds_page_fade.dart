@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_animations.dart';
 
-/// Page-level fade + slight rise when the pane becomes tickable.
+/// Page-level fade + slight rise on first enable.
 ///
 /// Use around screen bodies. Prefer [DsItemEnter] / [DsStagger] for list items.
-/// Re-runs when [TickerMode] flips from disabled → enabled (e.g. tab revisit).
+/// Does **not** re-run when a tab pane becomes tickable again (avoids stacking
+/// with [DsTabSwitcher] crossfades).
 class DsPageFade extends StatefulWidget {
   const DsPageFade({
     super.key,
@@ -27,7 +28,7 @@ class _DsPageFadeState extends State<DsPageFade>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
-  bool? _lastTickerEnabled;
+  bool _played = false;
 
   @override
   void initState() {
@@ -51,23 +52,19 @@ class _DsPageFadeState extends State<DsPageFade>
   }
 
   void _syncWithTickerMode() {
+    if (_played) return;
+
     if (WidgetsBinding.instance.disableAnimations ||
         MediaQuery.disableAnimationsOf(context)) {
-      _lastTickerEnabled = true;
+      _played = true;
       _controller.value = 1;
       return;
     }
 
-    final enabled = TickerMode.valuesOf(context).enabled;
-    final wasEnabled = _lastTickerEnabled;
-    _lastTickerEnabled = enabled;
+    if (!TickerMode.of(context)) return;
 
-    if (!enabled) return;
-
-    // First enable, or re-enable after the pane was offstage.
-    if (wasEnabled != true) {
-      _controller.forward(from: 0);
-    }
+    _played = true;
+    _controller.forward(from: 0);
   }
 
   @override

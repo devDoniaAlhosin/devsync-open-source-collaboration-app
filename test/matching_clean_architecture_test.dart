@@ -1,7 +1,13 @@
+import 'package:devsync_open_source_collaboration_app/core/error/failures.dart';
+import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
+import 'package:devsync_open_source_collaboration_app/core/di/injection.dart';
+import 'package:devsync_open_source_collaboration_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_feedback_action.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/matching_priority.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/usecases/save_match_feedback.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/ai_analytics_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
@@ -11,24 +17,36 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/ai_studio_scoring_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/ai_studio_suggested_matches_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/test_dependencies.dart';
+import 'helpers/fake_matching_feedback_repository.dart';
 
 void main() {
   group('MatchingCubit Clean Architecture & State Management', () {
     late MatchingRepositoryImpl repository;
+    late FakeMatchingFeedbackRepository feedbackRepository;
     late MatchingCubit cubit;
 
-    setUp(() {
+    setUp(() async {
+      await configureTestDependencies();
+      feedbackRepository = FakeMatchingFeedbackRepository();
       repository = MatchingRepositoryImpl(
         remoteDataSource: MockMatchingRemoteDataSource(),
         localDataSource: InMemoryMatchingLocalDataSource(),
       );
-      cubit = MatchingCubit(repository: repository);
+      cubit = MatchingCubit(
+        repository: repository,
+        saveMatchFeedback: SaveMatchFeedback(feedbackRepository),
+      );
     });
 
     tearDown(() async {
       await cubit.close();
+      await getIt.reset();
     });
 
     test('loadInitialData populates matches and analytics', () async {
@@ -84,30 +102,79 @@ void main() {
       final firstMatch = cubit.state.currentDeckMatch!;
       expect(cubit.state.canUndo, isFalse);
 
-      cubit.performDeckAction(firstMatch, MatchSwipeAction.request);
+      final result = await cubit.performDeckAction(
+        firstMatch,
+        MatchSwipeAction.request,
+      );
+      expect(result, isA<Success<void>>());
       expect(cubit.state.canUndo, isTrue);
       expect(cubit.state.currentDeckIndex, 1);
+      expect(feedbackRepository.savedFeedback, [
+        (firstMatch.projectId, MatchFeedbackAction.like),
+      ]);
 
-      cubit.undoLastDeckAction();
+      await cubit.undoLastDeckAction();
       expect(cubit.state.canUndo, isFalse);
       expect(cubit.state.currentDeckIndex, 0);
+      expect(feedbackRepository.clearedFeedback, [firstMatch.projectId]);
+    });
+
+    test('failed feedback save keeps the current match active', () async {
+      await cubit.loadInitialData();
+      feedbackRepository.result = const FailureResult(
+        PermissionFailure('Feedback could not be saved.'),
+      );
+
+      final result = await cubit.performDeckAction(
+        cubit.state.currentDeckMatch!,
+        MatchSwipeAction.skip,
+      );
+
+      expect(result, isA<FailureResult<void>>());
+      expect(cubit.state.currentDeckIndex, 0);
+      expect(cubit.state.actionHistory, isEmpty);
+      expect(feedbackRepository.savedFeedback, isEmpty);
+    });
+
+    test('undo restores the previous feedback choice', () async {
+      await cubit.loadInitialData();
+      final match = cubit.state.currentDeckMatch!;
+      await cubit.performDeckAction(match, MatchSwipeAction.request);
+
+      await cubit.loadInitialData();
+      await cubit.performDeckAction(match, MatchSwipeAction.skip);
+      final result = await cubit.undoLastDeckAction();
+
+      expect(result, isA<Success<void>>());
+      expect(feedbackRepository.savedFeedback, [
+        (match.projectId, MatchFeedbackAction.like),
+        (match.projectId, MatchFeedbackAction.skip),
+        (match.projectId, MatchFeedbackAction.like),
+      ]);
     });
   });
 
   group('Matching UI Components & Screens', () {
     late MatchingRepositoryImpl repository;
+    late FakeMatchingFeedbackRepository feedbackRepository;
     late MatchingCubit cubit;
 
-    setUp(() {
+    setUp(() async {
+      await configureTestDependencies();
+      feedbackRepository = FakeMatchingFeedbackRepository();
       repository = MatchingRepositoryImpl(
         remoteDataSource: MockMatchingRemoteDataSource(),
         localDataSource: InMemoryMatchingLocalDataSource(),
       );
-      cubit = MatchingCubit(repository: repository);
+      cubit = MatchingCubit(
+        repository: repository,
+        saveMatchFeedback: SaveMatchFeedback(feedbackRepository),
+      );
     });
 
     tearDown(() async {
       await cubit.close();
+      await getIt.reset();
     });
 
     testWidgets(
@@ -119,9 +186,12 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            home: MatchFeedScreen(
-              cubit: cubit,
-              initialViewMode: MatchingViewMode.studio,
+            home: BlocProvider.value(
+              value: getIt<AuthCubit>(),
+              child: MatchFeedScreen(
+                cubit: cubit,
+                initialViewMode: MatchingViewMode.studio,
+              ),
             ),
           ),
         );

@@ -12,10 +12,13 @@ part 'requests_state.dart';
 
 class RequestsCubit extends Cubit<RequestsState> {
   RequestsCubit({
-    required this._getRequests,
-    required this._createRequest,
-    required this._updateRequestStatus,
-  }) : super(const RequestsInitial());
+    required GetRequests getRequests,
+    required CreateRequest createRequest,
+    required UpdateRequestStatus updateRequestStatus,
+  }) : _getRequests = getRequests,
+       _createRequest = createRequest,
+       _updateRequestStatus = updateRequestStatus,
+       super(const RequestsInitial());
 
   final GetRequests _getRequests;
   final CreateRequest _createRequest;

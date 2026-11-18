@@ -1,0 +1,1 @@
+enum MatchFeedbackAction { like, skip }

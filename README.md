@@ -32,7 +32,7 @@ DevSync helps a developer find an open-source project that actually fits them, a
 | **Backend** | Firebase Auth + Firestore + [DevSync API (Vercel)](https://devsync-backend-two.vercel.app) for OTP / email / Gemini matching (no Cloud Functions · Spark-safe) |
 | **Methodology** | Agile Scrum (Jira + GitHub pull requests) |
 
-> **Built now:** design system, Lucide icons, brand assets, auth screens, Firebase Auth, `users/{uid}` identity, and OTP via the Vercel API. **Not built:** Profile, Projects, Match Feed, like/skip, Requests, FCM, live Gemini (`POST /matches/generate` is a stub today). See [§14 Built so far](#14-built-so-far-for-the-team). Screen-by-screen flow + prototype: [Brand Task Guide and Prototype](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype).
+> **Built on main:** Auth (OTP), Profile (live GitHub scan), Projects/`views`, Requests + FCM bootstrap, Matching via Vercel `POST /matches/generate` (RAM cache). Prototype: [Brand Task Guide](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype).
 
 ---
 
@@ -156,7 +156,7 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | Project management | Jira | Scrum board, sprints, task tracking |
 | Design | DevSync brand system | Teal / forest palette; shared `Ds*` widgets in `lib/core/` |
 
-**Firestore:** `users/{uid}` identity is implemented. Planned: `projects`, `matches`, `feedback`, `requests`. If-time: `tasks`.
+**Firestore:** `users/{uid}` identity, request records, and matching feedback writes are implemented in code. Projects remain local/demo, and the updated rules still need deployment and end-to-end verification. If-time: `tasks`.
 
 <p align="center">
   <img src="docs/devsync-logos/devsync-logos/png/devsync-icon.png" alt="DevSync icon" height="48"/>
@@ -246,7 +246,7 @@ Dio is **not** in the stack. Auth and matching use `dart:io` `HttpClient` (or a 
 
 ### Matching flow (planned)
 
-Matching’s HTTP surface is **`POST /matches/generate` only**. Ranked results come back in that POST response; they are not fetched with GET. Cache and like/skip feedback live in Firestore.
+Matching’s HTTP surface is **`POST /matches/generate` only**. Ranked results come back in that POST response; they are not fetched with GET. Like/skip feedback is stored per user/project in Firestore; matching results and cache remain demo/local for now.
 
 1. Collect GitHub activity and declared skills into a structured profile
 2. Send the profile and candidate projects to **`POST https://devsync-backend-two.vercel.app/matches/generate`** (JSON locked to `MatchRequestModel` / `MatchItemModel` / `MatchResponseModel`)
@@ -443,6 +443,7 @@ Course and project documents live under [`docs/`](docs/). Use these as the sourc
 | Requirements Gathering | [DevSync-3-Requirements-Gathering.pdf](docs/DevSync-3-Requirements-Gathering.pdf) |
 | System Analysis and Design | [DevSync-4-System-Analysis-and-Design.pdf](docs/DevSync-4-System-Analysis-and-Design.pdf) |
 | Feature Summaries (all members) | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
+| Projects Firestore schema | [projects-firestore-schema.md](docs/projects-firestore-schema.md) |
 | Brand Task Guide and Prototype | [GitHub Pages hub `#prototype`](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype) |
 | Brand Guidelines | [DevSync_Brand_Guidelines.pdf](docs/DevSync_Brand_Guidelines.pdf) |
 | Brand Guide (HTML) | [DevSync Brand Guide.html](docs/DevSync%20Brand%20Guide.html) |

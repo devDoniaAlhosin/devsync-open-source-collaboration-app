@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 
-class ProjectSearchField extends StatelessWidget {
+class ProjectSearchField extends StatefulWidget {
   const ProjectSearchField({
     required this.controller,
     required this.onChanged,
@@ -16,29 +16,76 @@ class ProjectSearchField extends StatelessWidget {
   final String hint;
 
   @override
+  State<ProjectSearchField> createState() => _ProjectSearchFieldState();
+}
+
+class _ProjectSearchFieldState extends State<ProjectSearchField> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode()..addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_onFocusChange)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
+    final focused = _focusNode.hasFocus;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
       height: 54,
       decoration: BoxDecoration(
-        color: context.ds.surface.withValues(alpha: 0.82),
+        color: context.ds.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.ds.border),
+        border: Border.all(
+          color: focused
+              ? AppColors.teal.withValues(alpha: 0.72)
+              : context.ds.border,
+          width: focused ? 1.5 : 1,
+        ),
+        boxShadow: focused
+            ? [
+                BoxShadow(
+                  color: AppColors.teal.withValues(alpha: 0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: Row(
         children: [
           const SizedBox(width: 16),
-          Icon(AppIcons.search, size: 21, color: context.ds.textMuted),
+          Icon(
+            AppIcons.search,
+            size: 21,
+            color: focused ? AppColors.teal : context.ds.textMuted,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
-              controller: controller,
-              onChanged: onChanged,
+              controller: widget.controller,
+              focusNode: _focusNode,
+              onChanged: widget.onChanged,
               textInputAction: TextInputAction.search,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontSize: 15),
               decoration: InputDecoration(
-                hintText: hint,
+                hintText: widget.hint,
                 filled: false,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -53,21 +100,26 @@ class ProjectSearchField extends StatelessWidget {
             ),
           ),
           ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
+            valueListenable: widget.controller,
             builder: (context, value, child) {
               if (value.text.isEmpty) {
                 return const SizedBox(width: 14);
               }
-              return IconButton(
-                tooltip: 'Clear search',
-                onPressed: () {
-                  controller.clear();
-                  onChanged('');
-                },
-                icon: Icon(
-                  AppIcons.close,
-                  size: 18,
-                  color: context.ds.textMuted,
+              return Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: IconButton(
+                  tooltip: 'Clear search',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    widget.controller.clear();
+                    widget.onChanged('');
+                    _focusNode.requestFocus();
+                  },
+                  icon: Icon(
+                    AppIcons.close,
+                    size: 18,
+                    color: context.ds.textMuted,
+                  ),
                 ),
               );
             },
