@@ -10,9 +10,10 @@ import '../../domain/repositories/matching_profile_repository.dart';
 /// Loads and updates user matching profile data from Firestore `users/{uid}`.
 class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
   FirestoreMatchingProfileRepository({
-    required this._firestore,
-    required this._auth,
-  });
+    required FirebaseFirestore firestore,
+    required FirebaseAuth auth,
+  }) : _firestore = firestore,
+       _auth = auth;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -32,32 +33,32 @@ import '../../features/matching/domain/repositories/matching_repository.dart';
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
-import '../../features/profile/data/datasources/github_api_data_source.dart';
-import '../../features/profile/data/datasources/profile_local_data_source.dart';
+import '../../features/profile/data/datasources/github_profile_remote_data_source.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_profile.dart';
+import '../../features/profile/domain/usecases/scan_github_profile.dart';
 import '../../features/profile/domain/usecases/update_profile.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
-import '../../features/projects/data/datasources/projects_local_data_source.dart';
-import '../../features/projects/data/repositories/projects_repository_impl.dart';
-import '../../features/projects/domain/repositories/projects_repository.dart';
-import '../../features/projects/domain/usecases/get_project_stats.dart';
-import '../../features/projects/domain/usecases/get_projects.dart';
-import '../../features/projects/domain/usecases/upsert_project.dart';
-import '../../features/projects/presentation/cubit/projects_cubit.dart';
-import '../../features/requests/data/datasources/requests_local_data_source.dart';
+import '../../features/projects/projects_dependencies.dart';
+import '../../features/requests/data/datasources/requests_remote_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
 import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
 import '../../features/requests/domain/usecases/update_request_status.dart';
 import '../../features/requests/presentation/cubit/requests_cubit.dart';
+import '../../features/requests/domain/usecases/create_request.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/profile/domain/usecases/save_github_scan.dart';
 
 final GetIt getIt = GetIt.instance;
 
 /// Composition root. Safe to call more than once (tests / hot restart).
 Future<void> configureDependencies() async {
   if (getIt.isRegistered<AuthRepository>()) return;
+
+  final prefs = await SharedPreferences.getInstance();
+  getIt.registerSingleton<SharedPreferences>(prefs);
 
   getIt
     ..registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance)
@@ -125,7 +126,7 @@ Future<void> configureDependencies() async {
 
   _registerMatching();
   _registerProfile();
-  _registerProjects();
+  registerProjectsDependencies(getIt);
   _registerRequests();
 }
 
@@ -167,40 +168,26 @@ void _registerProfile() {
   if (getIt.isRegistered<ProfileRepository>()) return;
 
   getIt
-    ..registerLazySingleton(ProfileLocalDataSource.new)
-    ..registerLazySingleton<GitHubApiDataSource>(
-      () =>
-          const FakeGitHubApiDataSource(), // TODO: Replace with GitHubRestApiDataSource in production
+    ..registerLazySingleton(
+      () => ProfileRemoteDataSource(auth: getIt(), firestore: getIt()),
     )
+    ..registerLazySingleton(GithubProfileRemoteDataSource.new)
     ..registerLazySingleton<ProfileRepository>(
       () => ProfileRepositoryImpl(
-        localDataSource: getIt(),
-        gitHubDataSource: getIt(),
+        remoteDataSource: getIt(),
+        githubRemoteDataSource: getIt(),
       ),
     )
     ..registerLazySingleton(() => GetProfile(getIt()))
     ..registerLazySingleton(() => UpdateProfile(getIt()))
+    ..registerLazySingleton(() => SaveGithubScan(getIt()))
+    ..registerLazySingleton(() => ScanGithubProfile(getIt()))
     ..registerFactory(
-      () => ProfileCubit(getProfile: getIt(), updateProfile: getIt()),
-    );
-}
-
-void _registerProjects() {
-  if (getIt.isRegistered<ProjectsRepository>()) return;
-
-  getIt
-    ..registerLazySingleton(ProjectsLocalDataSource.new)
-    ..registerLazySingleton<ProjectsRepository>(
-      () => ProjectsRepositoryImpl(localDataSource: getIt()),
-    )
-    ..registerLazySingleton(() => GetProjects(getIt()))
-    ..registerLazySingleton(() => GetProjectStats(getIt()))
-    ..registerLazySingleton(() => UpsertProject(getIt()))
-    ..registerFactory(
-      () => ProjectsCubit(
-        getProjects: getIt(),
-        getProjectStats: getIt(),
-        upsertProject: getIt(),
+      () => ProfileCubit(
+        getProfile: getIt(),
+        updateProfile: getIt(),
+        saveGithubScan: getIt(),
+        scanGithubProfile: getIt(),
       ),
     );
 }
@@ -209,14 +196,26 @@ void _registerRequests() {
   if (getIt.isRegistered<RequestsRepository>()) return;
 
   getIt
-    ..registerLazySingleton(RequestsLocalDataSource.new)
+    ..registerLazySingleton<RequestsRemoteDataSource>(
+      () => RequestsRemoteDataSource(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
     ..registerLazySingleton<RequestsRepository>(
-      () => RequestsRepositoryImpl(localDataSource: getIt()),
+      () => RequestsRepositoryImpl(
+        remoteDataSource: getIt<RequestsRemoteDataSource>(),
+      ),
     )
     ..registerLazySingleton(() => GetRequests(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
+    ..registerLazySingleton(() => CreateRequest(getIt()))
     ..registerFactory(
-      () => RequestsCubit(getRequests: getIt(), updateRequestStatus: getIt()),
+      () => RequestsCubit(
+        createRequest: getIt(),
+        getRequests: getIt(),
+        updateRequestStatus: getIt(),
+      ),
     );
 }
 

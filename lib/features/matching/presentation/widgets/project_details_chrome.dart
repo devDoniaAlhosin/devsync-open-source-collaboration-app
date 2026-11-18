@@ -5,6 +5,83 @@ import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
+import '../../../../core/widgets/ds_icon.dart';
+import '../../../projects/domain/entities/project.dart';
+import '../../../requests/presentation/collaboration_request_flow.dart';
+import '../../domain/entities/match_item.dart';
+
+class CollaborationAction extends StatelessWidget {
+  const CollaborationAction({
+    super.key,
+    required this.match,
+    this.maintainerName = 'Karim',
+  });
+
+  final MatchItem match;
+  final String maintainerName;
+
+  Future<void> _requestToCollaborate(BuildContext context) {
+    return presentCollaborationRequestFlow(
+      context,
+      projectName: match.projectName,
+      maintainerName: maintainerName,
+      initials: initialsFromTitle(match.projectName),
+      projectId: match.projectId,
+      ownerId: match.maintainerId,
+      matchPercent: match.score.round(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    // Opaque fill required: with [Scaffold.extendBody] a transparent bar
+    // shows the Android window (black) behind the route.
+    return Material(
+      color: ds.background,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.md,
+            AppSpacing.xl,
+            AppSpacing.lg,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: AppSpacing.buttonHeight,
+                height: AppSpacing.buttonHeight,
+                child: Material(
+                  color: ds.surfaceAlt,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  ),
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                    child: const Center(
+                      child: DsIcon(AppIcons.close, size: 22),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: DsButton(
+                  label: 'Request to collaborate',
+                  icon: AppIcons.requests,
+                  onPressed: () => _requestToCollaborate(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// Bottom sheet displaying the project repository URL.
 abstract final class ProjectWorkspaceSheet {

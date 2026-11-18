@@ -10,7 +10,6 @@ class LanguageShare {
   final String name;
   final int percent;
 
-  /// ARGB color value (UI converts with `Color(colorArgb)`).
   final int colorArgb;
 }
 
@@ -18,7 +17,7 @@ class Profile {
   const Profile({
     required this.name,
     required this.githubUrl,
-    required this.completion,
+    this.completion = 0,
     required this.bio,
     required this.repos,
     required this.commits,
@@ -30,6 +29,23 @@ class Profile {
     this.topRepositories = const [],
   });
 
+  factory Profile.empty({required String name}) {
+    return Profile(
+      name: name,
+      githubUrl: '',
+      bio: '',
+      repos: 0,
+      commits: 0,
+      languageCount: 0,
+      activity: List.generate(weeks, (_) => List.filled(days, 0)),
+      languages: const [],
+      skills: const [],
+    );
+  }
+
+  static const int weeks = 20;
+  static const int days = 7;
+
   final String name;
   final String githubUrl;
   final int completion;
@@ -37,43 +53,50 @@ class Profile {
   final int repos;
   final int commits;
   final int languageCount;
+
   final List<List<int>> activity;
   final List<LanguageShare> languages;
   final List<String> skills;
   final List<String> suggestedSkills;
-
-  /// Top repositories by stars (GitHub URLs).
-  /// Empty list if not fetched or user has no repos.
   final List<String> topRepositories;
 
+  bool get hasGithub => githubUrl.trim().isNotEmpty;
+
   String get githubUsername {
-    final parts = githubUrl.split('/').where((p) => p.isNotEmpty).toList();
+    final parts = githubUrl
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
     return parts.isEmpty ? githubUrl : parts.last;
   }
 
   Profile copyWith({
+    String? name,
+    String? githubUrl,
     String? bio,
+    int? repos,
+    int? commits,
+    int? languageCount,
+    List<List<int>>? activity,
+    List<LanguageShare>? languages,
     List<String>? skills,
+    List<String>? suggestedSkills,
     List<String>? topRepositories,
   }) {
     return Profile(
-      name: name,
-      githubUrl: githubUrl,
-      completion: completion,
+      name: name ?? this.name,
+      githubUrl: githubUrl ?? this.githubUrl,
       bio: bio ?? this.bio,
-      repos: repos,
-      commits: commits,
-      languageCount: languageCount,
-      activity: activity,
-      languages: languages,
+      repos: repos ?? this.repos,
+      commits: commits ?? this.commits,
+      languageCount: languageCount ?? this.languageCount,
+      activity: activity ?? this.activity,
+      languages: languages ?? this.languages,
       skills: skills ?? this.skills,
-      suggestedSkills: suggestedSkills,
+      suggestedSkills: suggestedSkills ?? this.suggestedSkills,
       topRepositories: topRepositories ?? this.topRepositories,
     );
   }
-
-  static const int weeks = 20;
-  static const int days = 7;
 
   factory Profile.sample() {
     final rnd = Random(7);
@@ -92,7 +115,6 @@ class Profile {
     return Profile(
       name: 'Nour Hassan',
       githubUrl: 'github.com/nour-dev',
-      completion: 80,
       bio:
           'Final-year student. I like Flutter animation and shipping small apps.',
       repos: 18,
@@ -109,5 +131,4 @@ class Profile {
   }
 }
 
-/// Backward-compatible alias while screens migrate imports.
 typedef ProfileData = Profile;

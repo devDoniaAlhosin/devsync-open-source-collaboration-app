@@ -23,10 +23,7 @@ class NotificationPermissionArgs {
 
 /// Soft-ask before the OS prompt — Allow / Not now both open Requests.
 class NotificationPermissionScreen extends StatelessWidget {
-  const NotificationPermissionScreen({
-    super.key,
-    required this.args,
-  });
+  const NotificationPermissionScreen({super.key, required this.args});
 
   final NotificationPermissionArgs args;
 
@@ -178,11 +175,11 @@ class _PushDropInState extends State<_PushDropIn>
       _controller.value = 1;
       return;
     }
-    if (!TickerMode.valuesOf(context).enabled) return;
+    if (!TickerMode.of(context)) return;
 
     _started = true;
     Future<void>.delayed(_PushDropIn._delay, () {
-      if (mounted && TickerMode.valuesOf(context).enabled) {
+      if (mounted && TickerMode.of(context)) {
         _controller.forward();
       }
     });
@@ -203,10 +200,7 @@ class _PushDropInState extends State<_PushDropIn>
       child: AnimatedBuilder(
         animation: _slide,
         builder: (context, child) {
-          return Transform.translate(
-            offset: _slide.value,
-            child: child,
-          );
+          return Transform.translate(offset: _slide.value, child: child);
         },
         child: widget.child,
       ),
@@ -215,10 +209,7 @@ class _PushDropInState extends State<_PushDropIn>
 }
 
 class _PushPreview extends StatelessWidget {
-  const _PushPreview({
-    required this.title,
-    required this.subtitle,
-  });
+  const _PushPreview({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;

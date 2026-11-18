@@ -15,6 +15,8 @@ import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/failures/matching_failures.dart';
 import '../cubit/matching_cubit.dart';
@@ -30,7 +32,6 @@ import '../widgets/match_feed_greeting.dart';
 import '../widgets/match_info_sheet.dart';
 import 'ai_analytics_screen.dart';
 import 'ai_matching_studio_screen.dart';
-import 'connect_github_screen.dart';
 import 'project_details_screen.dart';
 import 'prompt_quality_screen.dart';
 
@@ -245,10 +246,35 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     ];
   }
 
+  String _greetingName(BuildContext context) {
+    AppUser? user;
+    final auth = context.read<AuthCubit>().state;
+    if (auth is AuthAuthenticated) {
+      user = auth.user;
+    } else if (auth is AuthNeedsVerification) {
+      user = auth.user;
+    }
+
+    final display = user?.displayName?.trim() ?? '';
+    if (display.isNotEmpty) {
+      return display.split(RegExp(r'\s+')).first;
+    }
+
+    final email = user?.email?.trim() ?? '';
+    if (email.contains('@')) {
+      final local = email.split('@').first.trim();
+      if (local.isNotEmpty) return local;
+    }
+
+    return 'there';
+  }
+
   void _openMatchingProfile() {
-    Navigator.of(context).push(
-      DsFadePageRoute<void>(builder: (_) => ConnectGithubScreen(cubit: _cubit)),
-    );
+    if (widget.onOpenProfile != null) {
+      widget.onOpenProfile!();
+      return;
+    }
+    Navigator.of(context).pushNamed(AppRoutes.connectGithub);
   }
 
   Widget _buildPageContent(MatchingState state) {
@@ -263,7 +289,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               mainAxisSize: MainAxisSize.min,
               spacing: AppSpacing.sm,
               children: [
-                MatchFeedGreeting(userName: state.profileName),
+                BlocBuilder<AuthCubit, AuthState>(
+                  buildWhen: (prev, next) =>
+                      prev.runtimeType != next.runtimeType ||
+                      (prev is AuthAuthenticated &&
+                          next is AuthAuthenticated &&
+                          prev.user.displayName != next.user.displayName),
+                  builder: (context, _) =>
+                      MatchFeedGreeting(userName: _greetingName(context)),
+                ),
                 ExploreDevSyncSection(items: _buildExploreItems()),
               ],
             ),

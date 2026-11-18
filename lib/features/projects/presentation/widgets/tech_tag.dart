@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 
 class TechTag extends StatelessWidget {
   const TechTag({
@@ -34,7 +35,7 @@ class TechTag extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         border: Border.all(
           color: selected ? AppColors.teal : context.ds.border,
         ),
@@ -71,7 +72,7 @@ class TechTag extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           child: chip,
         ),
       ),

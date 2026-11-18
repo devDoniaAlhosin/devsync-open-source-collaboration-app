@@ -154,8 +154,10 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                               presentCollaborationRequestFlow(
                                 context,
                                 projectName: match.projectName,
-                                maintainerName: 'Project maintainer',
+                                maintainerName: 'Karim',
                                 initials: initialsFromTitle(match.projectName),
+                                projectId: match.projectId,
+                                ownerId: match.maintainerId,
                                 matchPercent: match.score.round(),
                               );
                             },
@@ -164,7 +166,8 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'Refresh to load the latest saved matches for your account.',
+                      'Liked matches help ranking — they are not a separate '
+                      'Favorites product.',
                       style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
                     ),
                   ],
