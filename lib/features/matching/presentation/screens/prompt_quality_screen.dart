@@ -1,57 +1,209 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_card.dart';
+import '../models/prompt_quality_metrics.dart';
+import '../widgets/prompt_quality_trend.dart';
 
-/// Screen providing prompt guidelines and preference recommendations.
+/// Read-only prompt evaluation snapshot. Uses demo metrics until supplied.
 class PromptQualityScreen extends StatelessWidget {
-  const PromptQualityScreen({super.key});
+  final PromptQualityMetrics? metrics;
+
+  const PromptQualityScreen({super.key, this.metrics});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: DsAppBar(
-      title: 'Prompt guide',
-      eyebrow: 'DEVSYNC',
-      showBack: true,
-      onBack: () => Navigator.of(context).maybePop(),
+  Widget build(BuildContext context) {
+    final data = metrics ?? PromptQualityMetrics.demo;
+    return Scaffold(
+      backgroundColor: context.ds.background,
+      appBar: DsAppBar(
+        title: 'Prompt quality',
+        eyebrow: 'DEVSYNC',
+        showBack: true,
+        onBack: () => Navigator.of(context).maybePop(),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.screenPadding),
+              children: [
+                _RelevanceCard(metrics: data),
+                const SizedBox(height: AppSpacing.md),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final stacked =
+                        constraints.maxWidth < 280 ||
+                        MediaQuery.textScalerOf(context).scale(14) > 21;
+                    final cards = [
+                      _QualityMetric(
+                        value: '${_formatSeconds(data.averageMatchTime)}s',
+                        label: 'Avg match time',
+                      ),
+                      _QualityMetric(
+                        value: '${data.timelyAlertsPercentage.round()}%',
+                        label: 'Alerts within 10 s',
+                      ),
+                    ];
+                    return stacked
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              cards.first,
+                              const SizedBox(height: AppSpacing.md),
+                              cards.last,
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: cards.first),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(child: cards.last),
+                            ],
+                          );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatSeconds(Duration duration) {
+    final seconds = duration.inMilliseconds / 1000;
+    return seconds == seconds.roundToDouble()
+        ? seconds.toStringAsFixed(0)
+        : seconds.toStringAsFixed(1);
+  }
+}
+
+class _QualityMetric extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _QualityMetric({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) => DsCard(
+    borderRadius: AppSpacing.radiusMd,
+    padding: const EdgeInsets.all(AppSpacing.md),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            color: context.ds.accentText,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
+        ),
+      ],
     ),
-    body: SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540),
-          child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+  );
+}
+
+class _RelevanceCard extends StatelessWidget {
+  final PromptQualityMetrics metrics;
+
+  const _RelevanceCard({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final improvement = metrics.improvementPercentage;
+    return DsCard(
+      borderRadius: AppSpacing.radiusMd,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Top-5 rated relevant',
+            style: textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.sm,
             children: [
-              DsCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Make your preferences useful',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    const Text(
-                      'Describe the work you want to do, your preferred project topics, and the level of guidance you need. Keep the prompt within 1,000 characters.',
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    const Text(
-                      'Preferences guide recommendations. They do not add skills to your profile. Keep your declared skills accurate in Matching profile.',
-                    ),
-                  ],
+              Text(
+                metrics.latestRelevance == null
+                    ? '—'
+                    : '${metrics.latestRelevance!.round()}%',
+                style: textTheme.displayLarge?.copyWith(
+                  color: context.ds.accentText,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 48,
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
-              const DsCard(
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.teal,
+                  borderRadius: BorderRadius.circular(6),
+                ),
                 child: Text(
-                  'The matching service returns project scores and reasons. It does not provide prompt-quality ratings, historical trends, or response-time analytics. Review the actual results in Match insights.',
+                  'Target ${metrics.relevanceTarget.round()}%',
+                  style: textTheme.labelMedium?.copyWith(
+                    color: AppColors.onTeal,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.lg),
+          if (metrics.versions.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+              child: Text(
+                'No prompt evaluations yet.',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: context.ds.textMuted,
+                ),
+              ),
+            )
+          else
+            PromptQualityTrend(metrics: metrics),
+          if (improvement != null) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text:
+                        '${metrics.versions.first.label} to ${metrics.versions.last.label}: ',
+                  ),
+                  TextSpan(
+                    text:
+                        '${improvement >= 0 ? '+' : ''}${improvement.round()}% relevance. ',
+                    style: TextStyle(color: context.ds.accentText),
+                  ),
+                  TextSpan(
+                    text: 'Target was +${metrics.improvementTarget.round()}%.',
+                  ),
+                ],
+              ),
+              style: textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
+            ),
+          ],
+        ],
       ),
-    ),
-  );
+    );
+  }
 }
