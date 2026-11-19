@@ -13,7 +13,7 @@ class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
     required AuthTokenProvider authTokenProvider,
     String? baseUrl,
     HttpClient? client,
-    this.requestTimeout = const Duration(seconds: 45),
+    this.requestTimeout = const Duration(seconds: 20),
   }) : _authTokenProvider = authTokenProvider,
        _baseUrl = baseUrl ?? _defaultMatchingApiBase(),
        _ownsClient = client == null,
