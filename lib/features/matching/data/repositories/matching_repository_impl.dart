@@ -67,8 +67,16 @@ class MatchingRepositoryImpl implements MatchingRepository {
       );
       final response = await remoteDataSource.getMatches(request);
 
-      // Filter out non-matching candidates (score <= 0 or missing all required skills)
+      // If candidate projects were provided, drop any results whose projectId was not sent
+      final allowedIds = candidateProjects != null
+          ? candidateProjects.map((p) => p.projectId).toSet()
+          : null;
+
+      // Filter out non-matching candidates (score <= 0 or missing all required skills or unknown id)
       final relevantMatches = response.matches.where((match) {
+        if (allowedIds != null && !allowedIds.contains(match.projectId)) {
+          return false;
+        }
         if (match.score <= 0) return false;
         final normalizedReason = match.reason.trim().toLowerCase();
         if (normalizedReason.startsWith('missing all required skills')) {
@@ -92,12 +100,35 @@ class MatchingRepositoryImpl implements MatchingRepository {
           return byScore != 0 ? byScore : a.projectId.compareTo(b.projectId);
         });
 
+      final finalMatches = response.fallback
+          ? sorted
+                .map(
+                  (m) => m.isFallback
+                      ? m
+                      : MatchItemModel(
+                          projectId: m.projectId,
+                          projectName: m.projectName,
+                          description: m.description,
+                          githubUrl: m.githubUrl,
+                          neededSkills: m.neededSkills,
+                          score: m.score,
+                          reason: m.reason,
+                          maintainerId: m.maintainerId,
+                          isFallback: true,
+                        ),
+                )
+                .toList()
+          : sorted;
+
       _promptVersion = response.promptVersion;
 
       // Update cache with new results
-      await cacheDataSource.cacheMatches(sorted, profileHash: profileHash);
+      await cacheDataSource.cacheMatches(
+        finalMatches,
+        profileHash: profileHash,
+      );
 
-      return List<MatchItem>.unmodifiable(sorted);
+      return List<MatchItem>.unmodifiable(finalMatches);
     } on MatchingApiException catch (error) {
       // Map HTTP errors to domain failures
       throw switch (error.statusCode) {

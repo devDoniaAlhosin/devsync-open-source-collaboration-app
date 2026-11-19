@@ -1,7 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/usecase/usecase.dart';
+import '../../../projects/domain/usecases/get_projects.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
+import '../../data/models/match_request_model.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/matching_preferences.dart';
 import '../../domain/entities/matching_priority.dart';
@@ -21,17 +24,20 @@ class MatchingCubit extends Cubit<MatchingState> {
     required LikedMatchesLocalDataSource likedMatchesDataSource,
     required GetRankedMatchesUseCase getRankedMatchesUseCase,
     MatchingProfileRepository? profileRepository,
+    GetProjects? getProjects,
     UserProfile? profile,
   }) : _repository = repository,
        _getRankedMatchesUseCase = getRankedMatchesUseCase,
        _likedMatchesDataSource = likedMatchesDataSource,
        _profileRepository = profileRepository,
+       _getProjects = getProjects,
        super(MatchingState(profile: profile ?? UserProfile.empty));
 
   final MatchingRepository _repository;
   final GetRankedMatchesUseCase _getRankedMatchesUseCase;
   final LikedMatchesLocalDataSource _likedMatchesDataSource;
   final MatchingProfileRepository? _profileRepository;
+  final GetProjects? _getProjects;
 
   bool _lastRequestWasGenerating = false;
 
@@ -112,12 +118,33 @@ class MatchingCubit extends Cubit<MatchingState> {
     }
 
     try {
+      List<CandidateProject>? candidateProjects;
+      final getProjects = _getProjects;
+      if (getProjects != null) {
+        final projectsResult = await getProjects(const NoParams());
+        projectsResult.fold((_) {}, (projects) {
+          candidateProjects = projects
+              .map(
+                (p) => CandidateProject(
+                  projectId: p.id,
+                  projectName: p.title,
+                  description: p.description,
+                  githubUrl: p.githubUrl,
+                  neededSkills: p.techStack,
+                  maintainerId: p.ownerId.isNotEmpty ? p.ownerId : null,
+                ),
+              )
+              .toList();
+        });
+      }
+
       final results = await _getRankedMatchesUseCase(
         profile,
         prompt: prompt.isEmpty ? null : prompt,
         tags: state.preferences.selectedTags.isEmpty
             ? null
             : state.preferences.selectedTags,
+        candidateProjects: candidateProjects,
       );
       if (results.isEmpty) {
         emit(

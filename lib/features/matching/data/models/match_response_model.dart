@@ -5,14 +5,17 @@ class MatchResponseModel {
   const MatchResponseModel({
     required this.matches,
     required this.promptVersion,
+    this.fallback = false,
   });
 
   final List<MatchItemModel> matches;
   final String promptVersion;
+  final bool fallback;
 
   factory MatchResponseModel.fromJson(Map<String, dynamic> json) {
     final rawItems = json['matches'];
     final version = json['promptVersion'];
+    final fallback = (json['fallback'] ?? json['isFallback']) as bool? ?? false;
     if (rawItems is! List || version is! String || version.trim().isEmpty) {
       throw const FormatException('Invalid matching response');
     }
@@ -32,6 +35,7 @@ class MatchResponseModel {
     return MatchResponseModel(
       matches: List.unmodifiable(items),
       promptVersion: version,
+      fallback: fallback,
     );
   }
 }

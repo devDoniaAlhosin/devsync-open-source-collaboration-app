@@ -82,34 +82,37 @@ void main() {
       expect(results.first.score, 90);
     });
 
-    test('throws NoMatchesFailure when all candidates are non-matches', () async {
-      final remote = _FakeRemoteDataSource(
-        const MatchResponseModel(
-          promptVersion: 'v1.1',
-          matches: [
-            MatchItemModel(
-              projectId: 'django-cms',
-              projectName: 'Django CMS',
-              description: 'CMS in Django',
-              githubUrl: 'https://github.com/test/django',
-              neededSkills: ['Python', 'Django'],
-              score: 0,
-              reason: 'Missing all required skills: Python, Django',
-            ),
-          ],
-        ),
-      );
+    test(
+      'throws NoMatchesFailure when all candidates are non-matches',
+      () async {
+        final remote = _FakeRemoteDataSource(
+          const MatchResponseModel(
+            promptVersion: 'v1.1',
+            matches: [
+              MatchItemModel(
+                projectId: 'django-cms',
+                projectName: 'Django CMS',
+                description: 'CMS in Django',
+                githubUrl: 'https://github.com/test/django',
+                neededSkills: ['Python', 'Django'],
+                score: 0,
+                reason: 'Missing all required skills: Python, Django',
+              ),
+            ],
+          ),
+        );
 
-      final repo = MatchingRepositoryImpl(
-        remoteDataSource: remote,
-        localDataSource: InMemoryMatchingLocalDataSource(),
-      );
+        final repo = MatchingRepositoryImpl(
+          remoteDataSource: remote,
+          localDataSource: InMemoryMatchingLocalDataSource(),
+        );
 
-      expect(
-        () => repo.getRankedMatches(testProfile),
-        throwsA(isA<NoMatchesFailure>()),
-      );
-    });
+        expect(
+          () => repo.getRankedMatches(testProfile),
+          throwsA(isA<NoMatchesFailure>()),
+        );
+      },
+    );
 
     test('sorts relevant matches descending by score with tie-break', () async {
       final remote = _FakeRemoteDataSource(
@@ -193,14 +196,96 @@ void main() {
         ),
       ];
 
-      await repo.getRankedMatches(
-        testProfile,
-        candidateProjects: candidates,
-      );
+      await repo.getRankedMatches(testProfile, candidateProjects: candidates);
 
       expect(remote.lastRequest?.projects, isNotNull);
       expect(remote.lastRequest!.projects!.length, 1);
       expect(remote.lastRequest!.projects!.first.projectId, 'candidate-1');
     });
+
+    test(
+      'drops matches whose projectId was not in candidateProjects',
+      () async {
+        final remote = _FakeRemoteDataSource(
+          const MatchResponseModel(
+            promptVersion: 'v1.1',
+            matches: [
+              MatchItemModel(
+                projectId: 'candidate-1',
+                projectName: 'Candidate One',
+                description: 'Known',
+                githubUrl: 'https://github.com/test/1',
+                neededSkills: ['Flutter'],
+                score: 80,
+                reason: 'Good match',
+              ),
+              MatchItemModel(
+                projectId: 'unknown-project',
+                projectName: 'Unknown Project',
+                description: 'Not sent',
+                githubUrl: 'https://github.com/test/unknown',
+                neededSkills: ['Flutter'],
+                score: 95,
+                reason: 'High score but not sent',
+              ),
+            ],
+          ),
+        );
+
+        final repo = MatchingRepositoryImpl(
+          remoteDataSource: remote,
+          localDataSource: InMemoryMatchingLocalDataSource(),
+        );
+
+        const candidates = [
+          CandidateProject(
+            projectId: 'candidate-1',
+            projectName: 'Candidate One',
+            description: 'Known',
+            githubUrl: 'https://github.com/test/1',
+            neededSkills: ['Flutter'],
+          ),
+        ];
+
+        final results = await repo.getRankedMatches(
+          testProfile,
+          candidateProjects: candidates,
+        );
+
+        expect(results.length, 1);
+        expect(results.first.projectId, 'candidate-1');
+      },
+    );
+
+    test(
+      'propagates fallback flag to matches when response has fallback true',
+      () async {
+        final remote = _FakeRemoteDataSource(
+          const MatchResponseModel(
+            promptVersion: 'v1.1',
+            fallback: true,
+            matches: [
+              MatchItemModel(
+                projectId: 'candidate-1',
+                projectName: 'Candidate One',
+                description: 'Known',
+                githubUrl: 'https://github.com/test/1',
+                neededSkills: ['Flutter'],
+                score: 80,
+                reason: 'Good match',
+              ),
+            ],
+          ),
+        );
+
+        final repo = MatchingRepositoryImpl(
+          remoteDataSource: remote,
+          localDataSource: InMemoryMatchingLocalDataSource(),
+        );
+
+        final results = await repo.getRankedMatches(testProfile);
+        expect(results.first.isFallback, isTrue);
+      },
+    );
   });
 }

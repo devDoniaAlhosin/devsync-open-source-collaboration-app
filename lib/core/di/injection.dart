@@ -40,6 +40,7 @@ import '../../features/profile/domain/usecases/get_profile.dart';
 import '../../features/profile/domain/usecases/scan_github_profile.dart';
 import '../../features/profile/domain/usecases/update_profile.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
+import '../../features/projects/domain/usecases/get_projects.dart';
 import '../../features/projects/projects_dependencies.dart';
 import '../../features/requests/data/datasources/requests_remote_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
@@ -160,6 +161,9 @@ void _registerMatching() {
         likedMatchesDataSource: getIt<LikedMatchesLocalDataSource>(),
         getRankedMatchesUseCase: getIt<GetRankedMatchesUseCase>(),
         profileRepository: getIt<MatchingProfileRepository>(),
+        getProjects: getIt.isRegistered<GetProjects>()
+            ? getIt<GetProjects>()
+            : null,
       ),
     );
 }
