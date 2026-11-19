@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_fade_switch.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../domain/entities/match_item.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
@@ -30,6 +32,7 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
     return BlocProvider.value(
       value: _cubit,
       child: Scaffold(
+        backgroundColor: context.ds.background,
         appBar: DsAppBar(
           title: 'AI Studio',
           eyebrow: 'DEVSYNC',
@@ -84,9 +87,15 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
     await _cubit.generateMatches();
     if (!mounted) return;
     final state = _cubit.state;
-    _notify(
-      state.errorMessage ?? '${state.matches.length} matches generated',
-    );
+    final error = state.errorMessage;
+    if (error != null) {
+      _notify(error, tone: DsToastTone.error);
+    } else {
+      _notify(
+        '${state.matches.length} matches generated',
+        tone: DsToastTone.success,
+      );
+    }
   }
 
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {
@@ -102,12 +111,8 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
     );
   }
 
-  void _notify(String message) {
-    ScaffoldMessenger.maybeOf(context)
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
+  void _notify(String message, {DsToastTone tone = DsToastTone.info}) {
+    showDsToast(context, message, tone: tone);
   }
 
   Future<void> _openAnalytics() async {

@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../firebase_options.dart';
+import '../constants/firestore_collections.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -91,9 +92,9 @@ class FcmService {
     if (user == null) return;
 
     await firestore
-        .collection('users')
+        .collection(FirestoreCollections.users)
         .doc(user.uid)
-        .collection('fcmTokens')
+        .collection(FirestoreCollections.fcmTokens)
         .doc(token)
         .set({
           'token': token,

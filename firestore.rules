@@ -49,24 +49,19 @@ service cloud.firestore {
         && feedbackId == request.auth.uid + '_' + resource.data.projectId;
     }
 
-    // Projects are created and edited by their owner. Any signed-in user can
-    // read the catalogue.
-    //
-    // Counters (`requestsCount`, `viewsCount`) are the only fields a non-owner
-    // may touch, and only through a single +1 diff. Project content, ownership
-    // and deletion stay owner-only. Move these counters to Cloud Functions
-    // when the team enables them, then this exception can be removed.
+    // Owner CRUD; signed-in read. Non-owners may only +1 counters via transactions.
     match /projects/{projectId} {
       function isSignedIn() {
         return request.auth != null;
       }
 
       function isOwner() {
-        return isSignedIn() && resource.data.ownerId == request.auth.uid;
+        return isSignedIn() && (
+          resource.data.ownerId == request.auth.uid
+          || resource.data.get('ownerUid', '') == request.auth.uid
+        );
       }
 
-      // The request feature creates `requests/{uid}_{projectId}` in the same
-      // transaction, so a request-counter bump can be tied to that write.
       function requestCreatedByViewer() {
         let requestPath = /databases/$(database)/documents/requests/$(request.auth.uid + '_' + projectId);
         return existsAfter(requestPath)
@@ -87,6 +82,23 @@ service cloud.firestore {
           && request.resource.data.viewsCount == resource.data.get('viewsCount', 0) + 1;
       }
 
+      function pad2(n) {
+        return n < 10 ? '0' + string(n) : string(n);
+      }
+
+      function todayKeyUtc() {
+        return string(request.time.year())
+          + '-' + pad2(request.time.month())
+          + '-' + pad2(request.time.day());
+      }
+
+      function viewCreatedByViewer() {
+        let viewPath = /databases/$(database)/documents/views/$(projectId + '_' + request.auth.uid + '_' + todayKeyUtc());
+        return existsAfter(viewPath)
+          && getAfter(viewPath).data.projectId == projectId
+          && getAfter(viewPath).data.viewerId == request.auth.uid;
+      }
+
       allow read: if isSignedIn();
 
       allow create: if isSignedIn()
@@ -97,30 +109,30 @@ service cloud.firestore {
         && request.resource.data.ownerName.size() > 0;
 
       allow update: if (
-        // Owner content edits must keep the owner fields intact.
         isOwner()
           && request.resource.data.ownerId == resource.data.ownerId
           && request.resource.data.ownerName is string
           && request.resource.data.ownerName.size() > 0
       ) || (
-        // Counter-only diffs written by other users' transactions.
         isSignedIn()
           && onlyIncrementsRequestsCount()
           && requestCreatedByViewer()
       ) || (
         isSignedIn()
           && onlyIncrementsViewsCount()
+          && viewCreatedByViewer()
       );
 
       allow delete: if isOwner();
     }
 
-    // One document per viewer per day: `{projectId}_{uid}_{yyyy-MM-dd}`.
     match /views/{viewId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.viewerId == request.auth.uid;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if request.auth != null
+        && resource.data.viewerId == request.auth.uid;
     }
 
     match /requests/{requestId} {
@@ -251,7 +263,12 @@ service cloud.firestore {
           )
         );
 
-      allow delete: if false;
+      // Sender or owner may delete (needed for account wipe).
+      allow delete: if request.auth != null
+        && (
+          resource.data.senderId == request.auth.uid
+          || resource.data.ownerId == request.auth.uid
+        );
     }
   }
 }

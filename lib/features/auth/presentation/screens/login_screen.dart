@@ -5,19 +5,24 @@ import '../../../../app/app_routes.dart';
 import '../../../../app/devsync_app.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/usecase/usecase.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_page_header.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../../../core/widgets/ds_text_field.dart';
+import '../../../../core/widgets/ds_toast.dart';
+import '../../../profile/domain/usecases/get_profile.dart';
 import '../cubit/login_cubit.dart';
 import '../widgets/auth_divider.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/auth_hero_card.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/auth_social_buttons.dart';
+import '../widgets/github_device_code_dialog.dart';
 import '../widgets/password_strength_meter.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,6 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   bool _obscure = true;
   bool _rememberMe = true;
+  bool _gitHubDialogOpen = false;
   String? _emailError;
   String? _passwordError;
 
@@ -42,10 +48,28 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _toast(String message, {DsToastTone tone = DsToastTone.error}) {
+    showDsToast(context, message, tone: tone);
+  }
+
+  Future<void> _routeAfterLogin() async {
+    if (getIt.isRegistered<GetProfile>()) {
+      final result = await getIt<GetProfile>()(const NoParams());
+      if (!mounted) return;
+      if (result case Success(:final data) when data.needsOnboarding) {
+        navigateToOnboarding(context);
+        return;
+      }
+    }
+    if (!mounted) return;
+    navigateToHome(context);
+  }
+
+  void _closeGitHubDialog() {
+    if (!_gitHubDialogOpen || !mounted) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (navigator.canPop()) navigator.pop();
+    _gitHubDialogOpen = false;
   }
 
   void _submit(LoginCubit cubit) {
@@ -66,24 +90,48 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocProvider(
       create: (_) => getIt<LoginCubit>(),
       child: BlocConsumer<LoginCubit, LoginState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           switch (state) {
             case LoginSuccess():
-              navigateToHome(context);
+              _closeGitHubDialog();
+              await _routeAfterLogin();
             case LoginNeedsVerification(:final email):
+              _closeGitHubDialog();
               Navigator.of(context).pushNamedAndRemoveUntil(
                 AppRoutes.verifyEmail,
                 (route) => false,
                 arguments: {'email': email},
               );
+            case LoginGitHubDeviceCode(
+              :final userCode,
+              :final verificationUri,
+            ):
+              if (_gitHubDialogOpen) return;
+              _gitHubDialogOpen = true;
+              final cubit = context.read<LoginCubit>();
+              final cancelled = await showGitHubDeviceCodeDialog(
+                context,
+                userCode: userCode,
+                verificationUri: verificationUri,
+              );
+              _gitHubDialogOpen = false;
+              if (!context.mounted) return;
+              // false = user tapped Cancel; null = closed after success/failure
+              if (cancelled == false) {
+                cubit.cancelGitHubDeviceCode();
+              }
             case LoginFailure(:final message):
+              _closeGitHubDialog();
               _toast(message);
+            case LoginInitial():
+              _closeGitHubDialog();
             default:
               break;
           }
         },
         builder: (context, state) {
-          final loading = state is LoginLoading;
+          final loading =
+              state is LoginLoading || state is LoginGitHubDeviceCode;
           final cubit = context.read<LoginCubit>();
           return AuthScaffold(
             title: 'Sign in',

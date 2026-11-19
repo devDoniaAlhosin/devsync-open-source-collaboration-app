@@ -22,6 +22,13 @@ migrate_working_dir/
 # Cursor IDE (local agent rules / settings)
 .cursor/
 
+# AI / agent markdown — local only, never push to GitHub
+AGENTS.md
+CLAUDE.md
+.cursorrules
+**/GEMINI.md
+.github/copilot-instructions.md
+
 # VS Code / Cursor workspace settings (local only)
 .vscode/
 
@@ -53,3 +60,15 @@ ios/Runner/GoogleService-Info.plist
 macos/Runner/GoogleService-Info.plist
 **/google-services.json
 **/GoogleService-Info.plist
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+**/credentials*.json
+**/serviceAccount*.json
+**/*-firebase-adminsdk-*.json
+
+# Personal / local notes
+docs/saga_whatIdo.md
+

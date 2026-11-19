@@ -45,6 +45,7 @@ class _ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: 'Your profile',
         eyebrow: 'ACCOUNT',
@@ -135,8 +136,14 @@ class _ProfileBody extends StatelessWidget {
           ),
         ],
       ),
-      ContributionHeatmap(activity: profile.activity),
-      LanguageBreakdown(languages: profile.languages),
+      ContributionHeatmap(
+        activity: profile.activity,
+        commits: profile.commits,
+      ),
+      LanguageBreakdown(
+        languages: profile.languages,
+        profile: profile,
+      ),
       Wrap(
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.sm,

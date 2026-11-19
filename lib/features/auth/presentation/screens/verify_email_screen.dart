@@ -9,10 +9,9 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/usecase/usecase.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_otp_field.dart';
-import '../../domain/usecases/sign_out.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/verify_code_cubit.dart';
 import '../widgets/auth_gate.dart';
@@ -100,7 +99,7 @@ class _VerifyEmailOtpViewState extends State<_VerifyEmailOtpView> {
   }
 
   Future<void> _useAnotherAccount() async {
-    await getIt<SignOut>()(const NoParams());
+    await getIt<AuthCubit>().signOut();
     if (!mounted) return;
     Navigator.of(
       context,
@@ -116,16 +115,16 @@ class _VerifyEmailOtpViewState extends State<_VerifyEmailOtpView> {
         switch (state) {
           case VerifyCodeSent():
             _startCountdown();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Verification code sent')),
+            showDsToast(
+              context,
+              'Verification code sent',
+              tone: DsToastTone.success,
             );
           case VerifyCodeSuccess():
             getIt<AuthCubit>().refresh();
             navigateToOnboarding(context);
           case VerifyCodeFailure(:final message):
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(message)));
+            showDsToast(context, message, tone: DsToastTone.error);
           default:
             break;
         }

@@ -9,12 +9,16 @@ class SaveGithubScanParams {
     required this.repos,
     required this.commits,
     required this.languages,
+    this.bioSuggestion,
+    this.activity = const [],
   });
 
   final String githubUsername;
   final int repos;
   final int commits;
   final List<LanguageShare> languages;
+  final String? bioSuggestion;
+  final List<List<int>> activity;
 }
 
 class SaveGithubScan extends UseCase<Profile, SaveGithubScanParams> {
@@ -29,6 +33,8 @@ class SaveGithubScan extends UseCase<Profile, SaveGithubScanParams> {
       repos: params.repos,
       commits: params.commits,
       languages: params.languages,
+      bioSuggestion: params.bioSuggestion,
+      activity: params.activity,
     );
   }
 }

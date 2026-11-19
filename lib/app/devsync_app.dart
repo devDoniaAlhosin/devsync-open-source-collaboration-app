@@ -4,12 +4,17 @@ import 'package:devsync_open_source_collaboration_app/features/profile/presentat
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../core/di/injection.dart';
 import '../core/theme/app_animations.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/ds_fade_switch.dart';
 import '../core/widgets/ds_splash.dart';
+import '../core/widgets/ds_toast.dart';
+import '../features/auth/presentation/cubit/auth_cubit.dart';
+import '../features/auth/presentation/screens/choose_path_screen.dart';
 import '../features/auth/presentation/screens/code_sign_in_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
@@ -67,18 +72,14 @@ class DevSyncApp extends StatefulWidget {
   }
 
   static void showNotification(String title, String body) {
-    final messenger = _scaffoldMessengerKey.currentState;
-    if (messenger == null) return;
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
 
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(body.isEmpty ? title : '$title\n$body'),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(label: 'Open', onPressed: openRequests),
-        ),
-      );
+    showDsToast(
+      context,
+      body.isEmpty ? title : '$title\n$body',
+      tone: DsToastTone.info,
+    );
   }
 
   /// Toggle light / dark from the app bar.
@@ -149,7 +150,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final app = MaterialApp(
       title: 'DevSync',
       debugShowCheckedModeBanner: false,
       navigatorKey: DevSyncApp._navigatorKey,
@@ -158,14 +159,14 @@ class _DevSyncAppState extends State<DevSyncApp> {
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
       builder: (context, child) {
-        final app = child ?? const SizedBox.shrink();
-        if (!widget.showSplash) return app;
-        if (!_booting) return app;
+        final content = child ?? const SizedBox.shrink();
+        if (!widget.showSplash) return content;
+        if (!_booting) return content;
 
         return Stack(
           fit: StackFit.expand,
           children: [
-            if (_appVisible) _LaunchReveal(child: app),
+            if (_appVisible) _LaunchReveal(child: content),
             DsSplash(
               onReveal: () {
                 if (!mounted) return;
@@ -182,6 +183,13 @@ class _DevSyncAppState extends State<DevSyncApp> {
       },
       initialRoute: AppRoutes.intro,
       onGenerateRoute: _onGenerateRoute,
+    );
+
+    if (!getIt.isRegistered<AuthCubit>()) return app;
+
+    return BlocProvider.value(
+      value: getIt<AuthCubit>(),
+      child: app,
     );
   }
 
@@ -201,6 +209,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.verifyEmail => VerifyEmailScreen(
         email: _emailArg(settings.arguments),
       ),
+      AppRoutes.choosePath => const ChoosePathScreen(),
       AppRoutes.settings => const SettingsScreen(),
       AppRoutes.home => HomeShellScreen(
         initialIndex: settings.arguments is int
@@ -209,7 +218,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       ),
       AppRoutes.feed => const MatchFeedScreen(),
       AppRoutes.likedMatches => const LikedMatchesScreen(),
-      AppRoutes.editProfile => const EditProfileEntry(),
+      AppRoutes.editProfile => EditProfileEntry.fromArgs(settings.arguments),
       AppRoutes.analytics => const AiAnalyticsScreen(),
       AppRoutes.aiStudio => const AiMatchingStudioScreen(),
       AppRoutes.projects => const ProjectsShell(initialTab: 1),

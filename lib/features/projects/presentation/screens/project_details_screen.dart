@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
@@ -81,13 +82,11 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
   }
 
   void _previewWorkspace() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Project workspace preview is coming next.'),
-        ),
-      );
+    showDsToast(
+      context,
+      'Project workspace preview is coming next.',
+      tone: DsToastTone.info,
+    );
   }
 
   @override
@@ -99,9 +98,13 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
               previous.operationId != current.operationId),
       listener: (context, state) {
         if (state is ProjectOperationSuccess) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.message)));
+          final isDelete = state.message.toLowerCase().contains('deleted');
+          showDsToast(
+            context,
+            state.message,
+            tone: isDelete ? DsToastTone.error : DsToastTone.success,
+            icon: isDelete ? AppIcons.trash : null,
+          );
         }
       },
       child: BlocBuilder<ProjectsCubit, ProjectsState>(
@@ -125,7 +128,7 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
           }
 
           return Scaffold(
-            backgroundColor: Colors.transparent,
+            backgroundColor: context.ds.background,
             appBar: DsAppBar(
               title: 'Project details',
               eyebrow: 'WORKSPACE',

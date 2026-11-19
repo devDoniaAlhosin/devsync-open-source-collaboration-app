@@ -5,6 +5,8 @@ class GithubScanResult {
     required this.languages,
     required this.commitsLastYear,
     this.languagePercents = const {},
+    this.bioSuggestion,
+    this.activity = const [],
   });
 
   final String username;
@@ -17,6 +19,12 @@ class GithubScanResult {
   final Map<String, int> languagePercents;
 
   final int commitsLastYear;
+
+  /// Prefill for Edit Profile (README or GitHub bio), already truncated.
+  final String? bioSuggestion;
+
+  /// Weekly activity grid (weeks × days), intensity 0–4.
+  final List<List<int>> activity;
 
   int get languageCount => languages.length;
 

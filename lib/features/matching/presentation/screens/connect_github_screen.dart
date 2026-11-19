@@ -14,6 +14,7 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/privacy_note_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/setup_scaffold.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/edit_profile_entry.dart';
 
 class ConnectGithubScreen extends StatefulWidget {
   const ConnectGithubScreen({
@@ -101,9 +102,27 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
           title: 'Connect GitHub',
           stepLabel: '02 / 03',
           onThemeToggle: DevSyncApp.toggleTheme,
-          bottom: DsButton(
-            label: 'Continue',
-            onPressed: result == null ? null : () => _continue(result),
+          bottom: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DsButton(
+                label: 'Continue',
+                onPressed: result == null ? null : () => _continue(result),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              DsButton(
+                label: 'Skip for now',
+                variant: DsButtonVariant.quiet,
+                onPressed: scanning
+                    ? null
+                    : () => Navigator.of(context).pushReplacementNamed(
+                          AppRoutes.editProfile,
+                          arguments: const EditProfileRouteArgs(
+                            asOnboarding: true,
+                          ),
+                        ),
+              ),
+            ],
           ),
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

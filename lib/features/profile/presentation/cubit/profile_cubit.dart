@@ -86,6 +86,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     required int repos,
     required int commits,
     required List<LanguageShare> languages,
+    String? bioSuggestion,
+    List<List<int>> activity = const [],
   }) async {
     if (state is ProfileLoading) return; // ignore double taps
     emit(const ProfileLoading());
@@ -95,6 +97,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         repos: repos,
         commits: commits,
         languages: languages,
+        bioSuggestion: bioSuggestion,
+        activity: activity,
       ),
     );
     switch (result) {

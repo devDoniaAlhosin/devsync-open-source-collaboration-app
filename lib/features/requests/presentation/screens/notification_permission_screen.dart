@@ -14,6 +14,7 @@ import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../../core/widgets/ds_toast.dart';
 
 /// Arguments for prototype **12. Notification permission**.
 class NotificationPermissionArgs {
@@ -48,10 +49,10 @@ class NotificationPermissionScreen extends StatelessWidget {
     } on FirebaseException catch (error) {
       log('Could not request notification permission.', error: error);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not enable notifications. Please try again.'),
-        ),
+      showDsToast(
+        context,
+        'Could not enable notifications. Please try again.',
+        tone: DsToastTone.error,
       );
       return;
     }

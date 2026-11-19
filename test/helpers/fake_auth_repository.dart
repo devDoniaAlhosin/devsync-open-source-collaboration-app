@@ -44,7 +44,9 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<void>> signInWithGoogle() async => signInResult;
 
   @override
-  Future<Result<void>> signInWithGitHub() async => signInResult;
+  Future<Result<void>> signInWithGitHub({
+    GitHubDeviceCodeHandler? onDeviceCode,
+  }) async => signInResult;
 
   @override
   Future<Result<void>> signOut() async {
@@ -53,7 +55,7 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> deleteAccount() async {
+  Future<Result<void>> deleteAccount({String? password}) async {
     deleteCalls++;
     return deleteResult;
   }

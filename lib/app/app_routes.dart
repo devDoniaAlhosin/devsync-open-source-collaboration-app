@@ -11,6 +11,7 @@ abstract final class AppRoutes {
   static const String settings = '/settings';
   static const String feed = '/feed';
   static const String likedMatches = '/liked-matches';
+  static const String choosePath = '/choose-path';
   static const String connectGithub = '/connect-github';
   static const String editProfile = '/edit-profile';
   static const String discover = '/discover';

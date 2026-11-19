@@ -58,25 +58,25 @@ void main() {
     expect(cubit.state, const AuthAuthenticated(_verified));
   });
 
-  test('deleteAccount success still signs out', () async {
+  test('deleteAccount success emits signed out', () async {
     final result = await cubit.deleteAccount();
 
     expect(result, isA<Success<void>>());
     expect(repository.deleteCalls, 1);
-    expect(repository.signOutCalls, greaterThanOrEqualTo(1));
     expect(cubit.state, const AuthSignedOut());
   });
 
-  test('deleteAccount failure still signs out', () async {
+  test('deleteAccount failure keeps the session', () async {
+    await emitEvent(_verified);
     repository.deleteResult = const FailureResult(
       AuthFailure('Sign in again, then delete your account'),
     );
 
-    final result = await cubit.deleteAccount();
+    final result = await cubit.deleteAccount(password: 'wrong');
 
     expect(result, isA<FailureResult<void>>());
     expect(repository.deleteCalls, 1);
-    expect(repository.signOutCalls, greaterThanOrEqualTo(1));
-    expect(cubit.state, const AuthSignedOut());
+    expect(repository.signOutCalls, 0);
+    expect(cubit.state, const AuthAuthenticated(_verified));
   });
 }

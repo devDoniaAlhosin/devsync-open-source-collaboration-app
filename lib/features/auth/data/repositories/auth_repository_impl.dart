@@ -65,13 +65,19 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Result<void>> signInWithGoogle() => _guard(_remote.signInWithGoogle);
 
   @override
-  Future<Result<void>> signInWithGitHub() => _guard(_remote.signInWithGitHub);
+  Future<Result<void>> signInWithGitHub({
+    GitHubDeviceCodeHandler? onDeviceCode,
+  }) {
+    return _guard(() => _remote.signInWithGitHub(onDeviceCode: onDeviceCode));
+  }
 
   @override
   Future<Result<void>> signOut() => _guard(_remote.signOut);
 
   @override
-  Future<Result<void>> deleteAccount() => _guard(_remote.deleteAccount);
+  Future<Result<void>> deleteAccount({String? password}) {
+    return _guard(() => _remote.deleteAccount(password: password));
+  }
 
   @override
   Future<Result<void>> sendPasswordResetEmail(String email) {

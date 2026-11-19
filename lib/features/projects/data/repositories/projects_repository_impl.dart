@@ -18,6 +18,18 @@ class ProjectsRepositoryImpl implements ProjectsRepository {
   }
 
   @override
+  Future<Result<Project>> getProject(String projectId) {
+    if (projectId.trim().isEmpty) {
+      return Future.value(
+        const FailureResult<Project>(
+          ValidationFailure('Project id is required'),
+        ),
+      );
+    }
+    return _guard(() => _remote.fetchProject(projectId));
+  }
+
+  @override
   Future<Result<ProjectStats>> getStats(String projectId) {
     if (projectId.trim().isEmpty) {
       return Future.value(
@@ -96,6 +108,18 @@ class ProjectsRepositoryImpl implements ProjectsRepository {
     }
 
     return _guard(() => _remote.upsert(project));
+  }
+
+  @override
+  Future<Result<void>> delete(String projectId) {
+    if (projectId.trim().isEmpty) {
+      return Future.value(
+        const FailureResult<void>(
+          ValidationFailure('Project id is required'),
+        ),
+      );
+    }
+    return _guard(() => _remote.delete(projectId));
   }
 
   @override

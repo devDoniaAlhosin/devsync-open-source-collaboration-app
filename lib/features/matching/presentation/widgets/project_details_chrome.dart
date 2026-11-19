@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_icon.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../../projects/domain/entities/project.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/match_item.dart';
@@ -139,18 +140,21 @@ class _ProjectWorkspaceSheet extends StatelessWidget {
   }
 
   Future<void> _copyRepositoryLink(BuildContext context) async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       await Clipboard.setData(ClipboardData(text: repositoryUrl));
       if (!context.mounted) return;
-      Navigator.of(context).pop();
-      messenger?.showSnackBar(
-        const SnackBar(content: Text('Repository link copied')),
+      showDsToast(
+        context,
+        'Repository link copied',
+        tone: DsToastTone.success,
       );
+      Navigator.of(context).pop();
     } catch (_) {
       if (!context.mounted) return;
-      messenger?.showSnackBar(
-        const SnackBar(content: Text('Could not copy repository link')),
+      showDsToast(
+        context,
+        'Could not copy repository link',
+        tone: DsToastTone.error,
       );
     }
   }

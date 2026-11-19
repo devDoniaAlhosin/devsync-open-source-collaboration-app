@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/ds_app_bar.dart';
 import '../../core/widgets/ds_bottom_nav.dart';
 import '../../core/widgets/ds_tab_switcher.dart';
@@ -106,6 +107,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
+      backgroundColor: context.ds.background,
       extendBody: true,
       drawer: AppDrawer(
         onSelectTab: (i) => setState(() => _index = i),

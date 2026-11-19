@@ -11,7 +11,7 @@ Failure mapProjectsError(Object error) {
     return const NotFoundFailure('Project not found');
   }
   if (error is ProjectForbiddenException) {
-    return const PermissionFailure('You can only edit your own projects');
+    return const PermissionFailure('You can only change your own projects');
   }
   if (error is ProjectValidationException) {
     return ValidationFailure(error.message);

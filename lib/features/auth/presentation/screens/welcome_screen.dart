@@ -72,6 +72,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final isLast = _index == _slides.length - 1;
 
     return Scaffold(
+      backgroundColor: ds.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(

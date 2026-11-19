@@ -11,6 +11,7 @@ import '../../../../core/widgets/ds_empty_state.dart';
 import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_tab_switcher.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../domain/entities/project.dart';
 import '../cubit/projects_cubit.dart';
 import '../widgets/devsync_bottom_nav.dart';
@@ -142,10 +143,14 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showToast(String message) {
+    final isDelete = message.toLowerCase().contains('deleted');
+    showDsToast(
+      context,
+      message,
+      tone: isDelete ? DsToastTone.error : DsToastTone.success,
+      icon: isDelete ? AppIcons.trash : null,
+    );
   }
 
   void _showMenu() {
@@ -253,7 +258,7 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.ds.background,
       extendBody: true,
       body: ProjectBackground(
         child: Column(
@@ -289,7 +294,7 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
                         previous.operationId != current.operationId),
                 listener: (context, state) {
                   if (state is ProjectOperationSuccess) {
-                    _showSnackBar(state.message);
+                    _showToast(state.message);
                   }
                 },
                 child: BlocBuilder<ProjectsCubit, ProjectsState>(

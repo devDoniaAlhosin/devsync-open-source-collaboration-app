@@ -36,6 +36,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
     final stats = _data.statsFor(_period);
 
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: 'Insights',
         eyebrow: 'DEVSYNC',

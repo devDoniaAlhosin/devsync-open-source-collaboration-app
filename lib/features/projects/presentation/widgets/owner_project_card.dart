@@ -14,6 +14,7 @@ class OwnerProjectCard extends StatefulWidget {
     required this.weeklyViews,
     required this.onTap,
     required this.onEdit,
+    required this.onDelete,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class OwnerProjectCard extends StatefulWidget {
   final List<double> weeklyViews;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   State<OwnerProjectCard> createState() => _OwnerProjectCardState();
@@ -105,6 +107,12 @@ class _OwnerProjectCardState extends State<OwnerProjectCard> {
                         icon: AppIcons.edit,
                         tooltip: 'Edit project',
                         onPressed: widget.onEdit,
+                      ),
+                      const SizedBox(width: 8),
+                      DsIconButton(
+                        icon: AppIcons.trash,
+                        tooltip: 'Delete project',
+                        onPressed: widget.onDelete,
                       ),
                     ],
                   ),

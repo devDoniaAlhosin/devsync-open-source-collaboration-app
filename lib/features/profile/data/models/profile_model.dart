@@ -64,8 +64,14 @@ abstract final class ProfileModel {
     final flat = v is List
         ? [for (final e in v) e is num ? e.toInt() : 0]
         : <int>[];
+    final weeks = flat.isEmpty
+        ? Profile.weeks
+        : (flat.length / Profile.days)
+            .ceil()
+            .clamp(1, Profile.maxWeeks)
+            .toInt();
     return List.generate(
-      Profile.weeks,
+      weeks,
       (w) => List.generate(Profile.days, (d) {
         final i = w * Profile.days + d;
         return i < flat.length ? flat[i].clamp(0, 4).toInt() : 0;

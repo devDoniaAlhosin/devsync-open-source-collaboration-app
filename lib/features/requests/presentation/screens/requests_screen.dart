@@ -8,6 +8,7 @@ import 'package:devsync_open_source_collaboration_app/core/widgets/ds_app_bar.da
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_empty_state.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_item_enter.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_page_fade.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_toast.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/cubit/requests_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/segmented_tabs.dart';
@@ -37,6 +38,7 @@ class _RequestsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: 'Requests',
         eyebrow: 'INBOX',
@@ -62,9 +64,7 @@ class _RequestsView extends StatelessWidget {
                   (previous is RequestsLoaded ? previous.actionError : null),
           listener: (context, state) {
             if (state case RequestsLoaded(actionError: final message?)) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(content: Text(message)));
+              showDsToast(context, message, tone: DsToastTone.error);
             }
           },
           child: BlocBuilder<RequestsCubit, RequestsState>(

@@ -7,6 +7,7 @@ import '../../app/devsync_app.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/di/injection.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/result/result.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/ds_app_bar.dart';
@@ -18,6 +19,7 @@ import '../../core/widgets/ds_page_fade.dart';
 import '../../core/widgets/ds_segmented_control.dart';
 import '../../core/widgets/ds_staggered_entrance.dart';
 import '../../core/widgets/ds_text_field.dart';
+import '../../core/widgets/ds_toast.dart';
 import '../../core/widgets/ds_toggle.dart';
 import '../auth/presentation/cubit/auth_cubit.dart';
 
@@ -82,24 +84,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _confirmDelete() async {
     if (_sessionBusy) return;
-    final confirmed = await showDialog<bool>(
+    final authState = getIt<AuthCubit>().state;
+    final providers = authState is AuthAuthenticated
+        ? authState.user.authProviders
+        : const <String>[];
+    final needsPassword = providers.contains('password');
+
+    final confirmed = await showDialog<_DeleteAccountResult>(
       context: context,
       barrierColor: const Color(0x9E050F0E),
-      builder: (context) => const _DeleteAccountDialog(),
+      builder: (context) => _DeleteAccountDialog(needsPassword: needsPassword),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed == null || !mounted) return;
 
     setState(() => _sessionAction = _SessionAction.deleting);
     unawaited(_showSessionBusy(_SessionAction.deleting));
 
-    final result = await getIt<AuthCubit>().deleteAccount();
+    final result = await getIt<AuthCubit>().deleteAccount(
+      password: confirmed.password,
+    );
     if (!mounted) return;
-    result.fold((failure) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(failure.message)));
-    }, (_) {});
-    await _returnToGate();
+
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    if (rootNav.canPop()) rootNav.pop();
+    setState(() => _sessionAction = _SessionAction.idle);
+
+    switch (result) {
+      case FailureResult(:final failure):
+        showDsToast(context, failure.message, tone: DsToastTone.error);
+      case Success():
+        await _returnToGate();
+    }
   }
 
   @override
@@ -110,6 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return PopScope(
       canPop: !_sessionBusy,
       child: Scaffold(
+        backgroundColor: context.ds.background,
         appBar: DsAppBar(
           title: 'Settings',
           eyebrow: 'WORKSPACE',
@@ -262,12 +278,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: ds.textMuted,
                             ),
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Prompt quality is an if-time screen',
-                                  ),
-                                ),
+                              showDsToast(
+                                context,
+                                'Prompt quality is an if-time screen',
+                                tone: DsToastTone.info,
                               );
                             },
                           ),
@@ -280,12 +294,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: ds.textMuted,
                             ),
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'We only use public GitHub activity to suggest projects.',
-                                  ),
-                                ),
+                              showDsToast(
+                                context,
+                                'We only use public GitHub activity to suggest projects.',
+                                tone: DsToastTone.info,
                               );
                             },
                           ),
@@ -415,8 +427,16 @@ class _SessionBusyView extends StatelessWidget {
   }
 }
 
+class _DeleteAccountResult {
+  const _DeleteAccountResult({this.password});
+
+  final String? password;
+}
+
 class _DeleteAccountDialog extends StatefulWidget {
-  const _DeleteAccountDialog();
+  const _DeleteAccountDialog({required this.needsPassword});
+
+  final bool needsPassword;
 
   @override
   State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
@@ -424,20 +444,30 @@ class _DeleteAccountDialog extends StatefulWidget {
 
 class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
   final _confirm = TextEditingController();
+  final _password = TextEditingController();
   bool _submitting = false;
 
   @override
   void dispose() {
     _confirm.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  bool get _canDelete => _confirm.text.trim().toUpperCase() == 'DELETE';
+  bool get _canDelete {
+    if (_confirm.text.trim().toUpperCase() != 'DELETE') return false;
+    if (widget.needsPassword && _password.text.isEmpty) return false;
+    return true;
+  }
 
   void _submit() {
     if (!_canDelete || _submitting) return;
     setState(() => _submitting = true);
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(
+      _DeleteAccountResult(
+        password: widget.needsPassword ? _password.text : null,
+      ),
+    );
   }
 
   @override
@@ -477,11 +507,21 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'This removes your profile, skills and requests. It can’t be undone.',
+                'This permanently deletes your profile, projects, join requests, '
+                'and match feedback. It can’t be undone.',
                 style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.lg),
+              if (widget.needsPassword) ...[
+                DsTextField(
+                  label: 'Password',
+                  controller: _password,
+                  obscureText: true,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
               DsTextField(
                 label: 'Type DELETE to confirm',
                 controller: _confirm,
@@ -500,7 +540,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                 variant: DsButtonVariant.quiet,
                 onPressed: _submitting
                     ? null
-                    : () => Navigator.of(context).pop(false),
+                    : () => Navigator.of(context).pop(),
               ),
             ],
           ),

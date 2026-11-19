@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_routes.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/widgets/ds_toast.dart';
 import '../../projects/domain/entities/project.dart';
 import '../domain/entities/collaboration_request.dart';
 import 'cubit/requests_cubit.dart';
@@ -25,13 +26,11 @@ Future<bool> presentCollaborationRequestFlow(
       resolvedProjectId.isEmpty ||
       resolvedOwnerId == null ||
       resolvedOwnerId.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'This project is missing its project or maintainer account ID. '
-          'A request cannot be sent yet.',
-        ),
-      ),
+    showDsToast(
+      context,
+      'This project is missing its project or maintainer account ID. '
+      'A request cannot be sent yet.',
+      tone: DsToastTone.error,
     );
     return false;
   }

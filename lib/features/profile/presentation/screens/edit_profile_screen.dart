@@ -8,6 +8,7 @@ import 'package:devsync_open_source_collaboration_app/core/widgets/ds_card.dart'
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_staggered_entrance.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_text_field.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_toast.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/github_connection_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/skills_editor.dart';
@@ -27,11 +28,15 @@ class EditProfileScreen extends StatefulWidget {
     super.key,
     required this.data,
     this.asOnboarding = false,
+    this.homeTabIndex = 0,
   });
 
   final Profile data;
 
   final bool asOnboarding;
+
+  /// Bottom-nav index when finishing onboarding (e.g. Projects = 2).
+  final int homeTabIndex;
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -86,9 +91,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     FocusScope.of(context).unfocus();
     final bio = _bio.text.trim();
     if (bio.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Bio cannot be empty')));
+      showDsToast(context, 'Bio cannot be empty', tone: DsToastTone.error);
       return;
     }
     context.read<ProfileCubit>().save(
@@ -110,19 +113,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       listener: (context, state) {
         if (state is ProfileLoaded) {
           if (widget.asOnboarding) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.home,
+              (route) => false,
+              arguments: widget.homeTabIndex,
+            );
           } else {
             Navigator.of(context).pop();
           }
         } else if (state is ProfileSaveFailure) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          showDsToast(context, state.message, tone: DsToastTone.error);
         }
       },
       child: Scaffold(
+        backgroundColor: context.ds.background,
         appBar: DsAppBar(
           title: 'Edit profile and skills',
           eyebrow: 'WORKSPACE',

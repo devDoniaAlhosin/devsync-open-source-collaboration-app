@@ -1,6 +1,7 @@
 import 'package:devsync_open_source_collaboration_app/core/error/failures.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/data/mappers/auth_failure_mapper.dart';
+import 'package:devsync_open_source_collaboration_app/features/auth/domain/failures/auth_failures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,13 +30,14 @@ void main() {
     expect(failure, isA<CancelledFailure>());
   });
 
-  test('maps Google-only account to continue-with-Google message', () {
+  test('maps Google-only account to GoogleOnlyAccountFailure', () {
     final failure = mapAuthError(const GoogleOnlyAccountException());
 
-    expect(failure, isA<AuthFailure>());
+    expect(failure, isA<GoogleOnlyAccountFailure>());
     expect(
       failure.message,
-      'This account uses Google. Continue with Google instead.',
+      'This account uses Google. Sign in with Google instead — '
+      'there is no password to reset.',
     );
   });
 }

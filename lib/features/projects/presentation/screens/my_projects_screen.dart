@@ -3,8 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_button.dart';
+import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_item_enter.dart';
 import '../../../../core/widgets/ds_page_header.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
 import '../../project_layout.dart';
@@ -107,7 +111,7 @@ class MyProjectsScreen extends StatelessWidget {
                                     for (final project in owned)
                                       SizedBox(
                                         width: cardWidth,
-                                        child: _card(project, stats),
+                                        child: _card(context, project, stats),
                                       ),
                                   ],
                                 );
@@ -118,7 +122,7 @@ class MyProjectsScreen extends StatelessWidget {
                                     if (i > 0) const SizedBox(height: 14),
                                     DsItemEnter(
                                       index: i,
-                                      child: _card(owned[i], stats),
+                                      child: _card(context, owned[i], stats),
                                     ),
                                   ],
                                 ],
@@ -138,15 +142,34 @@ class MyProjectsScreen extends StatelessWidget {
     );
   }
 
-  Widget _card(Project project, Map<String, ProjectStats> stats) {
+  Widget _card(
+    BuildContext context,
+    Project project,
+    Map<String, ProjectStats> stats,
+  ) {
     return OwnerProjectCard(
       project: project,
-      // Empty until the first view lands; never show a fabricated trend.
       weeklyViews:
           stats[project.id]?.weeklyViews ?? const [0, 0, 0, 0, 0, 0, 0],
       onTap: () => onOpenProject(project),
       onEdit: () => onEditProject(project),
+      onDelete: () => _confirmDelete(context, project),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, Project project) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierColor: const Color(0x9E050F0E),
+      builder: (_) => _DeleteProjectDialog(title: project.title),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final error = await context.read<ProjectsCubit>().delete(project.id);
+    if (!context.mounted) return;
+    if (error != null) {
+      showDsToast(context, error, tone: DsToastTone.error);
+    }
   }
 }
 
@@ -195,6 +218,69 @@ class _EmptyOwnedState extends StatelessWidget {
   }
 }
 
+class _DeleteProjectDialog extends StatelessWidget {
+  const _DeleteProjectDialog({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Dialog(
+      backgroundColor: ds.background,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMatch),
+        side: BorderSide(color: ds.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: ds.danger,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              ),
+              alignment: Alignment.center,
+              child: DsIcon(AppIcons.trash, color: AppColors.forest),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Delete this project?',
+              style: textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '"$title" will be removed from Discover. This can’t be undone.',
+              style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            DsButton(
+              label: 'Delete project',
+              variant: DsButtonVariant.dangerFilled,
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            DsButton(
+              label: 'Keep project',
+              variant: DsButtonVariant.quiet,
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CommunityCallout extends StatelessWidget {
   const _CommunityCallout();
 
@@ -204,13 +290,11 @@ class _CommunityCallout extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(
-                content: Text('Community events are coming soon.'),
-              ),
-            );
+          showDsToast(
+            context,
+            'Community events are coming soon.',
+            tone: DsToastTone.info,
+          );
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(

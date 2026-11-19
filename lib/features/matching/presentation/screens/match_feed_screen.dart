@@ -16,6 +16,7 @@ import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../domain/entities/match_item.dart';
@@ -76,6 +77,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 state.viewMode == MatchingViewMode.deck &&
                 state.currentDeckMatch == null;
             return Scaffold(
+              backgroundColor: context.ds.background,
               appBar: DsAppBar(
                 title: isEmptyFeed ? 'Your matches' : 'For you',
                 eyebrow: 'DEVSYNC',
@@ -336,7 +338,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     await _cubit.generateMatches();
     if (!mounted) return;
     final state = _cubit.state;
-    _notify(state.errorMessage ?? '${state.matches.length} matches generated');
+    final error = state.errorMessage;
+    if (error != null) {
+      _notify(error, tone: DsToastTone.error);
+    } else {
+      _notify(
+        '${state.matches.length} matches generated',
+        tone: DsToastTone.success,
+      );
+    }
   }
 
   Future<void> _handleDeckAction(
@@ -349,10 +359,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     switch (result) {
       case Success<void>():
         final verb = action == MatchSwipeAction.request ? 'liked' : 'skipped';
-        _notify('${match.projectName} $verb');
+        _notify('${match.projectName} $verb', tone: DsToastTone.success);
       case FailureResult<void>(:final failure):
         _cardKey.currentState?.restoreAfterFailedAction();
-        _notify(failure.message);
+        _notify(failure.message, tone: DsToastTone.error);
     }
   }
 
@@ -360,7 +370,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     final result = await _cubit.undoLastDeckAction();
     if (!mounted) return;
     if (result case FailureResult<void>(:final failure)) {
-      _notify(failure.message);
+      _notify(failure.message, tone: DsToastTone.error);
     }
   }
 
@@ -374,14 +384,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  void _notify(String message) {
-    final messenger =
-        _scaffoldMessengerKey.currentState ??
-        ScaffoldMessenger.maybeOf(context);
-    messenger?.hideCurrentSnackBar();
-    messenger?.showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+  void _notify(String message, {DsToastTone tone = DsToastTone.info}) {
+    showDsToast(context, message, tone: tone);
   }
 
   Future<void> _openAnalytics() async {

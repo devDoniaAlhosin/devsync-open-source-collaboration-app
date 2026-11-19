@@ -87,6 +87,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
 
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: 'Notifications',
         eyebrow: 'INBOX',

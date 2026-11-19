@@ -32,6 +32,7 @@ class LikedMatchesScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: 'Liked',
         eyebrow: 'WORKSPACE',

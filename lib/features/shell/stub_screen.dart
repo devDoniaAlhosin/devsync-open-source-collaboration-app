@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/ds_app_bar.dart';
 import '../../core/widgets/ds_empty_state.dart';
 
@@ -21,6 +22,7 @@ class StubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: title,
         eyebrow: 'WORKSPACE',

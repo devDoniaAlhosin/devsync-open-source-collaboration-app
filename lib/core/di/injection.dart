@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
+import '../../features/auth/data/datasources/github_token_store.dart';
 import '../../features/auth/data/datasources/user_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
@@ -77,11 +78,13 @@ Future<void> configureDependencies({
     ..registerLazySingleton<UserRemoteDataSource>(
       () => UserRemoteDataSource(firestore: getIt()),
     )
+    ..registerLazySingleton<GithubTokenStore>(GithubTokenStore.new)
     ..registerLazySingleton<AuthRemoteDataSource>(
       () => AuthRemoteDataSource(
         auth: getIt(),
         userRemoteDataSource: getIt(),
         googleSignIn: getIt(),
+        githubTokenStore: getIt(),
       ),
     )
     ..registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(getIt()))
@@ -191,7 +194,11 @@ void _registerProfile() {
     ..registerLazySingleton(
       () => ProfileRemoteDataSource(auth: getIt(), firestore: getIt()),
     )
-    ..registerLazySingleton(GithubProfileRemoteDataSource.new)
+    ..registerLazySingleton(
+      () => GithubProfileRemoteDataSource(
+        tokenProvider: () => getIt<GithubTokenStore>().readToken(),
+      ),
+    )
     ..registerLazySingleton<ProfileRepository>(
       () => ProfileRepositoryImpl(
         remoteDataSource: getIt(),

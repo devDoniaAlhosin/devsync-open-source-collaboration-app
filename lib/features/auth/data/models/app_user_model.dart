@@ -10,6 +10,7 @@ class AppUserModel extends AppUser {
     super.displayName,
     super.photoUrl,
     super.authProviders,
+    super.githubLogin,
     super.needsEmailVerification,
     this.createdAt,
     this.updatedAt,
@@ -18,7 +19,10 @@ class AppUserModel extends AppUser {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  factory AppUserModel.fromFirebaseUser(User user) {
+  factory AppUserModel.fromFirebaseUser(
+    User user, {
+    String? githubLogin,
+  }) {
     final passwordProvider = user.providerData.any(
       (p) => p.providerId == 'password',
     );
@@ -29,11 +33,15 @@ class AppUserModel extends AppUser {
       photoUrl: user.photoURL,
       authProviders: user.providerData.map((p) => p.providerId).toSet().toList()
         ..sort(),
+      githubLogin: githubLogin?.trim().isNotEmpty == true
+          ? githubLogin!.trim()
+          : null,
       needsEmailVerification: passwordProvider && !user.emailVerified,
     );
   }
 
   factory AppUserModel.fromFirestore(String uid, Map<String, dynamic> data) {
+    final login = data['githubLogin'] as String?;
     return AppUserModel(
       uid: uid,
       email: data['email'] as String?,
@@ -44,12 +52,16 @@ class AppUserModel extends AppUser {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      githubLogin: login?.trim().isNotEmpty == true ? login!.trim() : null,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
     );
   }
 
-  Map<String, Object?> toFirestore({required bool isNew}) {
+  Map<String, Object?> toFirestore({
+    required bool isNew,
+    bool includeGithubLogin = true,
+  }) {
     final now = FieldValue.serverTimestamp();
     return {
       'uid': uid,
@@ -59,6 +71,10 @@ class AppUserModel extends AppUser {
       'authProviders': authProviders,
       'updatedAt': now,
       if (isNew) 'createdAt': now,
+      if (includeGithubLogin &&
+          githubLogin != null &&
+          githubLogin!.trim().isNotEmpty)
+        'githubLogin': githubLogin!.trim(),
     };
   }
 }

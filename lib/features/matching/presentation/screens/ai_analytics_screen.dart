@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../domain/entities/matching_priority.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_analytics_stat_card.dart';
@@ -35,6 +36,7 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
     return BlocProvider.value(
       value: _cubit,
       child: Scaffold(
+        backgroundColor: context.ds.background,
         appBar: DsAppBar(
           title: 'AI Analytics',
           eyebrow: 'DEVSYNC',
@@ -147,11 +149,10 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
 
   void _handleRefinePrompt() {
     _cubit.refinePromptWithPriority(_selectedPriority);
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: Text('Demo prompt refined for ${_selectedPriority.label}'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    showDsToast(
+      context,
+      'Demo prompt refined for ${_selectedPriority.label}',
+      tone: DsToastTone.info,
     );
     Navigator.of(context).maybePop(true);
   }

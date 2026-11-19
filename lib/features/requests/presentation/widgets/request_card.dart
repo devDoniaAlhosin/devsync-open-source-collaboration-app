@@ -1,7 +1,12 @@
 import 'package:devsync_open_source_collaboration_app/app/app_routes.dart';
+import 'package:devsync_open_source_collaboration_app/core/di/injection.dart';
+import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
 import 'package:devsync_open_source_collaboration_app/core/theme/app_animations.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_avatar.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_fade_switch.dart';
+import 'package:devsync_open_source_collaboration_app/core/widgets/ds_toast.dart';
+import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/get_project.dart';
+import 'package:devsync_open_source_collaboration_app/features/projects/presentation/screens/project_details_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/domain/entities/collaboration_request.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/connected_celebration_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_details.dart';
@@ -19,10 +24,40 @@ class ExpandedRequestCard extends StatefulWidget {
 
 class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
   late bool _expanded = widget.item.isReceived && widget.item.isPending;
+  bool _openingProject = false;
 
   RequestStatus get _status => widget.item.status;
 
   void _toggle() => setState(() => _expanded = !_expanded);
+
+  Future<void> _openProject() async {
+    if (_openingProject) return;
+    final projectId = widget.item.projectId.trim();
+    if (projectId.isEmpty) {
+      _showMessage('This request is not linked to a project');
+      return;
+    }
+
+    setState(() => _openingProject = true);
+    final result = await getIt<GetProject>()(GetProjectParams(projectId));
+    if (!mounted) return;
+    setState(() => _openingProject = false);
+
+    switch (result) {
+      case Success(:final data):
+        await Navigator.of(context).push<void>(
+          DsFadePageRoute<void>(
+            builder: (_) => ProjectDetailsScreen(project: data),
+          ),
+        );
+      case FailureResult(:final failure):
+        _showMessage(failure.message);
+    }
+  }
+
+  void _showMessage(String message) {
+    showDsToast(context, message, tone: DsToastTone.error);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,14 +139,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
               color: colors.onSurface,
             ),
             foreground: colors.onSurface,
-            // onTap: () => Navigator.of(context).push(
-            //   MaterialPageRoute(
-            //     builder: (_) => RequestDetailsScreen(item: widget.item),
-            //   ),
-            // ),
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Open project details')),
-            ),
+            onTap: _openProject,
           )
         else if (widget.item.isReceived && widget.item.isPending)
           Row(
