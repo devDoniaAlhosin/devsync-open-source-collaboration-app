@@ -43,9 +43,43 @@ class DevSyncApp extends StatefulWidget {
   /// Set `false` in widget tests to skip the open animation.
   final bool showSplash;
 
+  static final _navigatorKey = GlobalKey<NavigatorState>();
+  static final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  static bool _pendingRequestsNavigation = false;
+
   static _DevSyncAppState? _state;
 
   static ThemeMode get themeMode => _state?._themeMode ?? ThemeMode.light;
+
+  static void openRequests() {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      _pendingRequestsNavigation = true;
+      return;
+    }
+
+    _pendingRequestsNavigation = false;
+    navigator.pushNamedAndRemoveUntil(
+      AppRoutes.home,
+      (route) => false,
+      arguments: 3,
+    );
+  }
+
+  static void showNotification(String title, String body) {
+    final messenger = _scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(body.isEmpty ? title : '$title\n$body'),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(label: 'Open', onPressed: openRequests),
+        ),
+      );
+  }
 
   /// Toggle light / dark from the app bar.
   static void toggleTheme() => _state?._toggleTheme();
@@ -68,6 +102,9 @@ class _DevSyncAppState extends State<DevSyncApp> {
     _booting = widget.showSplash;
     _appVisible = !widget.showSplash;
     _syncSystemUi(_themeMode);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (DevSyncApp._pendingRequestsNavigation) DevSyncApp.openRequests();
+    });
   }
 
   @override
@@ -115,6 +152,8 @@ class _DevSyncAppState extends State<DevSyncApp> {
     return MaterialApp(
       title: 'DevSync',
       debugShowCheckedModeBanner: false,
+      navigatorKey: DevSyncApp._navigatorKey,
+      scaffoldMessengerKey: DevSyncApp._scaffoldMessengerKey,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,

@@ -104,6 +104,15 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
     widget.onAction(action);
   }
 
+  void restoreAfterFailedAction() {
+    if (!mounted) return;
+    setState(() {
+      _isCompleting = false;
+      _isDragging = false;
+      _dragOffset = Offset.zero;
+    });
+  }
+
   @override
   void didUpdateWidget(covariant DraggableMatchCard oldWidget) {
     super.didUpdateWidget(oldWidget);

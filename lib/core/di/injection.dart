@@ -30,6 +30,10 @@ import '../../features/matching/domain/repositories/matching_repository.dart';
 import '../../features/matching/domain/usecases/generate_matches_usecase.dart';
 import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
+import '../../features/matching/data/datasources/matching_feedback_remote_data_source.dart';
+import '../../features/matching/data/repositories/matching_feedback_repository_impl.dart';
+import '../../features/matching/domain/repositories/matching_feedback_repository.dart';
+import '../../features/matching/domain/usecases/save_match_feedback.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
 import '../../features/profile/data/datasources/github_profile_remote_data_source.dart';
@@ -49,12 +53,19 @@ import '../../features/requests/presentation/cubit/requests_cubit.dart';
 import '../../features/requests/domain/usecases/create_request.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/profile/domain/usecases/save_github_scan.dart';
+import '../notifications/fcm_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
 /// Composition root. Safe to call more than once (tests / hot restart).
-Future<void> configureDependencies() async {
-  if (getIt.isRegistered<AuthRepository>()) return;
+Future<void> configureDependencies({
+  void Function(String title, String body)? onForegroundMessage,
+  void Function()? onNotificationOpened,
+}) async {
+  if (getIt.isRegistered<AuthRepository>()) {
+    _registerFcmService(onForegroundMessage, onNotificationOpened);
+    return;
+  }
 
   final prefs = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(prefs);
@@ -127,6 +138,27 @@ Future<void> configureDependencies() async {
   _registerProfile();
   registerProjectsDependencies(getIt);
   _registerRequests();
+  _registerFcmService(onForegroundMessage, onNotificationOpened);
+}
+
+void _registerFcmService(
+  void Function(String title, String body)? onForegroundMessage,
+  void Function()? onNotificationOpened,
+) {
+  if (onForegroundMessage == null ||
+      onNotificationOpened == null ||
+      getIt.isRegistered<FcmService>()) {
+    return;
+  }
+
+  getIt.registerSingleton<FcmService>(
+    FcmService(
+      auth: FirebaseAuth.instance,
+      firestore: FirebaseFirestore.instance,
+      onForegroundMessage: onForegroundMessage,
+      onNotificationOpened: onNotificationOpened,
+    ),
+  );
 }
 
 void _registerMatching() {
@@ -134,11 +166,21 @@ void _registerMatching() {
 
   getIt
     ..registerLazySingleton<MatchingRepository>(createMatchingRepository)
+    ..registerLazySingleton(
+      () => MatchingFeedbackRemoteDataSource(firestore: getIt(), auth: getIt()),
+    )
+    ..registerLazySingleton<MatchingFeedbackRepository>(
+      () => MatchingFeedbackRepositoryImpl(remoteDataSource: getIt()),
+    )
+    ..registerLazySingleton(() => SaveMatchFeedback(getIt()))
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
     ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
     ..registerFactory(
-      () => MatchingCubit(repository: getIt<MatchingRepository>()),
+      () => MatchingCubit(
+        repository: getIt<MatchingRepository>(),
+        saveMatchFeedback: getIt<SaveMatchFeedback>(),
+      ),
     );
 }
 

@@ -156,7 +156,7 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | Project management | Jira | Scrum board, sprints, task tracking |
 | Design | DevSync brand system | Teal / forest palette; shared `Ds*` widgets in `lib/core/` |
 
-**Firestore:** `users/{uid}` identity is implemented. Planned: `projects`, `matches`, `feedback`, `requests`. If-time: `tasks`.
+**Firestore:** `users/{uid}` identity, request records, and matching feedback writes are implemented in code. Projects remain local/demo, and the updated rules still need deployment and end-to-end verification. If-time: `tasks`.
 
 <p align="center">
   <img src="docs/devsync-logos/devsync-logos/png/devsync-icon.png" alt="DevSync icon" height="48"/>
@@ -246,7 +246,7 @@ Dio is **not** in the stack. Auth and matching use `dart:io` `HttpClient` (or a 
 
 ### Matching flow (planned)
 
-Matching’s HTTP surface is **`POST /matches/generate` only**. Ranked results come back in that POST response; they are not fetched with GET. Cache and like/skip feedback live in Firestore.
+Matching’s HTTP surface is **`POST /matches/generate` only**. Ranked results come back in that POST response; they are not fetched with GET. Like/skip feedback is stored per user/project in Firestore; matching results and cache remain demo/local for now.
 
 1. Collect GitHub activity and declared skills into a structured profile
 2. Send the profile and candidate projects to **`POST https://devsync-backend-two.vercel.app/matches/generate`** (JSON locked to `MatchRequestModel` / `MatchItemModel` / `MatchResponseModel`)

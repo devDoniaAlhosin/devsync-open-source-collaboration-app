@@ -1,9 +1,10 @@
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/matching_progress_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/navigation/open_host_drawer.dart';
 import '../../../../core/theme/app_animations.dart';
@@ -178,7 +179,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       match: match,
       nextMatches: state.nextDeckMatches,
       canUndo: state.canUndo,
-      onUndo: _cubit.undoLastDeckAction,
+      onUndo: _undoLastDeckAction,
       onTap: () => _navigateToProjectDetails(match, state),
       onAction: (action) => _handleDeckAction(match, action),
       onInfo: () => _showMatchInfo(match),
@@ -199,9 +200,9 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ExploreDevSyncItem(
         title: 'Task board',
         subtitle: 'Plan your next\nsprint',
-        onTap: () => Navigator.of(context).push(
-          DsFadePageRoute<bool>(builder: (_) => MatchingProgressScreen()),
-        ),
+        onTap: () => Navigator.of(
+          context,
+        ).push(DsFadePageRoute<bool>(builder: (_) => MatchingProgressScreen())),
       ),
       ExploreDevSyncItem(
         title: 'Insights',
@@ -254,7 +255,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               spacing: AppSpacing.sm,
               children: [
                 BlocBuilder<AuthCubit, AuthState>(
-                  buildWhen: (prev, next) => prev.runtimeType != next.runtimeType ||
+                  buildWhen: (prev, next) =>
+                      prev.runtimeType != next.runtimeType ||
                       (prev is AuthAuthenticated &&
                           next is AuthAuthenticated &&
                           prev.user.displayName != next.user.displayName),
@@ -283,7 +285,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                         end: Offset.zero,
                       ).animate(fade),
                       child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.985, end: 1).animate(fade),
+                        scale: Tween<double>(
+                          begin: 0.985,
+                          end: 1,
+                        ).animate(fade),
                         child: child,
                       ),
                     ),
@@ -292,10 +297,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 layoutBuilder: (currentChild, previousChildren) {
                   return Stack(
                     alignment: Alignment.topCenter,
-                    children: <Widget>[
-                      ...previousChildren,
-                      ?currentChild,
-                    ],
+                    children: <Widget>[...previousChildren, ?currentChild],
                   );
                 },
                 child: KeyedSubtree(
@@ -334,15 +336,32 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     await _cubit.generateMatches();
     if (!mounted) return;
     final state = _cubit.state;
-    _notify(
-      state.errorMessage ?? '${state.matches.length} matches generated',
-    );
+    _notify(state.errorMessage ?? '${state.matches.length} matches generated');
   }
 
-  void _handleDeckAction(MatchItem match, MatchSwipeAction action) {
-    _cubit.performDeckAction(match, action);
-    final verb = action == MatchSwipeAction.request ? 'requested' : 'skipped';
-    _notify('${match.projectName} $verb');
+  Future<void> _handleDeckAction(
+    MatchItem match,
+    MatchSwipeAction action,
+  ) async {
+    final result = await _cubit.performDeckAction(match, action);
+    if (!mounted) return;
+
+    switch (result) {
+      case Success<void>():
+        final verb = action == MatchSwipeAction.request ? 'liked' : 'skipped';
+        _notify('${match.projectName} $verb');
+      case FailureResult<void>(:final failure):
+        _cardKey.currentState?.restoreAfterFailedAction();
+        _notify(failure.message);
+    }
+  }
+
+  Future<void> _undoLastDeckAction() async {
+    final result = await _cubit.undoLastDeckAction();
+    if (!mounted) return;
+    if (result case FailureResult<void>(:final failure)) {
+      _notify(failure.message);
+    }
   }
 
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {
@@ -367,9 +386,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   Future<void> _openAnalytics() async {
     final refreshNeeded = await Navigator.of(context).push<bool>(
-      DsFadePageRoute<bool>(
-        builder: (_) => AiAnalyticsScreen(cubit: _cubit),
-      ),
+      DsFadePageRoute<bool>(builder: (_) => AiAnalyticsScreen(cubit: _cubit)),
     );
     if (refreshNeeded == true && mounted) {
       await _cubit.loadInitialData();

@@ -147,7 +147,7 @@ Legacy project docs with empty `ownerId` still need to be fixed or deleted in th
 | --- | --- | --- |
 | Ranked matches | HTTP JSON → RAM | Firestore `matches` table |
 | `promptVersion` | Field on HTTP response | A Firestore collection |
-| Like / skip | RAM store | Firestore `feedback` |
+| Like / skip | Firestore `feedback` + RAM store | Device/account verification |
 
 ### Guidance — what you need to do
 
@@ -156,8 +156,8 @@ Legacy project docs with empty `ownerId` still need to be fixed or deleted in th
 2. **Persistence decision**  
    - Either write cache docs to Firestore `matches`, **or** explicitly accept “HTTP + RAM only” for the demo and say so in PR/docs.  
    - **Done when:** team agrees and Console either shows `matches` after generate **or** docs say “no Firestore matches”.
-3. **With Yousef (FR-15)** — persist like/skip to `feedback` (`userId`, `projectId`, `action`, timestamp), or agree RAM-only for demo.  
-   - **Done when:** like creates a `feedback` doc **or** documented exception.
+3. **FR-15** — like/skip writes to `feedback` (`userId`, `projectId`, `action`, timestamp) are implemented. Verify them under deployed rules with two accounts.
+   - **Done when:** the selected action is saved and Undo restores the previous choice.
 4. **Studio / analytics / prompt screens** — implement against real APIs or hide/disable until backend supports them (no `UnimplementedError` in the demo path).  
    - **Done when:** demo never opens a crashing stub.
 5. **DI** — inject GetIt use cases into Cubit; stop reconstructing them.  
@@ -167,7 +167,8 @@ Legacy project docs with empty `ownerId` still need to be fixed or deleted in th
 
 - **Do** keep matching HTTP as **`POST /matches/generate` only**; `GEMINI_API_KEY` on Vercel.  
 - **Don’t** claim Cloud Function `scoreMatches` is live.  
-- **Don’t** claim Firestore `matches`/`feedback` are written until they are.
+- **Don’t** claim Firestore `matches` are written; matching results remain HTTP + RAM.
+- **Do** verify feedback writes against the deployed `firestore.rules`.
 
 ---
 
@@ -183,7 +184,7 @@ Legacy project docs with empty `ownerId` still need to be fixed or deleted in th
 
 ### Missing (detail)
 
-Deployed rules, real E2E, notification UX, and FR-15 feedback persistence.
+Deployed-rule verification and a real two-account E2E run.
 
 ### Guidance — what you need to do
 
@@ -191,11 +192,9 @@ Deployed rules, real E2E, notification UX, and FR-15 feedback persistence.
    - **Done when:** create/update from two test accounts succeeds under rules (not only with open rules).
 2. **E2E demo script** — Account A sends → Account B (owner) sees inbox → accept/decline.  
    - **Done when:** recorded once on device/emulator with current `main`.
-3. **FCM UX** — foreground banner/snackbar, permission copy, deep link into Requests tab.  
-   - **Done when:** a test notification opens the right place (or documented limitation).
-4. **Rename** `fcm_scrvice.dart` → `fcm_service.dart` (and imports).  
-5. **FR-15 `feedback`** — with Emad, write like/skip docs; don’t treat `LikedMatchesStore` as done.  
-6. **Counters** — `projects.requestsCount` stays correct without duplicate request docs (coordinate Bishay).
+3. **FCM UX** — foreground banner/snackbar, permission request, and Requests-tab navigation are implemented. Verify with a test notification on-device.
+4. **FR-15 `feedback`** — like/skip writes and Undo persistence are implemented. Verify them against deployed rules.
+5. **Counters** — `projects.requestsCount` stays correct without duplicate request docs (coordinate Bishay).
 
 ### Do / Don’t
 
