@@ -1,22 +1,28 @@
+import 'dart:io';
+
+import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_http_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_item_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_request_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_response_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_item.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/user_profile.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/failures/matching_failures.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRemoteDataSource implements MatchingRemoteDataSource {
-  _FakeRemoteDataSource(this.response);
+  _FakeRemoteDataSource(this.response, {this.error});
 
   MatchResponseModel response;
+  Object? error;
   MatchRequestModel? lastRequest;
 
   @override
   Future<MatchResponseModel> getMatches(MatchRequestModel request) async {
     lastRequest = request;
+    if (error != null) throw error!;
     return response;
   }
 
@@ -285,6 +291,197 @@ void main() {
 
         final results = await repo.getRankedMatches(testProfile);
         expect(results.first.isFallback, isTrue);
+      },
+    );
+  });
+
+  group('Deterministic Fallback', () {
+    const fallbackProfile = UserProfile(
+      uid: 'user-001',
+      declaredSkills: ['Flutter', 'Dart', 'GraphQL'],
+      githubLanguages: {'Dart': 5000},
+      publicRepoCount: 10,
+      totalContributions: 150,
+    );
+
+    const candidateA = CandidateProject(
+      projectId: 'proj-a',
+      projectName: 'Project A',
+      description: 'Flutter and Dart',
+      githubUrl: 'https://github.com/a',
+      neededSkills: ['Flutter', 'Dart'], // 2/2 = 100%
+      maintainerId: 'other-user',
+    );
+
+    const candidateB = CandidateProject(
+      projectId: 'proj-b',
+      projectName: 'Project B',
+      description: 'Flutter and Python',
+      githubUrl: 'https://github.com/b',
+      neededSkills: ['Flutter', 'Python'], // 1/2 = 50%
+      maintainerId: 'other-user',
+    );
+
+    const candidateC = CandidateProject(
+      projectId: 'proj-c',
+      projectName: 'Project C',
+      description: 'Flutter and GraphQL',
+      githubUrl: 'https://github.com/c',
+      neededSkills: ['Flutter', 'GraphQL'], // 2/2 = 100%
+      maintainerId: 'other-user',
+    );
+
+    const candidateNoOverlap = CandidateProject(
+      projectId: 'proj-no-overlap',
+      projectName: 'Rust Lib',
+      description: 'Rust only',
+      githubUrl: 'https://github.com/rust',
+      neededSkills: ['Rust', 'Wasm'],
+      maintainerId: 'other-user',
+    );
+
+    const candidateNoSkills = CandidateProject(
+      projectId: 'proj-no-skills',
+      projectName: 'No Skills',
+      description: 'Empty skills',
+      githubUrl: 'https://github.com/empty',
+      neededSkills: [],
+      maintainerId: 'other-user',
+    );
+
+    const candidateOwn = CandidateProject(
+      projectId: 'proj-own',
+      projectName: 'My Project',
+      description: 'Owned by user-001',
+      githubUrl: 'https://github.com/my',
+      neededSkills: ['Flutter', 'Dart'],
+      maintainerId: 'user-001',
+    );
+
+    test(
+      'calculates correct score math, reason from overlapping skills, and sorts score desc, id asc',
+      () async {
+        final remote = _FakeRemoteDataSource(
+          const MatchResponseModel(promptVersion: 'v1', matches: []),
+          error: const SocketException('offline'),
+        );
+        final repo = MatchingRepositoryImpl(
+          remoteDataSource: remote,
+          localDataSource: InMemoryMatchingLocalDataSource(),
+        );
+
+        final results = await repo.getRankedMatches(
+          fallbackProfile,
+          candidateProjects: [
+            candidateB, // 50%
+            candidateA, // 100%, proj-a
+            candidateC, // 100%, proj-c
+            candidateNoOverlap,
+            candidateNoSkills,
+            candidateOwn,
+          ],
+        );
+
+        expect(results.length, 3);
+        // proj-a (100) vs proj-c (100): alphabetical tie-break -> proj-a first, proj-c second
+        expect(results[0].projectId, 'proj-a');
+        expect(results[0].score, 100.0);
+        expect(results[0].reason, 'Flutter, Dart');
+        expect(results[0].isFallback, isTrue);
+        expect(results[0].source, MatchSource.fallback);
+
+        expect(results[1].projectId, 'proj-c');
+        expect(results[1].score, 100.0);
+        expect(results[1].reason, 'Flutter, GraphQL');
+
+        expect(results[2].projectId, 'proj-b');
+        expect(results[2].score, 50.0);
+        expect(results[2].reason, 'Flutter');
+      },
+    );
+
+    test(
+      'throws NoMatchesFailure when no candidates qualify for fallback',
+      () async {
+        final remote = _FakeRemoteDataSource(
+          const MatchResponseModel(promptVersion: 'v1', matches: []),
+          error: const MatchingApiException(
+            'Service unavailable',
+            statusCode: 503,
+          ),
+        );
+        final repo = MatchingRepositoryImpl(
+          remoteDataSource: remote,
+          localDataSource: InMemoryMatchingLocalDataSource(),
+        );
+
+        expect(
+          () => repo.getRankedMatches(
+            fallbackProfile,
+            candidateProjects: [
+              candidateOwn,
+              candidateNoOverlap,
+              candidateNoSkills,
+            ],
+          ),
+          throwsA(isA<NoMatchesFailure>()),
+        );
+      },
+    );
+
+    test('does NOT fall back on 401/403 auth errors', () async {
+      final remote = _FakeRemoteDataSource(
+        const MatchResponseModel(promptVersion: 'v1', matches: []),
+        error: const MatchingApiException('Unauthorized', statusCode: 401),
+      );
+      final repo = MatchingRepositoryImpl(
+        remoteDataSource: remote,
+        localDataSource: InMemoryMatchingLocalDataSource(),
+      );
+
+      expect(
+        () => repo.getRankedMatches(
+          fallbackProfile,
+          candidateProjects: [candidateA],
+        ),
+        throwsA(isA<AuthFailure>()),
+      );
+    });
+
+    test(
+      'deterministic: multiple executions yield identical results without randomness',
+      () async {
+        final remote = _FakeRemoteDataSource(
+          const MatchResponseModel(promptVersion: 'v1', matches: []),
+          error: const SocketException('Connection reset'),
+        );
+        final repo = MatchingRepositoryImpl(
+          remoteDataSource: remote,
+          localDataSource: InMemoryMatchingLocalDataSource(),
+        );
+
+        final candidates = [candidateB, candidateA, candidateC];
+        final run1 = await repo.getRankedMatches(
+          fallbackProfile,
+          candidateProjects: candidates,
+        );
+        final run2 = await repo.getRankedMatches(
+          fallbackProfile,
+          candidateProjects: candidates,
+        );
+
+        expect(
+          run1.map((m) => m.projectId).toList(),
+          run2.map((m) => m.projectId).toList(),
+        );
+        expect(
+          run1.map((m) => m.score).toList(),
+          run2.map((m) => m.score).toList(),
+        );
+        expect(
+          run1.map((m) => m.reason).toList(),
+          run2.map((m) => m.reason).toList(),
+        );
       },
     );
   });

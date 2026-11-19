@@ -14,6 +14,7 @@ class MatchItemModel extends MatchItem {
     required super.reason,
     super.maintainerId,
     super.isFallback,
+    super.source,
     this.likedAt,
   });
 
@@ -30,6 +31,7 @@ class MatchItemModel extends MatchItem {
       reason: entity.reason,
       maintainerId: entity.maintainerId,
       isFallback: entity.isFallback,
+      source: entity.source,
       likedAt: DateTime.now(),
     );
   }

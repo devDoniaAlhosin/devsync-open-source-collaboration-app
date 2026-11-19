@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../../../core/utils/project_details_utils.dart';
 import '../../../profile/domain/entities/profile.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/user_profile.dart';
@@ -130,22 +131,110 @@ class MatchingRepositoryImpl implements MatchingRepository {
 
       return List<MatchItem>.unmodifiable(finalMatches);
     } on MatchingApiException catch (error) {
+      if (error.statusCode == 401 || error.statusCode == 403) {
+        throw const AuthFailure();
+      }
+      if (error.statusCode == 400) {
+        throw ValidationFailure(error.message);
+      }
+
+      final fallback = _computeFallbackMatches(
+        profile: profile,
+        candidates: candidateProjects,
+      );
+      if (fallback != null) {
+        if (fallback.isEmpty) throw const NoMatchesFailure();
+        return List<MatchItem>.unmodifiable(fallback);
+      }
+
       // Map HTTP errors to domain failures
       throw switch (error.statusCode) {
-        401 || 403 => const AuthFailure(),
         429 => const RateLimitFailure(),
         >= 500 => const ServerFailure(),
-        400 => ValidationFailure(error.message),
         0 => const NetworkFailure(), // No status code = network error
         _ => UnknownFailure(error.message),
       };
     } on SocketException {
+      final fallback = _computeFallbackMatches(
+        profile: profile,
+        candidates: candidateProjects,
+      );
+      if (fallback != null) {
+        if (fallback.isEmpty) throw const NoMatchesFailure();
+        return List<MatchItem>.unmodifiable(fallback);
+      }
       throw const NetworkFailure();
     } on MatchingFailure {
       rethrow;
     } catch (error) {
+      final fallback = _computeFallbackMatches(
+        profile: profile,
+        candidates: candidateProjects,
+      );
+      if (fallback != null) {
+        if (fallback.isEmpty) throw const NoMatchesFailure();
+        return List<MatchItem>.unmodifiable(fallback);
+      }
       throw UnknownFailure(error.toString());
     }
+  }
+
+  /// Computes deterministic skill-overlap matches when the AI backend is unavailable.
+  List<MatchItemModel>? _computeFallbackMatches({
+    required UserProfile profile,
+    required List<CandidateProject>? candidates,
+  }) {
+    if (candidates == null) return null;
+    final userSkills = normalizedSkills(profile.declaredSkills);
+    if (userSkills.isEmpty) return const [];
+
+    final results = <MatchItemModel>[];
+    for (final candidate in candidates) {
+      // Exclude the user's own projects (mirror the AI path)
+      if (candidate.maintainerId != null &&
+          candidate.maintainerId!.isNotEmpty &&
+          candidate.maintainerId == profile.uid) {
+        continue;
+      }
+
+      final needed = normalizedSkills(candidate.neededSkills);
+      // Skip projects with no requirements
+      if (needed.isEmpty) continue;
+
+      // Actual overlapping skills only
+      final matchingSkills = candidate.neededSkills
+          .where((skill) => userSkills.contains(skill.trim().toLowerCase()))
+          .toList();
+
+      // Skip projects with no overlap
+      if (matchingSkills.isEmpty) continue;
+
+      final score = (matchingSkills.length / needed.length) * 100;
+      final reason = matchingSkills.join(', ');
+
+      results.add(
+        MatchItemModel(
+          projectId: candidate.projectId,
+          projectName: candidate.projectName,
+          description: candidate.description,
+          githubUrl: candidate.githubUrl,
+          neededSkills: candidate.neededSkills,
+          score: score,
+          reason: reason,
+          maintainerId: candidate.maintainerId,
+          isFallback: true,
+          source: MatchSource.fallback,
+        ),
+      );
+    }
+
+    // Sort score desc, id asc
+    results.sort((a, b) {
+      final byScore = b.score.compareTo(a.score);
+      return byScore != 0 ? byScore : a.projectId.compareTo(b.projectId);
+    });
+
+    return results;
   }
 
   /// Generate hash from UserProfile when Profile entity is not available.

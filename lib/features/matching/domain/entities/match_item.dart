@@ -1,3 +1,5 @@
+enum MatchSource { ai, fallback }
+
 /// Represents a ranked project match.
 class MatchItem {
   const MatchItem({
@@ -10,7 +12,8 @@ class MatchItem {
     required this.reason,
     this.maintainerId,
     this.isFallback = false,
-  });
+    MatchSource? source,
+  }) : source = source ?? (isFallback ? MatchSource.fallback : MatchSource.ai);
 
   final String projectId;
   final String projectName;
@@ -21,7 +24,8 @@ class MatchItem {
   final String reason;
   final String? maintainerId;
   final bool isFallback;
+  final MatchSource source;
 
   @override
-  String toString() => 'MatchItem($projectName, score=$score)';
+  String toString() => 'MatchItem($projectName, score=$score, source=$source)';
 }
