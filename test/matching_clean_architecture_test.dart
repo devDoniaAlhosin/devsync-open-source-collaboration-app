@@ -1,8 +1,12 @@
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/liked_matches_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_request_model.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_response_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/matching_priority.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/user_profile.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/failures/matching_failures.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/ai_analytics_screen.dart';
@@ -10,8 +14,6 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'features/matching/mocks/mock_matching_remote_data_source.dart';
 
 const _testProfile = UserProfile(
   uid: 'test-uid-001',
@@ -21,16 +23,49 @@ const _testProfile = UserProfile(
   totalContributions: 200,
 );
 
-MatchingCubit _buildCubit() {
+class _FailingRemoteDataSource implements MatchingRemoteDataSource {
+  _FailingRemoteDataSource([this.failure]);
+  final MatchingFailure? failure;
+
+  @override
+  Future<MatchResponseModel> getMatches(MatchRequestModel request) async {
+    throw failure ?? const NetworkFailure();
+  }
+
+  @override
+  void close() {}
+}
+
+class _CountingRemoteDataSource implements MatchingRemoteDataSource {
+  _CountingRemoteDataSource(this.response);
+  MatchResponseModel response;
+  int callCount = 0;
+  List<MatchRequestModel> requests = [];
+
+  @override
+  Future<MatchResponseModel> getMatches(MatchRequestModel request) async {
+    callCount++;
+    requests.add(request);
+    return response;
+  }
+
+  @override
+  void close() {}
+}
+
+MatchingCubit _buildCubit({
+  MatchingRemoteDataSource? remoteDataSource,
+  UserProfile? profile,
+}) {
   final repository = MatchingRepositoryImpl(
-    remoteDataSource: MockMatchingRemoteDataSource(),
+    remoteDataSource: remoteDataSource ?? MockMatchingRemoteDataSource(),
     localDataSource: InMemoryMatchingLocalDataSource(),
   );
   return MatchingCubit(
     repository: repository,
     likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
     getRankedMatchesUseCase: GetRankedMatchesUseCase(repository),
-    profile: _testProfile,
+    profile: profile ?? _testProfile,
   );
 }
 
@@ -137,6 +172,102 @@ void main() {
         expect(cubit.state.isGenerating, isFalse);
       },
     );
+
+    test('initial state has MatchingStatus.initial and isInitial true', () {
+      expect(cubit.state.status, MatchingStatus.initial);
+      expect(cubit.state.isInitial, isTrue);
+      expect(cubit.state.isSuccess, isFalse);
+      expect(cubit.state.isFailure, isFalse);
+    });
+
+    test('loading and success state transitions on loadInitialData', () async {
+      final statuses = <MatchingStatus>[];
+      final sub = cubit.stream.listen((s) => statuses.add(s.status));
+      await cubit.loadInitialData();
+      await pumpEventQueue();
+      expect(
+        statuses,
+        containsAllInOrder([MatchingStatus.loading, MatchingStatus.success]),
+      );
+      expect(cubit.state.status, MatchingStatus.success);
+      expect(cubit.state.isSuccess, isTrue);
+      await sub.cancel();
+    });
+
+    test('empty state when user profile has empty declaredSkills', () async {
+      final emptySkillsCubit = _buildCubit(
+        profile: const UserProfile(
+          uid: 'no-skills',
+          declaredSkills: [],
+          githubLanguages: {},
+          publicRepoCount: 0,
+          totalContributions: 0,
+        ),
+      );
+      await emptySkillsCubit.loadInitialData();
+      expect(emptySkillsCubit.state.status, MatchingStatus.empty);
+      expect(emptySkillsCubit.state.isEmptyState, isTrue);
+      expect(emptySkillsCubit.state.failure, isA<NoMatchesFailure>());
+      await emptySkillsCubit.close();
+    });
+
+    test('empty state when remote returns empty matches', () async {
+      final emptyRemote = _CountingRemoteDataSource(
+        const MatchResponseModel(promptVersion: 'v1', matches: []),
+      );
+      final emptyCubit = _buildCubit(remoteDataSource: emptyRemote);
+      await emptyCubit.loadInitialData();
+      expect(emptyCubit.state.status, MatchingStatus.empty);
+      expect(emptyCubit.state.isEmptyState, isTrue);
+      expect(emptyCubit.state.failure, isA<NoMatchesFailure>());
+      await emptyCubit.close();
+    });
+
+    test('failure state when remote throws MatchingFailure', () async {
+      final failingCubit = _buildCubit(
+        remoteDataSource: _FailingRemoteDataSource(const NetworkFailure()),
+      );
+      await failingCubit.loadInitialData();
+      expect(failingCubit.state.status, MatchingStatus.failure);
+      expect(failingCubit.state.isFailure, isTrue);
+      expect(failingCubit.state.failure, isA<NetworkFailure>());
+      await failingCubit.close();
+    });
+
+    test(
+      'retry repeats loadInitialData when last request was loadInitialData',
+      () async {
+        final countingRemote = _CountingRemoteDataSource(
+          const MatchResponseModel(promptVersion: 'v1', matches: []),
+        );
+        final retryCubit = _buildCubit(remoteDataSource: countingRemote);
+        await retryCubit.loadInitialData();
+        expect(countingRemote.callCount, 1);
+        expect(countingRemote.requests.last.prompt, isNull);
+        await retryCubit.retry();
+        expect(countingRemote.callCount, 2);
+        expect(countingRemote.requests.last.prompt, isNull);
+        await retryCubit.close();
+      },
+    );
+
+    test(
+      'retry repeats generateMatches when last request was generateMatches',
+      () async {
+        final countingRemote = _CountingRemoteDataSource(
+          const MatchResponseModel(promptVersion: 'v1', matches: []),
+        );
+        final retryCubit = _buildCubit(remoteDataSource: countingRemote);
+        retryCubit.updatePrompt('flutter widgets');
+        await retryCubit.generateMatches();
+        expect(countingRemote.callCount, 1);
+        expect(countingRemote.requests.last.prompt, 'flutter widgets');
+        await retryCubit.retry();
+        expect(countingRemote.callCount, 2);
+        expect(countingRemote.requests.last.prompt, 'flutter widgets');
+        await retryCubit.close();
+      },
+    );
   });
 
   group('Matching UI Components & Screens', () {
@@ -185,11 +316,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Match insights'), findsOneWidget);
+      expect(find.text('AI Analytics'), findsOneWidget);
       expect(find.text('Recommendation insights'), findsOneWidget);
-      expect(find.text('Projects returned'), findsOneWidget);
-      expect(find.text('Average match'), findsOneWidget);
-      expect(find.text('Skill-based matches'), findsOneWidget);
+      expect(find.text('Matches rated'), findsOneWidget);
+      expect(find.text('Positive signals'), findsOneWidget);
+      expect(find.text('Skills matched'), findsOneWidget);
     });
   });
 }

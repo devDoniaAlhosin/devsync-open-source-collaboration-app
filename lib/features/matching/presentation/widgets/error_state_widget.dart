@@ -36,10 +36,12 @@ class ErrorStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Retry button (if retryable)
-            if (failure.retryable && onRetry != null)
+            // Retry button (if retryable or onRetry provided)
+            if (onRetry != null &&
+                failure is! ProfileIncompleteFailure &&
+                failure is! AuthFailure)
               DsButton(
-                label: 'Try Again',
+                label: 'Retry',
                 onPressed: onRetry,
                 icon: AppIcons.refresh,
               )

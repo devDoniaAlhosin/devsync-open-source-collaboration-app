@@ -33,21 +33,27 @@ class MatchingCubit extends Cubit<MatchingState> {
   final LikedMatchesLocalDataSource _likedMatchesDataSource;
   final MatchingProfileRepository? _profileRepository;
 
+  bool _lastRequestWasGenerating = false;
+
   Future<void> loadInitialData() => _loadMatches(isGenerating: false);
 
   Future<void> generateMatches() => _loadMatches(isGenerating: true);
 
-  /// Retry the last failed operation.
+  /// Retry the last failed operation, repeating the last request.
   Future<void> retry() async {
-    if (state.failure != null && state.failure!.retryable) {
+    if (_lastRequestWasGenerating) {
+      await generateMatches();
+    } else {
       await loadInitialData();
     }
   }
 
   Future<void> _loadMatches({required bool isGenerating}) async {
     if (state.isLoading || state.isGenerating || state.isSaving) return;
+    _lastRequestWasGenerating = isGenerating;
     emit(
       state.copyWith(
+        status: MatchingStatus.loading,
         isLoading: !isGenerating,
         isGenerating: isGenerating,
         clearError: true,
@@ -59,8 +65,10 @@ class MatchingCubit extends Cubit<MatchingState> {
     if (profile == null) {
       emit(
         state.copyWith(
+          status: MatchingStatus.failure,
           isLoading: false,
           isGenerating: false,
+          failure: const ProfileIncompleteFailure(),
           errorMessage:
               state.actionErrorMessage ??
               'Could not load your matching profile. Please try again.',
@@ -73,6 +81,7 @@ class MatchingCubit extends Cubit<MatchingState> {
     if (profile.declaredSkills.isEmpty) {
       emit(
         state.copyWith(
+          status: MatchingStatus.empty,
           profile: profile,
           matches: const [],
           currentDeckIndex: 0,
@@ -89,9 +98,13 @@ class MatchingCubit extends Cubit<MatchingState> {
     if (prompt.length > 1000) {
       emit(
         state.copyWith(
+          status: MatchingStatus.failure,
           profile: profile,
           isLoading: false,
           isGenerating: false,
+          failure: const ValidationFailure(
+            'Keep your preference under 1,000 characters.',
+          ),
           errorMessage: 'Keep your preference under 1,000 characters.',
         ),
       );
@@ -106,23 +119,45 @@ class MatchingCubit extends Cubit<MatchingState> {
             ? null
             : state.preferences.selectedTags,
       );
-      emit(
-        state.copyWith(
-          profile: profile,
-          matches: results,
-          promptVersion: _repository.promptVersion,
-          currentDeckIndex: 0,
-          actionHistory: const [],
-          isLoading: false,
-          isGenerating: false,
-          clearError: true,
-          clearFailure: true,
-          clearActionError: true,
-        ),
-      );
+      if (results.isEmpty) {
+        emit(
+          state.copyWith(
+            status: MatchingStatus.empty,
+            profile: profile,
+            matches: const [],
+            failure: const NoMatchesFailure(),
+            promptVersion: _repository.promptVersion,
+            currentDeckIndex: 0,
+            actionHistory: const [],
+            isLoading: false,
+            isGenerating: false,
+            clearError: true,
+            clearActionError: true,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: MatchingStatus.success,
+            profile: profile,
+            matches: results,
+            promptVersion: _repository.promptVersion,
+            currentDeckIndex: 0,
+            actionHistory: const [],
+            isLoading: false,
+            isGenerating: false,
+            clearError: true,
+            clearFailure: true,
+            clearActionError: true,
+          ),
+        );
+      }
     } on MatchingFailure catch (failure) {
       emit(
         state.copyWith(
+          status: failure is NoMatchesFailure
+              ? MatchingStatus.empty
+              : MatchingStatus.failure,
           profile: profile,
           isLoading: false,
           isGenerating: false,
@@ -132,6 +167,7 @@ class MatchingCubit extends Cubit<MatchingState> {
     } catch (error) {
       emit(
         state.copyWith(
+          status: MatchingStatus.failure,
           profile: profile,
           isLoading: false,
           isGenerating: false,

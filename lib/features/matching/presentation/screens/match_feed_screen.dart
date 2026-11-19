@@ -130,24 +130,27 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   }
 
   Widget _buildContent(MatchingState state) {
-    if (state.isLoading || state.isGenerating) return _buildLoadingSkeleton();
+    if (state.status == MatchingStatus.loading ||
+        state.isLoading ||
+        state.isGenerating) {
+      return _buildLoadingSkeleton();
+    }
 
-    if (state.failure is NoMatchesFailure) {
+    if (state.status == MatchingStatus.empty ||
+        state.failure is NoMatchesFailure) {
       return MatchFeedEmptyState(
         hasSkills: state.profile.declaredSkills.isNotEmpty,
         hasReviewedAll: false,
-        onRefresh: _cubit.loadInitialData,
+        onRefresh: _cubit.retry,
         onAddSkills: _openMatchingProfile,
         onConnectGitHub: _openMatchingProfile,
       );
     }
 
-    // Handle other failure types
-    if (state.failure != null) {
-      return ErrorStateWidget(
-        failure: state.failure!,
-        onRetry: state.failure!.retryable ? _cubit.retry : null,
-      );
+    // Handle failure
+    if (state.status == MatchingStatus.failure || state.failure != null) {
+      final failure = state.failure ?? UnknownFailure(state.errorMessage);
+      return ErrorStateWidget(failure: failure, onRetry: _cubit.retry);
     }
 
     // Legacy error message handling
@@ -158,7 +161,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         title: 'Something went wrong',
         message: error,
         actionLabel: 'Retry',
-        onAction: _cubit.loadInitialData,
+        onAction: _cubit.retry,
       );
     }
 
@@ -183,7 +186,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     if (match == null) {
       // Use EmptyMatchesWidget for legitimately empty results
       if (state.matches.isEmpty && !state.hasError) {
-        return EmptyMatchesWidget(onRefresh: _cubit.loadInitialData);
+        return EmptyMatchesWidget(onRefresh: _cubit.retry);
       }
 
       // Legacy empty state
@@ -248,11 +251,18 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
 
   String _greetingName(BuildContext context) {
     AppUser? user;
-    final auth = context.read<AuthCubit>().state;
-    if (auth is AuthAuthenticated) {
-      user = auth.user;
-    } else if (auth is AuthNeedsVerification) {
-      user = auth.user;
+    try {
+      final auth =
+          (context.read<AuthCubit?>() ??
+                  (getIt.isRegistered<AuthCubit>() ? getIt<AuthCubit>() : null))
+              ?.state;
+      if (auth is AuthAuthenticated) {
+        user = auth.user;
+      } else if (auth is AuthNeedsVerification) {
+        user = auth.user;
+      }
+    } catch (_) {
+      // AuthCubit not provided
     }
 
     final display = user?.displayName?.trim() ?? '';
@@ -289,14 +299,32 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               mainAxisSize: MainAxisSize.min,
               spacing: AppSpacing.sm,
               children: [
-                BlocBuilder<AuthCubit, AuthState>(
-                  buildWhen: (prev, next) =>
-                      prev.runtimeType != next.runtimeType ||
-                      (prev is AuthAuthenticated &&
-                          next is AuthAuthenticated &&
-                          prev.user.displayName != next.user.displayName),
-                  builder: (context, _) =>
-                      MatchFeedGreeting(userName: _greetingName(context)),
+                Builder(
+                  builder: (context) {
+                    AuthCubit? authCubit;
+                    try {
+                      authCubit = context.read<AuthCubit>();
+                    } catch (_) {
+                      if (getIt.isRegistered<AuthCubit>()) {
+                        authCubit = getIt<AuthCubit>();
+                      }
+                    }
+                    if (authCubit == null) {
+                      return MatchFeedGreeting(
+                        userName: state.profileName ?? 'there',
+                      );
+                    }
+                    return BlocBuilder<AuthCubit, AuthState>(
+                      bloc: authCubit,
+                      buildWhen: (prev, next) =>
+                          prev.runtimeType != next.runtimeType ||
+                          (prev is AuthAuthenticated &&
+                              next is AuthAuthenticated &&
+                              prev.user.displayName != next.user.displayName),
+                      builder: (context, _) =>
+                          MatchFeedGreeting(userName: _greetingName(context)),
+                    );
+                  },
                 ),
                 ExploreDevSyncSection(items: _buildExploreItems()),
               ],

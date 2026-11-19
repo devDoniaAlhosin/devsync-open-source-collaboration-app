@@ -2,6 +2,8 @@ part of 'matching_cubit.dart';
 
 enum MatchingViewMode { studio, deck }
 
+enum MatchingStatus { initial, loading, success, empty, failure }
+
 class MatchActionRecord extends Equatable {
   const MatchActionRecord({
     required this.index,
@@ -22,6 +24,7 @@ class MatchActionRecord extends Equatable {
 /// State for [MatchingCubit].
 final class MatchingState extends Equatable {
   const MatchingState({
+    this.status = MatchingStatus.initial,
     this.isLoading = false,
     this.isGenerating = false,
     this.isSaving = false,
@@ -37,6 +40,7 @@ final class MatchingState extends Equatable {
     required this.profile,
   });
 
+  final MatchingStatus status;
   final bool isLoading;
   final bool isGenerating;
   final bool isSaving;
@@ -51,6 +55,11 @@ final class MatchingState extends Equatable {
   final String? promptVersion;
   final UserProfile profile;
 
+  bool get isInitial => status == MatchingStatus.initial;
+  bool get isLoadingState => status == MatchingStatus.loading;
+  bool get isSuccess => status == MatchingStatus.success;
+  bool get isEmptyState => status == MatchingStatus.empty;
+  bool get isFailure => status == MatchingStatus.failure;
   String? get profileName => profile.displayName;
   bool get canUndo => actionHistory.isNotEmpty;
   bool get hasMatches => matches.isNotEmpty;
@@ -67,6 +76,7 @@ final class MatchingState extends Equatable {
   }
 
   MatchingState copyWith({
+    MatchingStatus? status,
     bool? isLoading,
     bool? isGenerating,
     bool? isSaving,
@@ -86,6 +96,7 @@ final class MatchingState extends Equatable {
     UserProfile? profile,
   }) {
     return MatchingState(
+      status: status ?? this.status,
       isLoading: isLoading ?? this.isLoading,
       isGenerating: isGenerating ?? this.isGenerating,
       isSaving: isSaving ?? this.isSaving,
@@ -108,6 +119,7 @@ final class MatchingState extends Equatable {
 
   @override
   List<Object?> get props => [
+    status,
     isLoading,
     isGenerating,
     isSaving,
