@@ -9,15 +9,15 @@ second local schema.
 
 | Piece | Status |
 | --- | --- |
-| `projects/{id}` create / edit / list | **Exists** — client writes core fields |
+| `projects/{id}` create / edit / list | **Exists** — client writes core fields; owner-guarded |
 | `views/{id}` daily view docs | **Exists** — `recordView` on project open |
 | Discover / My projects / details UI | **Exists** |
-| `ownerId` + `ownerName` on upsert | **Exists** (resolved from Auth / users doc) — still need every legacy doc filled |
-| Join request create | **Exists** via RequestsCubit — **Needs work:** remove dual write from projects remote if still present |
+| `ownerId` + `ownerName` on upsert | **Exists** — stamped from Auth / users doc; empty owner IDs are rejected |
+| Join request create | **Exists only in RequestsCubit** — projects module has no request writer |
 | AI fields on project (`matchPercentage`, …) | **Exists as read-only** — written by DevSync API / matching, not Flutter |
 | GitHub metrics map | **Exists** — opportunistic client refresh + optional API sync |
-| Firestore rules (owner-only updates) | **Needs work** — tighten |
-| Views sparkline composite index | **Needs work** — deploy `firestore.indexes.json` if Console warns |
+| Firestore rules (owner-only updates) | **Exists** — owner content/delete; counter-only +1 exception |
+| Views sparkline composite index | **Exists** — deploy `firestore.indexes.json` |
 
 Task board / `tasks` collection is **extra** — not part of this contract.
 
@@ -37,8 +37,8 @@ Task board / `tasks` collection is **extra** — not part of this contract.
 | `githubRepo` | string | client | `owner/repo`, derived from `githubUrl`. |
 | `techStack` | array\<string\> | client | |
 | `requiredContributors` | number | client | |
-| `viewsCount` | number | client transaction | Incremented by `views` logging. |
-| `requestsCount` | number | client transaction | Incremented when a request is created. |
+| `viewsCount` | number | client transaction | Incremented once per daily view document. |
+| `requestsCount` | number | requests feature transaction | Incremented once per request document; never double-counted on re-send. |
 | `createdAt` | timestamp | client (create) | Orders the "New" filter. |
 | `updatedAt` | timestamp | client | |
 
@@ -52,12 +52,13 @@ Task board / `tasks` collection is **extra** — not part of this contract.
 | `matchedSkills` | array\<string\> | **DevSync API / matching** | Read-only. |
 | `github` | map | API sync **or** client refresh | `{stars, contributors, openTasks, syncedAt}`. Details screen may refresh when stale. |
 
-### Needs work (projects feature)
+### Guards (implemented)
 
-1. Ensure **every** project doc has non-empty `ownerId` and preferred non-empty `ownerName` (legacy empties break join).
-2. Keep **one** request-create path (RequestsCubit only).
-3. Tighten Firestore rules (owner-only updates where safe).
-4. Confirm views composite index is deployed for weekly sparkline queries.
+1. Every create/edit stamps a non-empty `ownerId` (`request.auth.uid`) and `ownerName` (Auth display name → `users/{uid}` → email local part → `Maintainer`).
+2. Edit runs in a transaction: document must exist, have a non-empty `ownerId`, and match the signed-in user. Legacy unowned docs must be re-created.
+3. Rules: signed-in read; create requires `ownerId == request.auth.uid` and non-empty `ownerName`; update/delete are owner-only, except single +1 counter diffs.
+4. Keep **one** request-create path (RequestsCubit only).
+5. `firestore.indexes.json` contains the weekly views index and the request inbox indexes.
 
 ---
 
@@ -108,21 +109,23 @@ buckets `createdAt` over seven days (needs composite index in
 | `createdAt` | timestamp | |
 | `respondedAt` | timestamp \| null | Set on accept/decline. |
 
-Idempotent create: same sender + project should not double-increment
-`projects.requestsCount`.
+Idempotent create: request id is deterministic — `${senderId}_${projectId}`. A
+pending or accepted request is never duplicated; a declined request is re-opened
+on the same document. `projects.requestsCount` increments exactly once, in the
+same transaction that creates the document (never on re-open).
 
-### Legacy shape — **Needs removal** (older projects-remote path)
+### Legacy shape — removed from the client
 
-Do **not** treat as the contract. If still present in code, delete/guard it:
+The old projects-remote writer (`projectTitle`, `requesterId`, `requesterName`,
+`requesterEmail`, `ownerName`, `matchPercentage`, `updatedAt`) has been deleted.
+Do not reintroduce it; those docs, if present in a database, should be deleted.
 
-`projectTitle`, `requesterId`, `requesterName`, `requesterEmail`, `ownerName`,
-`matchPercentage`, `updatedAt` — conflicts with rules expecting `RequestModel`.
-
-### Needs work
+### Implemented
 
 1. Single writer: `RequestsCubit` / `RequestsRemoteDataSource` only.
-2. Deploy rules matching `RequestModel` / `validRequestData`.
-3. Keep `projects.requestsCount` in sync without double docs.
+2. Rules match `RequestModel` / `validRequestData`, and allow the same
+   transaction to bump `projects.requestsCount` by 1.
+3. No duplicate request documents (deterministic id + transaction).
 
 ---
 

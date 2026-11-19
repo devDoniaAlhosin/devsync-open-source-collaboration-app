@@ -75,13 +75,9 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
     setState(() => _requesting = false);
     if (!sent) return;
 
-    // Mohey's flow persists via RequestsCubit; refresh UI pending flag.
-    if (!project.hasPendingRequest) {
-      context.read<ProjectsCubit>().loadProject(
-        project.copyWith(hasPendingRequest: true),
-        initialStats: stats,
-      );
-    }
+    // The requests feature already persisted the request document. Mirror the
+    // result on the feed instead of re-loading and recording a second view.
+    context.read<ProjectsCubit>().markRequestPending(project.id);
   }
 
   void _previewWorkspace() {

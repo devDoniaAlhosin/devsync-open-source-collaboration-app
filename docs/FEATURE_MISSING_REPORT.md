@@ -100,26 +100,30 @@ Rules, resilient UI, and onboarding flow polish — not a new fake scan.
 
 - Create/edit projects; Discover + My projects  
 - `views` + `viewsCount`  
-- Upsert fills `ownerId` / `ownerName`  
-- Join uses **RequestsCubit** (preferred)  
+- Upsert stamps non-empty `ownerId` / `ownerName` and rejects edits to unowned legacy docs  
+- Join uses **RequestsCubit** only; the projects module no longer writes `requests`  
+- `projects.requestsCount` is incremented once per deterministic request document  
+- Owner-only project rules (content + delete) with viewer read access  
 
 Schema: [projects-firestore-schema.md](projects-firestore-schema.md).
 
+### Done (projects module)
+
+1. **Owner fields** — create/edit guarded in the data source; both fields are non-empty on every write.  
+2. **Single request-create path** — legacy projects writer and `request_to_collaborate` use case removed; `RequestsCubit` / `RequestModel` is the only writer.  
+3. **Rules** — project content/delete owner-only; only `requestsCount` / `viewsCount` +1 diffs are allowed outside ownership (until counters move to Cloud Functions).  
+4. **Indexes** — weekly views + requests indexes added to `firestore.indexes.json`.
+
 ### Missing (detail)
 
-Legacy empty `ownerId`, possible dual request writers, rules, indexes.
+Legacy project docs with empty `ownerId` still need to be fixed or deleted in the demo database. Deploy rules and indexes with `firebase deploy --only firestore`.
 
 ### Guidance — what you need to do
 
-1. **Owner fields** — every project used in demo must have non-empty `ownerId` (and preferred `ownerName`). Guard create/edit; fix or delete bad seed docs.  
-   - **Done when:** Discover → Request to join never hits “missing ownerId”.
-2. **Single request-create path** — only Mohey’s `RequestsCubit` / `RequestModel` (`senderId`, …). Remove or hard-guard the old projects-remote writer (`requesterId` / `projectTitle` shape).  
-   - **Done when:** one code path creates `requests` docs; shape matches rules.
-3. **Tighten rules** — owner-only updates on `projects/{id}` where safe; viewers can read.  
-   - **Done when:** non-owner update is denied in rules.
-4. **Views index** — if sparkline/query fails, deploy composite index from `firestore.indexes.json`.  
-   - **Done when:** weekly views query succeeds in Console/app.
-5. **Later** — rename details screen to avoid clash with matching’s `ProjectDetailsScreen`.
+1. **Deploy** — `firebase deploy --only firestore` after merging.  
+2. **Seed cleanup** — re-create or delete project docs that still have an empty `ownerId`.  
+3. **Verify** — send a request from Discover, accept it in Inbox, and confirm `projects.requestsCount` moved once.  
+4. **Later** — rename details screen to avoid clash with matching’s `ProjectDetailsScreen`.
 
 ### Do / Don’t
 

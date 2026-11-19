@@ -89,6 +89,9 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
       matchPercent: project.matchPercentage,
     );
     if (!mounted || !sent) return;
+
+    // RequestsCubit owns the write; keep the Discover feed in sync locally.
+    context.read<ProjectsCubit>().markRequestPending(project.id);
   }
 
   void _markEntered() {
@@ -96,10 +99,7 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
   }
 
   Widget _listItem(Project project, int index) {
-    final card = KeyedSubtree(
-      key: ValueKey(project.id),
-      child: _card(project),
-    );
+    final card = KeyedSubtree(key: ValueKey(project.id), child: _card(project));
     if (!_hasEntered) {
       return DsItemEnter(
         key: ValueKey('enter-${project.id}'),

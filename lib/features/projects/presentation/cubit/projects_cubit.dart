@@ -11,26 +11,27 @@ import '../../domain/usecases/get_joined_contributions.dart';
 import '../../domain/usecases/get_project_stats.dart';
 import '../../domain/usecases/get_projects.dart';
 import '../../domain/usecases/record_project_view.dart';
-import '../../domain/usecases/request_to_collaborate.dart';
 import '../../domain/usecases/upsert_project.dart';
 
 part 'projects_state.dart';
 
-/// Owns the project feed, the owner's dashboard metrics and all write
+/// Owns the project feed, the owner's dashboard metrics and all project write
 /// operations. Screens either share an instance through `BlocProvider.value`
 /// (shell → editor) or create their own scope (project details).
+///
+/// Collaboration requests are not sent from this cubit. The details and
+/// Discover screens call the requests feature (`presentCollaborationRequestFlow`
+/// → `RequestsCubit`), then call [markRequestPending] to reflect the new state.
 class ProjectsCubit extends Cubit<ProjectsState> {
   ProjectsCubit({
     required GetProjects getProjects,
     required GetProjectStats getProjectStats,
     required UpsertProject upsertProject,
-    required RequestToCollaborate requestToCollaborate,
     required GetJoinedContributions getJoinedContributions,
     required RecordProjectView recordProjectView,
   }) : _getProjects = getProjects,
        _getProjectStats = getProjectStats,
        _upsertProject = upsertProject,
-       _requestToCollaborate = requestToCollaborate,
        _getJoinedContributions = getJoinedContributions,
        _recordProjectView = recordProjectView,
        super(const ProjectsInitial());
@@ -38,7 +39,6 @@ class ProjectsCubit extends Cubit<ProjectsState> {
   final GetProjects _getProjects;
   final GetProjectStats _getProjectStats;
   final UpsertProject _upsertProject;
-  final RequestToCollaborate _requestToCollaborate;
   final GetJoinedContributions _getJoinedContributions;
   final RecordProjectView _recordProjectView;
 
@@ -149,48 +149,35 @@ class ProjectsCubit extends Cubit<ProjectsState> {
     }
   }
 
-  /// Sends a collaboration request. Returns `null` on success.
-  Future<String?> requestToCollaborate(
-    Project project, {
-    String? message,
-  }) async {
-    final result = await _requestToCollaborate(
-      RequestToCollaborateParams(project: project, message: message),
-    );
+  /// Marks [projectId] as requested after the requests feature successfully
+  /// created the request document.
+  ///
+  /// The request write (and the `projects.requestsCount` increment) is owned by
+  /// the requests feature, so the feed only mirrors the result. Guarding on
+  /// [Project.hasPendingRequest] keeps repeated taps from inflating the local
+  /// counter.
+  void markRequestPending(String projectId) {
+    final current = state;
+    if (current is! ProjectsLoaded) return;
 
-    switch (result) {
-      case FailureResult(:final failure):
-        return failure.message;
-      case Success(:final data):
-        final current = state;
-        final loaded = current is ProjectsLoaded ? current : null;
-        final projects = (loaded?.projects ?? <Project>[project])
-            .map((item) {
-              if (item.id != project.id) return item;
-              return item.copyWith(
-                hasPendingRequest: true,
-                requestsCount: data.created
-                    ? item.requestsCount + 1
-                    : item.requestsCount,
-              );
-            })
-            .toList(growable: false);
-
-        emit(
-          ProjectOperationSuccess(
-            projects: projects,
-            stats: Map<String, ProjectStats>.of(
-              loaded?.stats ?? const <String, ProjectStats>{},
-            ),
-            joinedContributors: loaded?.joinedContributors ?? 0,
-            message: data.created
-                ? 'Request sent to ${_maintainerName(project)}.'
-                : 'You already have a pending request for ${project.title}.',
-            operationId: ++_operationId,
+    var changed = false;
+    final projects = <Project>[];
+    for (final project in current.projects) {
+      if (project.id == projectId && !project.hasPendingRequest) {
+        changed = true;
+        projects.add(
+          project.copyWith(
+            hasPendingRequest: true,
+            requestsCount: project.requestsCount + 1,
           ),
         );
-        return null;
+      } else {
+        projects.add(project);
+      }
     }
+
+    if (!changed) return;
+    emit(current.copyWith(projects: projects));
   }
 
   /// Fire-and-forget: a failed view log must never break the details screen.
@@ -213,10 +200,5 @@ class ProjectsCubit extends Cubit<ProjectsState> {
       Success(:final data) => data,
       FailureResult() => null,
     };
-  }
-
-  String _maintainerName(Project project) {
-    final name = project.ownerName.trim();
-    return name.isEmpty ? 'the maintainer' : name;
   }
 }

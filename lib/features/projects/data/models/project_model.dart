@@ -132,16 +132,30 @@ class ProjectModel extends Project {
   }
 
   /// Payload for create/update. Never writes AI or repository-metric fields.
+  ///
+  /// [ownerId] and [ownerName] are supplied by the data source from the signed
+  /// in Firebase session, never from user-controlled form input. Both are
+  /// denormalized on every write so Discover can resolve a maintainer without
+  /// an extra `users/{uid}` read.
   Map<String, Object?> toFirestore({
     required String ownerId,
+    required String ownerName,
     required bool isNew,
   }) {
+    final normalizedOwnerId = ownerId.trim();
+    if (normalizedOwnerId.isEmpty) {
+      throw StateError('A project must be written with a non-empty ownerId.');
+    }
+
+    final normalizedOwnerName = ownerName.trim();
+    if (normalizedOwnerName.isEmpty) {
+      throw StateError('A project must be written with a non-empty ownerName.');
+    }
+
     final now = DateTime.now();
     return {
-      'ownerId': ownerId,
-      'ownerName': ownerName.trim().isNotEmpty
-          ? ownerName.trim()
-          : 'Maintainer',
+      'ownerId': normalizedOwnerId,
+      'ownerName': normalizedOwnerName,
       'title': title.trim(),
       'description': description.trim(),
       'githubUrl': githubUrl.trim(),
