@@ -36,6 +36,7 @@ final class MatchingState extends Equatable {
     this.viewMode = MatchingViewMode.studio,
     this.currentDeckIndex = 0,
     this.actionHistory = const [],
+    this.feedback = const [],
     this.promptVersion,
     required this.profile,
   });
@@ -52,6 +53,7 @@ final class MatchingState extends Equatable {
   final MatchingViewMode viewMode;
   final int currentDeckIndex;
   final List<MatchActionRecord> actionHistory;
+  final List<FeedbackRecord> feedback;
   final String? promptVersion;
   final UserProfile profile;
 
@@ -91,6 +93,7 @@ final class MatchingState extends Equatable {
     MatchingViewMode? viewMode,
     int? currentDeckIndex,
     List<MatchActionRecord>? actionHistory,
+    List<FeedbackRecord>? feedback,
     String? promptVersion,
     bool clearPromptVersion = false,
     UserProfile? profile,
@@ -110,6 +113,7 @@ final class MatchingState extends Equatable {
       viewMode: viewMode ?? this.viewMode,
       currentDeckIndex: currentDeckIndex ?? this.currentDeckIndex,
       actionHistory: actionHistory ?? this.actionHistory,
+      feedback: feedback ?? this.feedback,
       promptVersion: clearPromptVersion
           ? null
           : (promptVersion ?? this.promptVersion),
@@ -131,6 +135,7 @@ final class MatchingState extends Equatable {
     viewMode,
     currentDeckIndex,
     actionHistory,
+    feedback,
     promptVersion,
     profile,
   ];

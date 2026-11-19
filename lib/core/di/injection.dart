@@ -174,6 +174,9 @@ void _registerMatching() {
         getProjects: getIt.isRegistered<GetProjects>()
             ? getIt<GetProjects>()
             : null,
+        getUserFeedbackUseCase: getIt.isRegistered<GetUserFeedbackUseCase>()
+            ? getIt<GetUserFeedbackUseCase>()
+            : null,
       ),
     );
 }

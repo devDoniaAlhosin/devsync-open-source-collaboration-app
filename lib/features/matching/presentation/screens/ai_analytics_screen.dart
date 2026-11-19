@@ -70,29 +70,18 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                   onAction: _cubit.loadInitialData,
                 );
               }
+
+              final analytics = _cubit.analytics;
+              if (analytics.isEmpty) {
+                return const DsEmptyState(
+                  icon: AppIcons.info,
+                  title: 'Rate matches to see insights',
+                  message:
+                      'Swipe or rate projects in your feed to see your matching trends and model transparency.',
+                );
+              }
+
               final matches = state.matches;
-              final ratedActions = state.actionHistory.length;
-              final positiveActions = state.actionHistory
-                  .where((action) => action.action.name == 'request')
-                  .length;
-              final positivePercentage = ratedActions == 0
-                  ? 0
-                  : ((positiveActions / ratedActions) * 100).round();
-              final declaredSkills = state.profile.declaredSkills
-                  .map((skill) => skill.toLowerCase())
-                  .toSet();
-              final skillsMatched = matches
-                  .expand((match) => match.neededSkills)
-                  .map((skill) => skill.toLowerCase())
-                  .where(declaredSkills.contains)
-                  .toSet()
-                  .length;
-              final trendValues = matches.isEmpty
-                  ? const <double>[48, 57, 64]
-                  : matches
-                        .take(5)
-                        .map((match) => match.score.toDouble())
-                        .toList();
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -127,28 +116,30 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                       children: [
                         Expanded(
                           child: AiAnalyticsStatCard(
-                            value: '$ratedActions',
+                            value: '${analytics.ratedCount}',
                             label: 'Matches rated',
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: AiAnalyticsStatCard(
-                            value: '$positivePercentage%',
+                            value: '${analytics.positivePercentage}%',
                             label: 'Positive signals',
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: AiAnalyticsStatCard(
-                            value: '$skillsMatched',
-                            label: 'Skills matched',
+                        if (analytics.skillsMatchedCount != null) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: AiAnalyticsStatCard(
+                              value: '${analytics.skillsMatchedCount}',
+                              label: 'Skills matched',
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    AiAnalyticsTrendChart(trendValues: trendValues),
+                    AiAnalyticsTrendChart(trendValues: analytics.trendValues),
                     const SizedBox(height: AppSpacing.lg),
                     AiAnalyticsTuningCard(
                       selectedPriority: _selectedPriority,

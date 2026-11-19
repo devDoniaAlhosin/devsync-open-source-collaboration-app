@@ -5,7 +5,9 @@ import '../../../../core/usecase/usecase.dart';
 import '../../../projects/domain/usecases/get_projects.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
 import '../../data/models/match_request_model.dart';
+import '../../domain/entities/feedback_record.dart';
 import '../../domain/entities/match_item.dart';
+import '../../domain/entities/matching_analytics.dart';
 import '../../domain/entities/matching_preferences.dart';
 import '../../domain/entities/matching_priority.dart';
 import '../../domain/entities/user_profile.dart';
@@ -13,6 +15,8 @@ import '../../domain/failures/matching_failures.dart';
 import '../../domain/repositories/matching_profile_repository.dart';
 import '../../domain/repositories/matching_repository.dart';
 import '../../domain/usecases/get_ranked_matches_usecase.dart';
+import '../../domain/usecases/get_user_feedback_usecase.dart';
+import '../../domain/utils/matching_analytics_aggregator.dart';
 import '../widgets/draggable_match_card.dart';
 
 part 'matching_state.dart';
@@ -25,12 +29,14 @@ class MatchingCubit extends Cubit<MatchingState> {
     required GetRankedMatchesUseCase getRankedMatchesUseCase,
     MatchingProfileRepository? profileRepository,
     GetProjects? getProjects,
+    GetUserFeedbackUseCase? getUserFeedbackUseCase,
     UserProfile? profile,
   }) : _repository = repository,
        _getRankedMatchesUseCase = getRankedMatchesUseCase,
        _likedMatchesDataSource = likedMatchesDataSource,
        _profileRepository = profileRepository,
        _getProjects = getProjects,
+       _getUserFeedbackUseCase = getUserFeedbackUseCase,
        super(MatchingState(profile: profile ?? UserProfile.empty));
 
   final MatchingRepository _repository;
@@ -38,8 +44,42 @@ class MatchingCubit extends Cubit<MatchingState> {
   final LikedMatchesLocalDataSource _likedMatchesDataSource;
   final MatchingProfileRepository? _profileRepository;
   final GetProjects? _getProjects;
+  final GetUserFeedbackUseCase? _getUserFeedbackUseCase;
 
   bool _lastRequestWasGenerating = false;
+
+  /// Aggregated metrics from real user feedback.
+  MatchingAnalytics get analytics {
+    final projectSkills = <String, List<String>>{};
+    for (final m in state.matches) {
+      projectSkills[m.projectId] = m.neededSkills;
+    }
+    for (final a in state.actionHistory) {
+      projectSkills[a.match.projectId] = a.match.neededSkills;
+    }
+
+    final effectiveFeedback = state.feedback.isNotEmpty
+        ? state.feedback
+        : state.actionHistory
+              .map(
+                (a) => FeedbackRecord(
+                  id: 'history_${a.index}',
+                  userId: state.profile.uid,
+                  projectId: a.match.projectId,
+                  action: a.action == MatchSwipeAction.request
+                      ? 'like'
+                      : 'skip',
+                  timestamp: DateTime.now(),
+                ),
+              )
+              .toList();
+
+    return MatchingAnalyticsAggregator.aggregate(
+      feedback: effectiveFeedback,
+      declaredSkills: state.profile.declaredSkills,
+      projectSkills: projectSkills,
+    );
+  }
 
   Future<void> loadInitialData() => _loadMatches(isGenerating: false);
 
@@ -146,12 +186,23 @@ class MatchingCubit extends Cubit<MatchingState> {
             : state.preferences.selectedTags,
         candidateProjects: candidateProjects,
       );
+
+      List<FeedbackRecord> feedback = state.feedback;
+      final getUserFeedback = _getUserFeedbackUseCase;
+      if (getUserFeedback != null) {
+        final feedbackResult = await getUserFeedback();
+        feedbackResult.fold((_) {}, (records) {
+          feedback = records;
+        });
+      }
+
       if (results.isEmpty) {
         emit(
           state.copyWith(
             status: MatchingStatus.empty,
             profile: profile,
             matches: const [],
+            feedback: feedback,
             failure: const NoMatchesFailure(),
             promptVersion: _repository.promptVersion,
             currentDeckIndex: 0,
@@ -168,6 +219,7 @@ class MatchingCubit extends Cubit<MatchingState> {
             status: MatchingStatus.success,
             profile: profile,
             matches: results,
+            feedback: feedback,
             promptVersion: _repository.promptVersion,
             currentDeckIndex: 0,
             actionHistory: const [],
@@ -306,9 +358,20 @@ class MatchingCubit extends Cubit<MatchingState> {
           removesSavedMatchOnUndo: removeSavedMatchOnUndo,
         ),
       );
+    final feedbackRecords = List<FeedbackRecord>.from(state.feedback)
+      ..add(
+        FeedbackRecord(
+          id: 'action_${state.currentDeckIndex}_${match.projectId}',
+          userId: state.profile.uid,
+          projectId: match.projectId,
+          action: action == MatchSwipeAction.request ? 'like' : 'skip',
+          timestamp: DateTime.now(),
+        ),
+      );
     emit(
       state.copyWith(
         actionHistory: history,
+        feedback: feedbackRecords,
         currentDeckIndex: state.currentDeckIndex + 1,
         isSaving: false,
         clearActionError: true,
@@ -342,9 +405,14 @@ class MatchingCubit extends Cubit<MatchingState> {
     }
     final history = List<MatchActionRecord>.from(state.actionHistory)
       ..removeLast();
+    final feedbackRecords = List<FeedbackRecord>.from(state.feedback);
+    if (feedbackRecords.isNotEmpty) {
+      feedbackRecords.removeLast();
+    }
     emit(
       state.copyWith(
         actionHistory: history,
+        feedback: feedbackRecords,
         currentDeckIndex: last.index,
         isSaving: false,
         clearActionError: true,

@@ -268,6 +268,21 @@ void main() {
         await retryCubit.close();
       },
     );
+
+    test('analytics reflects deck swipe actions and skill overlap', () async {
+      await cubit.loadInitialData();
+      expect(cubit.analytics.isEmpty, isTrue);
+
+      await cubit.performDeckAction(
+        cubit.state.matches.first,
+        MatchSwipeAction.request,
+      );
+
+      expect(cubit.analytics.isEmpty, isFalse);
+      expect(cubit.analytics.ratedCount, 1);
+      expect(cubit.analytics.positivePercentage, 100);
+      expect(cubit.analytics.skillsMatchedCount, 2);
+    });
   });
 
   group('Matching UI Components & Screens', () {
@@ -309,6 +324,10 @@ void main() {
     ) async {
       await tester.runAsync(() async {
         await cubit.loadInitialData();
+        await cubit.performDeckAction(
+          cubit.state.matches.first,
+          MatchSwipeAction.request,
+        );
       });
 
       await tester.pumpWidget(
@@ -321,6 +340,21 @@ void main() {
       expect(find.text('Matches rated'), findsOneWidget);
       expect(find.text('Positive signals'), findsOneWidget);
       expect(find.text('Skills matched'), findsOneWidget);
+    });
+
+    testWidgets('AiAnalyticsScreen renders empty state when zero ratings', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        await cubit.loadInitialData();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(home: AiAnalyticsScreen(cubit: cubit)),
+      );
+      await tester.pump();
+
+      expect(find.text('Rate matches to see insights'), findsOneWidget);
     });
   });
 }
