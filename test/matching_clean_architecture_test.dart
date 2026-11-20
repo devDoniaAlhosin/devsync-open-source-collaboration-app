@@ -384,7 +384,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(home: AiAnalyticsScreen(cubit: cubit)),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('AI Analytics'), findsOneWidget);
       expect(find.text('Recommendation insights'), findsOneWidget);
@@ -403,7 +403,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(home: AiAnalyticsScreen(cubit: cubit)),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Rate matches to see insights'), findsOneWidget);
     });

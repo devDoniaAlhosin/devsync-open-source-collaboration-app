@@ -128,9 +128,9 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                     DsPageHeader(
                       style: DsPageHeaderStyle.page,
                       title: 'Liked matches',
-                      eyebrow: '${_likedMatches.length} saved',
+                      eyebrow: 'Yousef · like/skip',
                       body:
-                          'A heart on Matches saves a project here. Your likes help tune future recommendations.',
+                          'Heart on the feed saves here. Same feedback Emad uses to tune ranking — not a second Favorites product.',
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     DsStagger(

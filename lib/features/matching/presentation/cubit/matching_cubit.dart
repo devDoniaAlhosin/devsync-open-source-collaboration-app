@@ -95,8 +95,9 @@ class MatchingCubit extends Cubit<MatchingState> {
     if (getMatchingAnalytics == null) {
       emit(
         state.copyWith(
-          analyticsErrorMessage: 'Analytics are unavailable right now.',
+          analytics: analytics,
           isLoadingAnalytics: false,
+          clearAnalyticsError: true,
         ),
       );
       return;

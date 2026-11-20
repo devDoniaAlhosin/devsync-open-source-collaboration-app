@@ -12,6 +12,14 @@ service cloud.firestore {
     // MATCHING FEATURE COLLECTIONS
     // ============================================
     
+    // Match Table (Liked Matches Collection per ERD)
+    // Structure: match/{matchId}
+    // Fields: matchId, userId, projectId, score, reason, promptVersion, createdAt
+    match /match/{matchId} {
+      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
     // Liked Matches Collection
     // Structure: liked_matches/{userId}/matches/{projectId}
     // User can read/write their own liked matches

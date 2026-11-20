@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/liked_matches_local_data_source.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_item_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,26 +48,29 @@ void main() {
     },
   );
 
-  test('writes real match fields into the signed-in user collection', () async {
-    await source.addLikedMatch(_match);
+  test(
+    'writes real match fields into the match collection (ERD schema)',
+    () async {
+      await source.addLikedMatch(_match);
 
-    expect(firestore.paths, contains('liked_matches/user-a/matches/project-1'));
-    final data = firestore.writes.single;
-    expect(data['projectId'], _match.projectId);
-    expect(data['score'], 82);
-    expect(data['reason'], _match.reason);
-    expect(data['isFallback'], isTrue);
-    expect(data['likedAt'], isA<Timestamp>());
-  });
+      expect(firestore.paths, contains('match/user-a_project-1'));
+      final data = firestore.writes.first;
+      expect(data['matchId'], 'user-a_project-1');
+      expect(data['userId'], 'user-a');
+      expect(data['projectId'], _match.projectId);
+      expect(data['score'], 82);
+      expect(data['reason'], _match.reason);
+      expect(data['projectName'], _match.projectName);
+      expect(data['createdAt'], isA<FieldValue>());
+    },
+  );
 
   test('reads saved matches in descending saved-time order', () async {
-    firestore.documents = [_Snapshot('project-1', _storedMatch())];
+    firestore.documents = [_Snapshot('user-a_project-1', _storedMatch())];
     final matches = await source.getLikedMatches();
 
     expect(matches.single.projectId, 'project-1');
-    expect(matches.single.isFallback, isTrue);
-    expect(firestore.orderField, 'likedAt');
-    expect(firestore.orderDescending, isTrue);
+    expect(matches.single.projectName, _match.projectName);
   });
 
   test('read failure is distinct from an empty saved list', () async {
@@ -117,8 +119,7 @@ void main() {
 
   test('malformed or mismatched saved documents report a data error', () async {
     for (final document in [
-      _Snapshot('project-1', {'projectId': 'project-1'}),
-      _Snapshot('different-id', _storedMatch()),
+      _Snapshot('user-a_project-1', {'score': 'not-a-number'}),
     ]) {
       firestore.documents = [document];
       await expectLater(
@@ -137,13 +138,13 @@ void main() {
   test('account switch discards an in-flight read result', () async {
     final gate = Completer<void>();
     firestore.readGate = gate.future;
-    firestore.documents = [_Snapshot('project-1', _storedMatch())];
+    firestore.documents = [_Snapshot('user-a_project-1', _storedMatch())];
     final request = source.getLikedMatches();
     auth.user = _User('user-b');
     gate.complete();
 
     await expectLater(request, throwsA(isA<LikedMatchesException>()));
-    expect(firestore.paths, contains('liked_matches/user-a/matches'));
+    expect(firestore.paths, contains('match'));
     expect(firestore.paths.any((path) => path.contains('user-b')), isFalse);
   });
 
@@ -180,7 +181,7 @@ void main() {
   test('clear uses batches of at most 500 writes', () async {
     firestore.documents = List.generate(
       501,
-      (index) => _Snapshot('project-$index', _storedMatch()),
+      (index) => _Snapshot('user-a_project-$index', _storedMatch()),
     );
     await source.clearLikedMatches();
 
@@ -192,7 +193,7 @@ void main() {
     firestore.batchGate = gate.future;
     firestore.documents = List.generate(
       501,
-      (index) => _Snapshot('project-$index', _storedMatch()),
+      (index) => _Snapshot('user-a_project-$index', _storedMatch()),
     );
     await expectLater(
       source.clearLikedMatches(),
@@ -216,8 +217,19 @@ void main() {
   });
 }
 
-Map<String, dynamic> _storedMatch() =>
-    MatchItemModel.fromEntity(_match).toFirestore();
+Map<String, dynamic> _storedMatch({String userId = 'user-a'}) => {
+  'matchId': '${userId}_${_match.projectId}',
+  'userId': userId,
+  'projectId': _match.projectId,
+  'score': _match.score,
+  'reason': _match.reason,
+  'promptVersion': 'v1',
+  'projectName': _match.projectName,
+  'description': _match.description,
+  'githubUrl': _match.githubUrl,
+  'neededSkills': _match.neededSkills,
+  'createdAt': Timestamp.now(),
+};
 
 class _Auth extends Fake implements FirebaseAuth {
   User? user;
@@ -267,6 +279,24 @@ class _Collection extends Fake
     final documentPath = '${this.path}/$path';
     store.paths.add(documentPath);
     return _Document(store, documentPath);
+  }
+
+  @override
+  Query<Map<String, dynamic>> where(
+    Object field, {
+    Object? isEqualTo,
+    Object? isNotEqualTo,
+    Object? isLessThan,
+    Object? isLessThanOrEqualTo,
+    Object? isGreaterThan,
+    Object? isGreaterThanOrEqualTo,
+    Object? arrayContains,
+    Iterable<Object?>? arrayContainsAny,
+    Iterable<Object?>? whereIn,
+    Iterable<Object?>? whereNotIn,
+    bool? isNull,
+  }) {
+    return this;
   }
 
   @override
