@@ -20,7 +20,7 @@ void main() {
     );
     expect(find.text('No matches yet'), findsOneWidget);
     await tester.tap(find.text('Add skills'));
-    await tester.tap(find.text('Connect GitHub'));
+    await tester.tap(find.text('GitHub profile'));
     expect(skills, 1);
     expect(github, 1);
   });
@@ -45,9 +45,9 @@ void main() {
         ),
       ),
     );
-    await tester.ensureVisible(find.text('Connect GitHub'));
+    await tester.ensureVisible(find.text('GitHub profile'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.text('Connect GitHub').hitTestable(), findsOneWidget);
+    expect(find.text('GitHub profile').hitTestable(), findsOneWidget);
   });
 }

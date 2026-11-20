@@ -44,6 +44,11 @@ abstract final class AppIcons {
   static const IconData sparkle = LucideIcons.sparkles;
   static const IconData code = LucideIcons.code;
   static const IconData undo = LucideIcons.undo2;
+  static const IconData user = LucideIcons.user;
+  static const IconData logIn = LucideIcons.logIn;
+  static const IconData wifiOff = LucideIcons.wifiOff;
+  static const IconData alertTriangle = LucideIcons.alertTriangle;
+  static const IconData alertCircle = LucideIcons.alertCircle;
 
   // Feedback / status
   static const IconData info = LucideIcons.info;

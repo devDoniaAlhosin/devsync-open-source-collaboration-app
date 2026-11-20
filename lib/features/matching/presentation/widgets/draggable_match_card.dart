@@ -44,7 +44,7 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
     return Semantics(
       button: widget.onTap != null,
       label:
-          '${widget.match.projectName}. Swipe right to request collaboration, or left to skip.',
+          '${widget.match.projectName}. Swipe right to save this match, or left to skip.',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
@@ -104,12 +104,12 @@ class DraggableMatchCardState extends State<DraggableMatchCard> {
     widget.onAction(action);
   }
 
-  void restoreAfterFailedAction() {
+  void restore() {
     if (!mounted) return;
     setState(() {
-      _isCompleting = false;
-      _isDragging = false;
       _dragOffset = Offset.zero;
+      _isDragging = false;
+      _isCompleting = false;
     });
   }
 
@@ -177,9 +177,6 @@ class _MatchCardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final skills = match.neededSkills.take(3).toList();
-    final metrics = skills.isEmpty
-        ? const ['Skill fit', 'Activity', 'Interest']
-        : skills;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -250,22 +247,32 @@ class _MatchCardContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        for (var index = 0; index < metrics.length; index++) ...[
-          _MatchMetric(
-            label: metrics[index],
-            score: (match.score - index * 9).clamp(38, 100).toDouble(),
+        if (skills.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Skills needed',
+            style: textTheme.labelMedium?.copyWith(
+              color: context.ds.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          if (index < metrics.length - 1) const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final skill in skills)
+                DsChip(label: skill, variant: DsChipVariant.muted),
+            ],
+          ),
         ],
-        const SizedBox(height: AppSpacing.md),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: [
-            for (final skill in skills)
-              DsChip(label: skill, variant: DsChipVariant.muted),
-          ],
-        ),
+        if (match.isFallback) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Skill-based match',
+            style: textTheme.labelSmall?.copyWith(color: context.ds.textMuted),
+          ),
+        ],
       ],
     );
   }
@@ -276,47 +283,6 @@ class _MatchCardContent extends StatelessWidget {
       .take(2)
       .map((part) => part[0])
       .join();
-}
-
-class _MatchMetric extends StatelessWidget {
-  final String label;
-
-  final double score;
-  const _MatchMetric({required this.label, required this.score});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 72,
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: context.ds.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(child: DsScoreMeter(score: score, height: 6, animate: false)),
-        const SizedBox(width: AppSpacing.sm),
-        SizedBox(
-          width: 24,
-          child: Text(
-            score.round().toString(),
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: context.ds.textMuted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _MatchReasonHeading extends StatelessWidget {
@@ -351,7 +317,7 @@ class _SwipeLabel extends StatelessWidget {
           border: Border.all(color: color, width: 2),
         ),
         child: Text(
-          isRequest ? 'REQUEST' : 'SKIP',
+          isRequest ? 'SAVE' : 'SKIP',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             color: color,
             fontWeight: FontWeight.w800,

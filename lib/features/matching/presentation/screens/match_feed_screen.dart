@@ -1,10 +1,9 @@
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/matching_progress_screen.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/di/injection.dart';
-import '../../../../core/result/result.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/navigation/open_host_drawer.dart';
 import '../../../../core/theme/app_animations.dart';
@@ -20,9 +19,12 @@ import '../../../../core/widgets/ds_toast.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../domain/entities/match_item.dart';
+import '../../domain/failures/matching_failures.dart';
 import '../cubit/matching_cubit.dart';
 import '../widgets/ai_studio_content.dart';
 import '../widgets/draggable_match_card.dart';
+import '../widgets/empty_matches_widget.dart';
+import '../widgets/error_state_widget.dart';
 import '../widgets/explore_devsync_section.dart';
 import '../widgets/match_card_skeleton.dart';
 import '../widgets/match_feed_deck_view.dart';
@@ -34,13 +36,10 @@ import 'ai_matching_studio_screen.dart';
 import 'project_details_screen.dart';
 import 'prompt_quality_screen.dart';
 
-/// Screen hosting the AI recommendations and interactive match feed.
 class MatchFeedScreen extends StatefulWidget {
   final MatchingCubit? cubit;
   final MatchingViewMode? initialViewMode;
   final VoidCallback? onMenuPressed;
-
-  /// Switches the host shell to the Profile tab (keeps the drawer).
   final VoidCallback? onOpenProfile;
 
   const MatchFeedScreen({
@@ -77,7 +76,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 state.viewMode == MatchingViewMode.deck &&
                 state.currentDeckMatch == null;
             return Scaffold(
-              backgroundColor: context.ds.background,
               appBar: DsAppBar(
                 title: isEmptyFeed ? 'Your matches' : 'For you',
                 eyebrow: 'DEVSYNC',
@@ -91,7 +89,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 },
                 onNotifications: () =>
                     Navigator.of(context).pushNamed(AppRoutes.notifications),
-                notificationBadge: true,
                 actions: [
                   DsIconButton(
                     icon: AppIcons.bookmark,
@@ -133,7 +130,28 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   }
 
   Widget _buildContent(MatchingState state) {
-    if (state.isLoading) return _buildLoadingSkeleton();
+    if (state.status == MatchingStatus.loading ||
+        state.isLoading ||
+        state.isGenerating) {
+      return _buildLoadingSkeleton();
+    }
+
+    if (state.status == MatchingStatus.empty ||
+        state.failure is NoMatchesFailure) {
+      return MatchFeedEmptyState(
+        hasSkills: state.profile.declaredSkills.isNotEmpty,
+        hasReviewedAll: false,
+        onRefresh: _cubit.retry,
+        onAddSkills: _openMatchingProfile,
+        onConnectGitHub: _openMatchingProfile,
+      );
+    }
+
+    if (state.status == MatchingStatus.failure || state.failure != null) {
+      final failure = state.failure ?? UnknownFailure(state.errorMessage);
+      return ErrorStateWidget(failure: failure, onRetry: _cubit.retry);
+    }
+
     final error = state.errorMessage;
     if (error != null) {
       return DsEmptyState(
@@ -141,9 +159,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         title: 'Something went wrong',
         message: error,
         actionLabel: 'Retry',
-        onAction: _cubit.loadInitialData,
+        onAction: _cubit.retry,
       );
     }
+
     return switch (state.viewMode) {
       MatchingViewMode.studio => _buildStudioView(state),
       MatchingViewMode.deck => _buildDeckView(state),
@@ -163,28 +182,31 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Widget _buildDeckView(MatchingState state) {
     final match = state.currentDeckMatch;
     if (match == null) {
+      if (state.matches.isEmpty && !state.hasError) {
+        return EmptyMatchesWidget(onRefresh: _cubit.retry);
+      }
+
       return MatchFeedEmptyState(
-        onAddSkills: () {
-          if (widget.onOpenProfile != null) {
-            widget.onOpenProfile!();
-            return;
-          }
-          Navigator.of(context).pushNamed(AppRoutes.profile);
-        },
-        onConnectGitHub: () =>
-            Navigator.of(context).pushNamed(AppRoutes.connectGithub),
+        hasSkills: state.profile.declaredSkills.isNotEmpty,
+        hasReviewedAll: state.matches.isNotEmpty,
+        onRefresh: _cubit.loadInitialData,
+        onAddSkills: _openMatchingProfile,
+        onConnectGitHub: _openMatchingProfile,
       );
     }
 
-    return MatchFeedDeckView(
-      cardKey: _cardKey,
-      match: match,
-      nextMatches: state.nextDeckMatches,
-      canUndo: state.canUndo,
-      onUndo: _undoLastDeckAction,
-      onTap: () => _navigateToProjectDetails(match, state),
-      onAction: (action) => _handleDeckAction(match, action),
-      onInfo: () => _showMatchInfo(match),
+    return AbsorbPointer(
+      absorbing: state.isSaving,
+      child: MatchFeedDeckView(
+        cardKey: _cardKey,
+        match: match,
+        nextMatches: state.nextDeckMatches,
+        canUndo: state.canUndo,
+        onUndo: _undo,
+        onTap: () => _navigateToProjectDetails(match, state),
+        onAction: (action) => _handleDeckAction(match, action),
+        onInfo: () => _showMatchInfo(match),
+      ),
     );
   }
 
@@ -200,35 +222,42 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         ),
       ),
       ExploreDevSyncItem(
-        title: 'Task board',
-        subtitle: 'Plan your next\nsprint',
-        onTap: () => Navigator.of(
-          context,
-        ).push(DsFadePageRoute<bool>(builder: (_) => MatchingProgressScreen())),
+        title: 'Refresh matches',
+        subtitle: 'Find new\nrecommendations',
+        onTap: () => Navigator.of(context).push(
+          DsFadePageRoute<bool>(
+            builder: (_) => MatchingProgressScreen(cubit: _cubit),
+          ),
+        ),
       ),
       ExploreDevSyncItem(
         title: 'Insights',
-        subtitle: 'Track contributions',
+        subtitle: 'Review your\nmatch results',
         onTap: _openAnalytics,
       ),
       ExploreDevSyncItem(
-        title: 'Collaboration',
-        subtitle: 'Work with your\nteam',
-        onTap: () => Navigator.of(
-          context,
-        ).push(DsFadePageRoute<bool>(builder: (_) => PromptQualityScreen())),
+        title: 'Prompt guide',
+        subtitle: 'Improve your\npreferences',
+        onTap: () => Navigator.of(context).push(
+          DsFadePageRoute<bool>(builder: (_) => const PromptQualityScreen()),
+        ),
       ),
     ];
   }
 
   String _greetingName(BuildContext context) {
     AppUser? user;
-    final auth = context.read<AuthCubit>().state;
-    if (auth is AuthAuthenticated) {
-      user = auth.user;
-    } else if (auth is AuthNeedsVerification) {
-      user = auth.user;
-    }
+    try {
+      final auth =
+          (context.read<AuthCubit?>() ??
+                  (getIt.isRegistered<AuthCubit>() ? getIt<AuthCubit>() : null))
+              ?.state;
+      if (auth is AuthAuthenticated) {
+        user = auth.user;
+      } else if (auth is AuthNeedsVerification) {
+        user = auth.user;
+      }
+    } catch (_) {}
 
     final display = user?.displayName?.trim() ?? '';
     if (display.isNotEmpty) {
@@ -244,6 +273,14 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     return 'there';
   }
 
+  void _openMatchingProfile() {
+    if (widget.onOpenProfile != null) {
+      widget.onOpenProfile!();
+      return;
+    }
+    Navigator.of(context).pushNamed(AppRoutes.connectGithub);
+  }
+
   Widget _buildPageContent(MatchingState state) {
     return Center(
       child: ConstrainedBox(
@@ -256,19 +293,38 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
               mainAxisSize: MainAxisSize.min,
               spacing: AppSpacing.sm,
               children: [
-                BlocBuilder<AuthCubit, AuthState>(
-                  buildWhen: (prev, next) =>
-                      prev.runtimeType != next.runtimeType ||
-                      (prev is AuthAuthenticated &&
-                          next is AuthAuthenticated &&
-                          prev.user.displayName != next.user.displayName),
-                  builder: (context, _) =>
-                      MatchFeedGreeting(userName: _greetingName(context)),
+                Builder(
+                  builder: (context) {
+                    AuthCubit? authCubit;
+                    try {
+                      authCubit = context.read<AuthCubit>();
+                    } catch (_) {
+                      if (getIt.isRegistered<AuthCubit>()) {
+                        authCubit = getIt<AuthCubit>();
+                      }
+                    }
+                    if (authCubit == null) {
+                      return MatchFeedGreeting(
+                        userName: state.profileName ?? 'there',
+                      );
+                    }
+                    return BlocBuilder<AuthCubit, AuthState>(
+                      bloc: authCubit,
+                      buildWhen: (prev, next) =>
+                          prev.runtimeType != next.runtimeType ||
+                          (prev is AuthAuthenticated &&
+                              next is AuthAuthenticated &&
+                              prev.user.displayName != next.user.displayName),
+                      builder: (context, _) =>
+                          MatchFeedGreeting(userName: _greetingName(context)),
+                    );
+                  },
                 ),
                 ExploreDevSyncSection(items: _buildExploreItems()),
               ],
             ),
-            const SizedBox(height: AppSpacing.xs),
+            
+            
             Expanded(
               child: AnimatedSwitcher(
                 duration: AppAnimations.slow,
@@ -325,8 +381,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       onPromptChanged: _cubit.updatePrompt,
       preferences: state.preferences,
       matches: state.matches,
-      scoringBreakdown: state.analytics.scoringBreakdown,
-      isGenerating: state.isGenerating,
+      availableTags: state.profile.declaredSkills,
+      isGenerating: state.isGenerating || state.isLoading,
       onTagToggled: _cubit.toggleTag,
       onGenerateMatches: _generateMatches,
       onViewProjectDetails: (match) => _navigateToProjectDetails(match, state),
@@ -353,25 +409,26 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     MatchItem match,
     MatchSwipeAction action,
   ) async {
-    final result = await _cubit.performDeckAction(match, action);
+    final success = await _cubit.performDeckAction(match, action);
     if (!mounted) return;
-
-    switch (result) {
-      case Success<void>():
-        final verb = action == MatchSwipeAction.request ? 'liked' : 'skipped';
-        _notify('${match.projectName} $verb', tone: DsToastTone.success);
-      case FailureResult<void>(:final failure):
-        _cardKey.currentState?.restoreAfterFailedAction();
-        _notify(failure.message, tone: DsToastTone.error);
+    if (!success) {
+      _cardKey.currentState?.restore();
+      _notify(
+        _cubit.state.actionErrorMessage ??
+            'Could not save this action. Try again.',
+        tone: DsToastTone.error,
+      );
+      return;
     }
+    final verb = action == MatchSwipeAction.request ? 'saved' : 'skipped';
+    _notify('${match.projectName} $verb', tone: DsToastTone.success);
   }
 
-  Future<void> _undoLastDeckAction() async {
-    final result = await _cubit.undoLastDeckAction();
+  Future<void> _undo() async {
+    await _cubit.undoLastDeckAction();
     if (!mounted) return;
-    if (result case FailureResult<void>(:final failure)) {
-      _notify(failure.message, tone: DsToastTone.error);
-    }
+    final error = _cubit.state.actionErrorMessage;
+    if (error != null) _notify(error, tone: DsToastTone.error);
   }
 
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {

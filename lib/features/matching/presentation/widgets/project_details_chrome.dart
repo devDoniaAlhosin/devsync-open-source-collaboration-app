@@ -36,8 +36,6 @@ class CollaborationAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
-    // Opaque fill required: with [Scaffold.extendBody] a transparent bar
-    // shows the Android window (black) behind the route.
     return Material(
       color: ds.background,
       child: SafeArea(
@@ -93,8 +91,7 @@ abstract final class ProjectWorkspaceSheet {
       context: context,
       backgroundColor: context.ds.surface,
       showDragHandle: true,
-      builder: (sheetContext) =>
-          _ProjectWorkspaceSheet(repositoryUrl: repositoryUrl),
+      builder: (_) => _ProjectWorkspaceSheet(repositoryUrl: repositoryUrl),
     );
   }
 }
@@ -118,11 +115,11 @@ class _ProjectWorkspaceSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Project workspace',
+            'Repository link',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          SelectableText(
             repositoryUrl,
             style: Theme.of(
               context,

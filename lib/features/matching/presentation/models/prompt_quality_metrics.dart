@@ -9,7 +9,6 @@ class PromptQualityVersion {
   final double relevance;
 }
 
-/// A presentation snapshot supplied by the analytics source.
 @immutable
 class PromptQualityMetrics {
   PromptQualityMetrics({
@@ -34,14 +33,4 @@ class PromptQualityMetrics {
     if (versions.length < 2 || versions.first.relevance == 0) return null;
     return (versions.last.relevance / versions.first.relevance - 1) * 100;
   }
-
-  static final demo = PromptQualityMetrics(
-    versions: const [
-      PromptQualityVersion(label: 'v1', relevance: 48),
-      PromptQualityVersion(label: 'v2', relevance: 57),
-      PromptQualityVersion(label: 'v3', relevance: 64),
-    ],
-    averageMatchTime: const Duration(seconds: 2),
-    timelyAlertsPercentage: 98,
-  );
 }

@@ -17,6 +17,7 @@ class Profile {
   const Profile({
     required this.name,
     required this.githubUrl,
+    this.completion = 0,
     required this.bio,
     required this.repos,
     required this.commits,
@@ -25,6 +26,7 @@ class Profile {
     required this.languages,
     required this.skills,
     this.suggestedSkills = const [],
+    this.topRepositories = const [],
   });
 
   factory Profile.empty({required String name}) {
@@ -50,6 +52,7 @@ class Profile {
 
   final String name;
   final String githubUrl;
+  final int completion;
   final String bio;
   final int repos;
   final int commits;
@@ -59,6 +62,7 @@ class Profile {
   final List<LanguageShare> languages;
   final List<String> skills;
   final List<String> suggestedSkills;
+  final List<String> topRepositories;
 
   bool get hasGithub => githubUrl.trim().isNotEmpty;
 
@@ -66,18 +70,11 @@ class Profile {
   bool get needsOnboarding => bio.trim().isEmpty;
 
   String get githubUsername {
-    final parts = githubUrl.split('/').where((p) => p.isNotEmpty).toList();
+    final parts = githubUrl
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
     return parts.isEmpty ? githubUrl : parts.last;
-  }
-
-  int get completion {
-    var done = 0;
-    if (name.trim().isNotEmpty) done++;
-    if (bio.trim().isNotEmpty) done++;
-    if (hasGithub) done++;
-    if (skills.isNotEmpty) done++;
-    if (repos > 0 || languages.isNotEmpty) done++;
-    return done * 100 ~/ 5;
   }
 
   Profile copyWith({
@@ -91,6 +88,7 @@ class Profile {
     List<LanguageShare>? languages,
     List<String>? skills,
     List<String>? suggestedSkills,
+    List<String>? topRepositories,
   }) {
     return Profile(
       name: name ?? this.name,
@@ -103,6 +101,7 @@ class Profile {
       languages: languages ?? this.languages,
       skills: skills ?? this.skills,
       suggestedSkills: suggestedSkills ?? this.suggestedSkills,
+      topRepositories: topRepositories ?? this.topRepositories,
     );
   }
 

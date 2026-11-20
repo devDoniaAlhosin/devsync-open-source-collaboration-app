@@ -1,6 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // User profiles – only the owner can read or write their own document.
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
@@ -269,6 +271,40 @@ service cloud.firestore {
           resource.data.senderId == request.auth.uid
           || resource.data.ownerId == request.auth.uid
         );
+    }
+
+    // Match result cache – each user owns their own cache document.
+    match /matches_cache/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Liked matches – each user owns their own saved matches sub-collection.
+    match /liked_matches/{userId}/matches/{projectId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Match table (liked matches per ERD)
+    match /match/{matchId} {
+      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Legacy matches collection for backward compatibility
+    match /matches/{matchId} {
+      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Feedback (like / skip actions) – each user writes their own records.
+    match /feedback/{feedbackId} {
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.action in ['like', 'skip']
+                    && request.resource.data.projectId is string
+                    && request.resource.data.timestamp is timestamp;
+      allow update, delete: if false;
     }
   }
 }

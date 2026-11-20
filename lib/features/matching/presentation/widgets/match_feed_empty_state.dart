@@ -6,15 +6,20 @@ import '../../../../core/widgets/ds_brand_icon.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_github_icon.dart';
 
-/// Profile setup prompts for a feed with no recommendations.
 class MatchFeedEmptyState extends StatelessWidget {
   final VoidCallback onAddSkills;
 
   final VoidCallback onConnectGitHub;
+  final VoidCallback? onRefresh;
+  final bool hasSkills;
+  final bool hasReviewedAll;
   const MatchFeedEmptyState({
     super.key,
     required this.onAddSkills,
     required this.onConnectGitHub,
+    this.onRefresh,
+    this.hasSkills = false,
+    this.hasReviewedAll = false,
   });
 
   @override
@@ -46,7 +51,9 @@ class MatchFeedEmptyState extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
-                      'No matches yet',
+                      hasReviewedAll
+                          ? 'You have reviewed every match'
+                          : 'No matches yet',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
@@ -56,7 +63,11 @@ class MatchFeedEmptyState extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      "Add a few skills or connect GitHub and we'll find projects worth your time.",
+                      hasReviewedAll
+                          ? 'Your saved projects are in Liked matches. Refresh to check for new recommendations.'
+                          : hasSkills
+                          ? 'No eligible projects were returned. Try again later or update your matching preferences.'
+                          : 'Add your skills to your saved profile to find relevant projects.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: context.ds.textMuted,
@@ -64,10 +75,14 @@ class MatchFeedEmptyState extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
+                    if (onRefresh != null) ...[
+                      DsButton(label: 'Refresh matches', onPressed: onRefresh),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
                     DsButton(label: 'Add skills', onPressed: onAddSkills),
                     const SizedBox(height: AppSpacing.md),
                     DsButton(
-                      label: 'Connect GitHub',
+                      label: 'GitHub profile',
                       leading: DsGithubIcon(
                         size: 18,
                         color: context.ds.textPrimary,

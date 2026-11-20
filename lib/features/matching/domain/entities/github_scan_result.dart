@@ -12,10 +12,8 @@ class GithubScanResult {
   final String username;
   final int publicRepos;
 
-  /// Languages ordered by usage (highest first).
   final List<String> languages;
 
-  /// Percent share per language name (sums to 100 when non-empty).
   final Map<String, int> languagePercents;
 
   final int commitsLastYear;

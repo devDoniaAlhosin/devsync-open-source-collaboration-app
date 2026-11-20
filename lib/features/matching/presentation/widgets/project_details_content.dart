@@ -34,7 +34,6 @@ class ProjectDetailsContent extends StatelessWidget {
               AppSpacing.xl,
               AppSpacing.md,
               AppSpacing.xl,
-              // Clearance for floating CollaborationAction (md + button + lg).
               AppSpacing.md + AppSpacing.buttonHeight + AppSpacing.lg,
             ),
             child: Center(

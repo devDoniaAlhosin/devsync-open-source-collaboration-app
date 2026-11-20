@@ -27,14 +27,15 @@ import '../../features/auth/presentation/cubit/forgot_password_cubit.dart';
 import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/auth/presentation/cubit/verify_code_cubit.dart';
 import '../../features/auth/presentation/cubit/register_cubit.dart';
+import '../../features/matching/data/datasources/liked_matches_local_data_source.dart';
+import '../../features/matching/data/repositories/firestore_feedback_repository.dart';
+import '../../features/matching/data/repositories/firestore_matching_profile_repository.dart';
+import '../../features/matching/domain/repositories/feedback_repository.dart';
+import '../../features/matching/domain/repositories/matching_profile_repository.dart';
 import '../../features/matching/domain/repositories/matching_repository.dart';
-import '../../features/matching/domain/usecases/generate_matches_usecase.dart';
 import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
-import '../../features/matching/data/datasources/matching_feedback_remote_data_source.dart';
-import '../../features/matching/data/repositories/matching_feedback_repository_impl.dart';
-import '../../features/matching/domain/repositories/matching_feedback_repository.dart';
-import '../../features/matching/domain/usecases/save_match_feedback.dart';
+import '../../features/matching/domain/usecases/get_user_feedback_usecase.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
 import '../../features/profile/data/datasources/github_profile_remote_data_source.dart';
@@ -44,6 +45,7 @@ import '../../features/profile/domain/usecases/get_profile.dart';
 import '../../features/profile/domain/usecases/scan_github_profile.dart';
 import '../../features/profile/domain/usecases/update_profile.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
+import '../../features/projects/domain/usecases/get_projects.dart';
 import '../../features/projects/projects_dependencies.dart';
 import '../../features/requests/data/datasources/requests_remote_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
@@ -168,21 +170,58 @@ void _registerMatching() {
   if (getIt.isRegistered<MatchingRepository>()) return;
 
   getIt
-    ..registerLazySingleton<MatchingRepository>(createMatchingRepository)
-    ..registerLazySingleton(
-      () => MatchingFeedbackRemoteDataSource(firestore: getIt(), auth: getIt()),
+    ..registerLazySingleton<MatchingRepository>(
+      () => createMatchingRepository(
+        getIt<FirebaseAuth>(),
+        getIt<FirebaseFirestore>(),
+      ),
+      dispose: (repository) => repository.dispose(),
     )
-    ..registerLazySingleton<MatchingFeedbackRepository>(
-      () => MatchingFeedbackRepositoryImpl(remoteDataSource: getIt()),
+    ..registerLazySingleton<MatchingProfileRepository>(
+      () => FirestoreMatchingProfileRepository(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
     )
-    ..registerLazySingleton(() => SaveMatchFeedback(getIt()))
+    ..registerLazySingleton<LikedMatchesLocalDataSource>(
+      () => FirestoreLikedMatchesDataSource(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
-    ..registerLazySingleton(() => GenerateMatchesUseCase(getIt()))
-    ..registerLazySingleton(() => GetMatchingAnalyticsUseCase(getIt()))
+    ..registerLazySingleton<FeedbackRepository>(
+      () => FirestoreFeedbackRepository(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
+    ..registerLazySingleton(() => GetUserFeedbackUseCase(getIt()))
+    ..registerLazySingleton(
+      () => GetMatchingAnalyticsUseCase(
+        getUserFeedback: getIt<GetUserFeedbackUseCase>(),
+        profileRepository: getIt<MatchingProfileRepository>(),
+        getProjects: getIt.isRegistered<GetProjects>()
+            ? getIt<GetProjects>()
+            : null,
+      ),
+    )
     ..registerFactory(
       () => MatchingCubit(
         repository: getIt<MatchingRepository>(),
-        saveMatchFeedback: getIt<SaveMatchFeedback>(),
+        likedMatchesDataSource: getIt<LikedMatchesLocalDataSource>(),
+        getRankedMatchesUseCase: getIt<GetRankedMatchesUseCase>(),
+        profileRepository: getIt<MatchingProfileRepository>(),
+        getProjects: getIt.isRegistered<GetProjects>()
+            ? getIt<GetProjects>()
+            : null,
+        getUserFeedbackUseCase: getIt.isRegistered<GetUserFeedbackUseCase>()
+            ? getIt<GetUserFeedbackUseCase>()
+            : null,
+        getMatchingAnalyticsUseCase:
+            getIt.isRegistered<GetMatchingAnalyticsUseCase>()
+            ? getIt<GetMatchingAnalyticsUseCase>()
+            : null,
       ),
     );
 }
