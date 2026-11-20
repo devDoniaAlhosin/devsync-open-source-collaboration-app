@@ -82,6 +82,43 @@ void main() {
     );
 
     test(
+      'reads skills, bio, repos from nested profile map (ERD schema)',
+      () async {
+        firestore.documentData['users/user-123'] = {
+          'displayName': 'Lord Of war',
+          'email': 'lordofwar975@gmail.com',
+          'profile': {
+            'name': 'Lord Of war',
+            'bio': 'I am flutter developer',
+            'skills': ['Java', 'dart', 'Flutter', 'Nodejs', 'firebase'],
+            'repos': 5,
+            'commits': 12,
+            'languages': [
+              {'name': 'Dart', 'percent': 80, 'colorArgb': 0},
+              {'name': 'Java', 'percent': 20, 'colorArgb': 0},
+            ],
+          },
+        };
+
+        final result = await repository.getProfile();
+        expect(result, isA<Success<UserProfile>>());
+        result.fold((failure) => fail('Expected Success'), (profile) {
+          expect(profile.declaredSkills, [
+            'Java',
+            'dart',
+            'Flutter',
+            'Nodejs',
+            'firebase',
+          ]);
+          expect(profile.bio, 'I am flutter developer');
+          expect(profile.publicRepoCount, 5);
+          expect(profile.totalContributions, 12);
+          expect(profile.githubLanguages, {'Dart': 80, 'Java': 20});
+        });
+      },
+    );
+
+    test(
       'updateDeclaredSkills writes to both "skills" and "declaredSkills" in users/{uid}',
       () async {
         final result = await repository.updateDeclaredSkills([

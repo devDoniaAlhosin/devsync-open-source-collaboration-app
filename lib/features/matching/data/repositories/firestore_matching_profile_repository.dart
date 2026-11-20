@@ -74,6 +74,7 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
       await _users.doc(user.uid).set({
         'skills': normalized,
         'declaredSkills': normalized,
+        'profile': {'skills': normalized},
         'matchingProfileUpdatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       if (_auth.currentUser?.uid != user.uid) {
@@ -97,6 +98,15 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
       _firestore.collection(FirestoreCollections.users);
 
   UserProfile _profileFromData(User user, Map<String, dynamic> data) {
+    final profileMap = data['profile'] is Map
+        ? Map<String, dynamic>.from(data['profile'] as Map)
+        : const <String, dynamic>{};
+
+    final skillsFromProfileMap = _readStringList(
+      profileMap['skills'],
+      maxItems: 100,
+      maxLength: 100,
+    );
     final skillsFromUsersDoc = _readStringList(
       data['skills'],
       maxItems: 100,
@@ -108,28 +118,59 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
       maxLength: 100,
     );
 
-    // Merge skills from both fields in users/{uid} so skills are always retrieved.
+    // Merge skills from profile map and root fields in users/{uid}
     final mergedSkills = <String>{
+      ...skillsFromProfileMap,
       ...skillsFromUsersDoc,
       ...declaredSkillsList,
     }.toList();
 
+    var languages = _readLanguages(data['githubLanguages']);
+    if (languages.isEmpty && profileMap['languages'] is List) {
+      final langs = <String, int>{};
+      for (final item in profileMap['languages'] as List) {
+        if (item is Map && item['name'] is String && item['percent'] is num) {
+          final name = (item['name'] as String).trim();
+          final percent = (item['percent'] as num).floor();
+          if (name.isNotEmpty && percent >= 0) {
+            langs[name] = percent;
+          }
+        }
+      }
+      if (langs.isNotEmpty) {
+        languages = Map.unmodifiable(langs);
+      }
+    }
+
     return UserProfile(
       uid: user.uid,
       declaredSkills: mergedSkills,
-      githubLanguages: _readLanguages(data['githubLanguages']),
-      publicRepoCount: _readNonNegativeInt(data['publicRepoCount']),
-      totalContributions: _readNonNegativeInt(data['totalContributions']),
-      bio: _readOptionalString(data['bio'], maxLength: 5000),
+      githubLanguages: languages,
+      publicRepoCount: _readNonNegativeInt(
+        data['publicRepoCount'] ?? profileMap['repos'],
+      ),
+      totalContributions: _readNonNegativeInt(
+        data['totalContributions'] ?? profileMap['commits'],
+      ),
+      bio: _readOptionalString(
+        data['bio'] ?? profileMap['bio'],
+        maxLength: 5000,
+      ),
       topRepositories: _readStringList(
         data['topRepositories'],
         maxItems: 50,
         maxLength: 200,
       ),
       displayName:
-          _readOptionalString(data['displayName'], maxLength: 200) ??
+          _readOptionalString(
+            data['displayName'] ?? profileMap['name'],
+            maxLength: 200,
+          ) ??
           user.displayName,
-      githubUrl: _readOptionalString(data['githubUrl'], maxLength: 500),
+      githubUrl: _readOptionalString(
+        data['githubUrl'] ?? profileMap['githubUrl'],
+        maxLength: 500,
+      ),
     );
   }
 
