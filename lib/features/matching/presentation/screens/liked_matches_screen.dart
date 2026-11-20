@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/app_routes.dart';
 import '../../../../core/icons/app_icons.dart';
@@ -15,6 +16,8 @@ import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_page_header.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../projects/domain/entities/project.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../../../core/di/injection.dart';
@@ -42,6 +45,34 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
     super.initState();
     _dataSource = widget.dataSource ?? getIt<LikedMatchesLocalDataSource>();
     _loadLikedMatches();
+  }
+
+  String _currentUserName(BuildContext context) {
+    AppUser? user;
+    try {
+      final auth =
+          (context.read<AuthCubit?>() ??
+                  (getIt.isRegistered<AuthCubit>() ? getIt<AuthCubit>() : null))
+              ?.state;
+      if (auth is AuthAuthenticated) {
+        user = auth.user;
+      } else if (auth is AuthNeedsVerification) {
+        user = auth.user;
+      }
+    } catch (_) {}
+
+    final displayName = user?.displayName?.trim() ?? '';
+    if (displayName.isNotEmpty) {
+      return displayName.split(RegExp(r'\s+')).first;
+    }
+
+    final email = user?.email?.trim() ?? '';
+    if (email.contains('@')) {
+      final localPart = email.split('@').first.trim();
+      if (localPart.isNotEmpty) return localPart;
+    }
+
+    return 'You';
   }
 
   Future<void> _loadLikedMatches() async {
@@ -127,9 +158,9 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                     DsPageHeader(
                       style: DsPageHeaderStyle.page,
                       title: 'Liked matches',
-                      eyebrow: 'Yousef · like/skip',
+                      eyebrow: '${_currentUserName(context)} · like/skip',
                       body:
-                          'Heart on the feed saves here. Same feedback Emad uses to tune ranking — not a second Favorites product.',
+                          'Heart on the feed saves here. Your feedback helps tune ranking — not a second Favorites product.',
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     DsStagger(
@@ -153,7 +184,7 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                               presentCollaborationRequestFlow(
                                 context,
                                 projectName: match.projectName,
-                                maintainerName: 'Karim',
+                                maintainerName: 'Project maintainer',
                                 initials: initialsFromTitle(match.projectName),
                                 projectId: match.projectId,
                                 ownerId: match.maintainerId,

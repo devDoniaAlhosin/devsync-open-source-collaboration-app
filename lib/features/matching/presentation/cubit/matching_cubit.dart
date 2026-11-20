@@ -390,11 +390,18 @@ class MatchingCubit extends Cubit<MatchingState> {
     if (action == MatchSwipeAction.request) {
       emit(state.copyWith(isSaving: true, clearActionError: true));
       try {
-        await _likedMatchesDataSource.addLikedMatch(
-          match,
-          promptVersion: state.promptVersion ?? _repository.promptVersion,
+        final saved = await _likedMatchesDataSource.getLikedMatches();
+        final alreadySaved = saved.any(
+          (savedMatch) => savedMatch.projectId == match.projectId,
         );
-        removeSavedMatchOnUndo = true;
+        if (!alreadySaved) {
+          await _likedMatchesDataSource.addLikedMatch(
+            match,
+            promptVersion: state.promptVersion ?? _repository.promptVersion,
+          );
+          // Undo must not remove a match that was saved before this action.
+          removeSavedMatchOnUndo = true;
+        }
       } on LikedMatchesException catch (error) {
         emit(
           state.copyWith(isSaving: false, actionErrorMessage: error.message),

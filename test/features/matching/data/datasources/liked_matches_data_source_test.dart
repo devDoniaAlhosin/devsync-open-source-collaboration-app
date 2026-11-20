@@ -14,6 +14,7 @@ const _match = MatchItem(
   neededSkills: ['Dart'],
   score: 82,
   reason: 'Dart skills overlap.',
+  maintainerId: 'owner-1',
   isFallback: true,
 );
 
@@ -62,6 +63,7 @@ void main() {
       expect(data['reason'], _match.reason);
       expect(data['promptVersion'], 'ranker-v1');
       expect(data['projectName'], _match.projectName);
+      expect(data['maintainerId'], 'owner-1');
       expect(data['createdAt'], isA<FieldValue>());
     },
   );
@@ -72,6 +74,7 @@ void main() {
 
     expect(matches.single.projectId, 'project-1');
     expect(matches.single.projectName, _match.projectName);
+    expect(matches.single.maintainerId, 'owner-1');
   });
 
   test('read failure is distinct from an empty saved list', () async {
@@ -229,6 +232,7 @@ Map<String, dynamic> _storedMatch({String userId = 'user-a'}) => {
   'description': _match.description,
   'githubUrl': _match.githubUrl,
   'neededSkills': _match.neededSkills,
+  'maintainerId': _match.maintainerId,
   'createdAt': Timestamp.now(),
 };
 

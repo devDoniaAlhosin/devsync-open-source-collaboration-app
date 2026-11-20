@@ -107,6 +107,7 @@ class _CountingRemoteDataSource implements MatchingRemoteDataSource {
 MatchingCubit _buildCubit({
   MatchingRemoteDataSource? remoteDataSource,
   UserProfile? profile,
+  LikedMatchesLocalDataSource? likedMatchesDataSource,
 }) {
   final repository = MatchingRepositoryImpl(
     remoteDataSource: remoteDataSource ?? _DefaultRemoteDataSource(),
@@ -114,7 +115,8 @@ MatchingCubit _buildCubit({
   );
   return MatchingCubit(
     repository: repository,
-    likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
+    likedMatchesDataSource:
+        likedMatchesDataSource ?? InMemoryLikedMatchesDataSource(),
     getRankedMatchesUseCase: GetRankedMatchesUseCase(repository),
     profile: profile ?? _testProfile,
   );
@@ -211,6 +213,24 @@ void main() {
       await cubit.undoLastDeckAction();
       expect(cubit.state.canUndo, isFalse);
       expect(cubit.state.currentDeckIndex, 0);
+    });
+
+    test('undo keeps a match that was liked before this deck action', () async {
+      final likedMatches = InMemoryLikedMatchesDataSource();
+      final repeatCubit = _buildCubit(likedMatchesDataSource: likedMatches);
+      await repeatCubit.loadInitialData();
+      repeatCubit.setViewMode(MatchingViewMode.deck);
+      final firstMatch = repeatCubit.state.currentDeckMatch!;
+      await likedMatches.addLikedMatch(firstMatch);
+
+      await repeatCubit.performDeckAction(firstMatch, MatchSwipeAction.request);
+      await repeatCubit.undoLastDeckAction();
+
+      expect(
+        (await likedMatches.getLikedMatches()).single.projectId,
+        firstMatch.projectId,
+      );
+      await repeatCubit.close();
     });
 
     test(

@@ -92,6 +92,7 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
         description: match.description,
         githubUrl: match.githubUrl,
         neededSkills: match.neededSkills,
+        maintainerId: match.maintainerId?.trim() ?? '',
       );
 
       await collection
@@ -202,7 +203,9 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
       '${userId}_$projectId';
 
   Future<MatchItem> _toMatchItem(MatchRecordModel record) async {
-    if (record.projectName.isNotEmpty && record.neededSkills.isNotEmpty) {
+    if (record.projectName.isNotEmpty &&
+        record.neededSkills.isNotEmpty &&
+        record.maintainerId.isNotEmpty) {
       return MatchItem(
         projectId: record.projectId,
         projectName: record.projectName,
@@ -213,6 +216,7 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
         neededSkills: record.neededSkills,
         score: record.score,
         reason: record.reason,
+        maintainerId: record.maintainerId.isEmpty ? null : record.maintainerId,
       );
     }
 
@@ -261,6 +265,7 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
       neededSkills: record.neededSkills,
       score: record.score,
       reason: record.reason,
+      maintainerId: record.maintainerId.isEmpty ? null : record.maintainerId,
     );
   }
 }

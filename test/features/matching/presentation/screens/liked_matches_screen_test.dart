@@ -37,6 +37,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Liked matches'), findsOneWidget);
+    expect(find.text('You · like/skip'), findsOneWidget);
     expect(find.text('flutter-oss/charts'), findsOneWidget);
     expect(find.text('Needs a Dart contributor'), findsOneWidget);
     expect(find.text('92'), findsOneWidget);

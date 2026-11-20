@@ -322,46 +322,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 ExploreDevSyncSection(items: _buildExploreItems()),
               ],
             ),
-            if (state.hasMatches && state.matches.any((m) => m.isFallback)) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.ds.surfaceAlt,
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    border: Border.all(color: context.ds.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        AppIcons.info,
-                        size: 16,
-                        color: context.ds.textMuted,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          'Basic skill match — AI unavailable',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: context.ds.textMuted,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.xs),
+            
+            
             Expanded(
               child: AnimatedSwitcher(
                 duration: AppAnimations.slow,

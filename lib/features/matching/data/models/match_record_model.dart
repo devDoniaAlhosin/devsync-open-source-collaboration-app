@@ -12,6 +12,7 @@ class MatchRecordModel {
     this.description = '',
     this.githubUrl = '',
     this.neededSkills = const [],
+    this.maintainerId = '',
     this.createdAt,
   });
 
@@ -25,6 +26,7 @@ class MatchRecordModel {
   final String description;
   final String githubUrl;
   final List<String> neededSkills;
+  final String maintainerId;
   final DateTime? createdAt;
 
   factory MatchRecordModel.fromFirestore(
@@ -43,6 +45,7 @@ class MatchRecordModel {
     final projectName = data['projectName'] as String? ?? '';
     final description = data['description'] as String? ?? '';
     final githubUrl = data['githubUrl'] as String? ?? '';
+    final maintainerId = data['maintainerId'] as String? ?? '';
     final neededSkills =
         (data['neededSkills'] as List?)?.whereType<String>().toList(
           growable: false,
@@ -71,6 +74,7 @@ class MatchRecordModel {
       description: description,
       githubUrl: githubUrl,
       neededSkills: neededSkills,
+      maintainerId: maintainerId,
       createdAt: createdAt,
     );
   }
@@ -88,6 +92,7 @@ class MatchRecordModel {
       if (description.isNotEmpty) 'description': description,
       if (githubUrl.isNotEmpty) 'githubUrl': githubUrl,
       if (neededSkills.isNotEmpty) 'neededSkills': neededSkills,
+      if (maintainerId.isNotEmpty) 'maintainerId': maintainerId,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
