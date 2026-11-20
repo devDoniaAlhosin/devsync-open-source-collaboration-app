@@ -1,6 +1,7 @@
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/liked_matches_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_item_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_request_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/models/match_response_model.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
@@ -22,6 +23,55 @@ const _testProfile = UserProfile(
   publicRepoCount: 14,
   totalContributions: 200,
 );
+
+/// Test-only stub that mirrors the original MockMatchingRemoteDataSource sample
+/// data. The production code no longer ships a mock implementation.
+class _DefaultRemoteDataSource implements MatchingRemoteDataSource {
+  @override
+  Future<MatchResponseModel> getMatches(MatchRequestModel request) async {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    return const MatchResponseModel(
+      promptVersion: 'v1-sample',
+      matches: [
+        MatchItemModel(
+          projectId: 'sample-1',
+          projectName: 'flutter/packages',
+          description:
+              'A collection of useful packages maintained by the Flutter team.',
+          githubUrl: 'https://github.com/flutter/packages',
+          neededSkills: ['Flutter', 'Dart', 'CI/CD'],
+          score: 92,
+          reason:
+              'Strong Dart and Flutter activity with CI contributions matching project needs.',
+        ),
+        MatchItemModel(
+          projectId: 'sample-2',
+          projectName: 'appwrite/appwrite',
+          description:
+              'Open-source backend server for web, mobile, and Flutter developers.',
+          githubUrl: 'https://github.com/appwrite/appwrite',
+          neededSkills: ['Flutter', 'REST APIs', 'Docker'],
+          score: 78,
+          reason: 'Flutter SDK experience aligns well; REST API skills are a bonus.',
+        ),
+        MatchItemModel(
+          projectId: 'sample-3',
+          projectName: 'pocketbase/pocketbase',
+          description:
+              'Open-source backend in a single file — real-time DB, auth, file storage.',
+          githubUrl: 'https://github.com/pocketbase/pocketbase',
+          neededSkills: ['Go', 'SQLite', 'REST APIs'],
+          score: 55,
+          reason:
+              'REST API overlap; Go is a growth opportunity given your backend interest.',
+        ),
+      ],
+    );
+  }
+
+  @override
+  void close() {}
+}
 
 class _FailingRemoteDataSource implements MatchingRemoteDataSource {
   _FailingRemoteDataSource([this.failure]);
@@ -58,7 +108,7 @@ MatchingCubit _buildCubit({
   UserProfile? profile,
 }) {
   final repository = MatchingRepositoryImpl(
-    remoteDataSource: remoteDataSource ?? MockMatchingRemoteDataSource(),
+    remoteDataSource: remoteDataSource ?? _DefaultRemoteDataSource(),
     localDataSource: InMemoryMatchingLocalDataSource(),
   );
   return MatchingCubit(
