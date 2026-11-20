@@ -11,6 +11,7 @@ import 'package:devsync_open_source_collaboration_app/features/profile/data/mode
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/insights/activity_bar_chart.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/insights/analytics_explorer_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/insights/milestones_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/shell/presentation/widgets/inbox_badge_builder.dart';
 
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key, this.data});
@@ -35,97 +36,103 @@ class _InsightsScreenState extends State<InsightsScreen> {
     final ds = context.ds;
     final stats = _data.statsFor(_period);
 
-    return Scaffold(
-      backgroundColor: context.ds.background,
-      appBar: DsAppBar(
-        title: 'Insights',
-        eyebrow: 'DEVSYNC',
-        showBack: true,
-        onBack: () => Navigator.of(context).maybePop(),
-        onNotifications: () {
-          Navigator.of(context).pushNamed(AppRoutes.notifications);
-        },
-        notificationBadge: true,
-      ),
-      body: DsPageFade(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenPadding,
-            AppSpacing.lg,
-            AppSpacing.screenPadding,
-            100,
+    return InboxBadgeBuilder(
+      builder: (context, hasUnreadNotifications, _) {
+        return Scaffold(
+          backgroundColor: context.ds.background,
+          appBar: DsAppBar(
+            title: 'Insights',
+            eyebrow: 'DEVSYNC',
+            showBack: true,
+            onBack: () => Navigator.of(context).maybePop(),
+            onNotifications: () {
+              Navigator.of(context).pushNamed(AppRoutes.notifications);
+            },
+            notificationBadge: hasUnreadNotifications,
           ),
-          children: [
-            DsStagger(
-            spacing: AppSpacing.lg,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'CONTRIBUTION REPORT',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: ds.accentText,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 10,
-                      letterSpacing: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Your impact',
-                    style: textTheme.headlineLarge?.copyWith(
-                      color: ds.textPrimary,
-                      fontSize: 32,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'A snapshot of your open-source journey.',
-                    style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
-                  ),
-                ],
+          body: DsPageFade(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.lg,
+                AppSpacing.screenPadding,
+                100,
               ),
-              Row(
-                children: [
-                  Expanded(
-                    child: ProfileStatCard(
-                      value: _data.summaryPrs,
-                      label: 'PRs merged',
+              children: [
+                DsStagger(
+                  spacing: AppSpacing.lg,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CONTRIBUTION REPORT',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: ds.accentText,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10,
+                            letterSpacing: 1.6,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Your impact',
+                          style: textTheme.headlineLarge?.copyWith(
+                            color: ds.textPrimary,
+                            fontSize: 32,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'A snapshot of your open-source journey.',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: ds.textMuted,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: ProfileStatCard(
-                      value: _data.summaryCommits,
-                      label: 'Commits',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ProfileStatCard(
+                            value: _data.summaryPrs,
+                            label: 'PRs merged',
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: ProfileStatCard(
+                            value: _data.summaryCommits,
+                            label: 'Commits',
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: ProfileStatCard(
+                            value: _data.summaryProjects,
+                            label: 'Projects',
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: ProfileStatCard(
-                      value: _data.summaryProjects,
-                      label: 'Projects',
+                    AnalyticsExplorerCard(
+                      period: _period,
+                      stats: stats,
+                      onPeriodChanged: _setPeriod,
                     ),
-                  ),
-                ],
-              ),
-              AnalyticsExplorerCard(
-                period: _period,
-                stats: stats,
-                onPeriodChanged: _setPeriod,
-              ),
-              ActivityBarChart(
-                period: _period,
-                bars: stats.bars,
-                onPeriodChanged: _setPeriod,
-              ),
-              MilestonesCard(milestones: _data.milestones),
-            ],
+                    ActivityBarChart(
+                      period: _period,
+                      bars: stats.bars,
+                      onPeriodChanged: _setPeriod,
+                    ),
+                    MilestonesCard(milestones: _data.milestones),
+                  ],
+                ),
+              ],
+            ),
           ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -58,6 +58,7 @@ import '../../features/notifications/data/repositories/notifications_repository_
 import '../../features/notifications/domain/repositories/notifications_repository.dart';
 import '../../features/notifications/domain/usecases/get_notifications.dart';
 import '../../features/notifications/domain/usecases/mark_notification_read.dart';
+import '../../features/notifications/domain/usecases/watch_unread_notifications.dart';
 import '../../features/notifications/presentation/cubit/notifications_cubit.dart';
 import '../../features/requests/data/datasources/requests_remote_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
@@ -65,8 +66,10 @@ import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
 import '../../features/requests/domain/usecases/get_unavailable_project_ids.dart';
 import '../../features/requests/domain/usecases/update_request_status.dart';
+import '../../features/requests/domain/usecases/watch_pending_received_requests.dart';
 import '../../features/requests/presentation/cubit/requests_cubit.dart';
 import '../../features/requests/domain/usecases/create_request.dart';
+import '../../features/shell/presentation/cubit/inbox_badges_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/profile/domain/usecases/save_github_scan.dart';
 import '../notifications/fcm_service.dart';
@@ -157,6 +160,7 @@ Future<void> configureDependencies({
   registerProjectsDependencies(getIt);
   _registerNotifications();
   _registerRequests();
+  _registerInboxBadges();
   _registerFcmService(onForegroundMessage, onNotificationOpened);
 }
 
@@ -304,6 +308,7 @@ void _registerNotifications() {
     )
     ..registerLazySingleton(() => GetNotifications(getIt()))
     ..registerLazySingleton(() => MarkNotificationRead(getIt()))
+    ..registerLazySingleton(() => WatchUnreadNotifications(getIt()))
     ..registerFactory(
       () => NotificationsCubit(
         getNotifications: getIt(),
@@ -334,6 +339,7 @@ void _registerRequests() {
     ..registerLazySingleton(() => GetUnavailableProjectIds(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
     ..registerLazySingleton(() => CreateRequest(getIt()))
+    ..registerLazySingleton(() => WatchPendingReceivedRequests(getIt()))
     ..registerFactory(
       () => RequestsCubit(
         createRequest: getIt(),
@@ -341,6 +347,18 @@ void _registerRequests() {
         updateRequestStatus: getIt(),
       ),
     );
+}
+
+void _registerInboxBadges() {
+  if (getIt.isRegistered<InboxBadgesCubit>()) return;
+
+  getIt.registerLazySingleton(
+    () => InboxBadgesCubit(
+      watchUnreadNotifications: getIt(),
+      watchPendingReceivedRequests: getIt(),
+    ),
+    dispose: (cubit) => cubit.close(),
+  );
 }
 
 /// Test composition root — register a fake [AuthRepository] first, then call this.

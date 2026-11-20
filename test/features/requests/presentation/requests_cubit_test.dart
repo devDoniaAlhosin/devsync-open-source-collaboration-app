@@ -122,4 +122,7 @@ class _FakeRequestsRepository implements RequestsRepository {
     required String requestId,
     required RequestStatus status,
   }) async => statusResult;
+
+  @override
+  Stream<bool> watchHasPendingReceived() => Stream.value(false);
 }

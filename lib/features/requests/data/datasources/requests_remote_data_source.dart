@@ -57,6 +57,23 @@ class RequestsRemoteDataSource {
     return items;
   }
 
+  /// Emits whether the signed-in user has a pending / isNew received request.
+  Stream<bool> watchHasPendingReceived() {
+    return _auth.authStateChanges().asyncExpand((user) {
+      if (user == null) return Stream.value(false);
+      return _requests
+          .where('ownerId', isEqualTo: user.uid)
+          .snapshots()
+          .map((snapshot) {
+            for (final doc in snapshot.docs) {
+              final status = doc.data()['status'];
+              if (status == 'pending' || status == 'isNew') return true;
+            }
+            return false;
+          });
+    });
+  }
+
   /// Sent requests that block another join attempt for the same project.
   Future<Set<String>> fetchUnavailableProjectIds() async {
     final uid = _uid;

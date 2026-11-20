@@ -23,6 +23,7 @@ import 'package:devsync_open_source_collaboration_app/features/profile/presentat
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/language_breakdown.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/profile_identity.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/profile_stat_card.dart';
+import 'package:devsync_open_source_collaboration_app/features/shell/presentation/widgets/inbox_badge_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -47,55 +48,59 @@ class _ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.ds.background,
-      appBar: DsAppBar(
-        title: 'Your profile',
-        eyebrow: 'ACCOUNT',
-        showMenu: true,
-        onMenu: () {
-          if (onMenuPressed != null) {
-            onMenuPressed!();
-            return;
-          }
-          openHostDrawer(context);
-        },
-        onNotifications: () {
-          Navigator.of(context).pushNamed(AppRoutes.notifications);
-        },
-        notificationBadge: true,
-        onSettings: () {
-          Navigator.of(context).pushNamed(AppRoutes.settings);
-        },
-      ),
-      body: DsPageFade(
-        child: BlocBuilder<ProfileCubit, ProfileState>(
-          builder: (context, state) {
-            return switch (state) {
-              ProfileInitial() ||
-              ProfileLoading() ||
-              ProfileGithubScanning() ||
-              ProfileGithubScanReady() ||
-              ProfileGithubScanFailure() => const Center(
-                child: CircularProgressIndicator(color: AppColors.teal),
-              ),
-              ProfileFailure(:final message) => DsEmptyState(
-                icon: AppIcons.error,
-                title: 'Could not load profile',
-                message: message,
-                actionLabel: 'Retry',
-                onAction: () => context.read<ProfileCubit>().load(),
-              ),
-              ProfileLoaded(:final profile) ||
-              ProfileSaving(:final profile) ||
-              ProfileSaveFailure(:final profile) => _ProfileBody(
-                profile: profile,
-                saving: state is ProfileSaving,
-              ),
-            };
-          },
-        ),
-      ),
+    return InboxBadgeBuilder(
+      builder: (context, hasUnreadNotifications, _) {
+        return Scaffold(
+          backgroundColor: context.ds.background,
+          appBar: DsAppBar(
+            title: 'Your profile',
+            eyebrow: 'ACCOUNT',
+            showMenu: true,
+            onMenu: () {
+              if (onMenuPressed != null) {
+                onMenuPressed!();
+                return;
+              }
+              openHostDrawer(context);
+            },
+            onNotifications: () {
+              Navigator.of(context).pushNamed(AppRoutes.notifications);
+            },
+            notificationBadge: hasUnreadNotifications,
+            onSettings: () {
+              Navigator.of(context).pushNamed(AppRoutes.settings);
+            },
+          ),
+          body: DsPageFade(
+            child: BlocBuilder<ProfileCubit, ProfileState>(
+              builder: (context, state) {
+                return switch (state) {
+                  ProfileInitial() ||
+                  ProfileLoading() ||
+                  ProfileGithubScanning() ||
+                  ProfileGithubScanReady() ||
+                  ProfileGithubScanFailure() => const Center(
+                    child: CircularProgressIndicator(color: AppColors.teal),
+                  ),
+                  ProfileFailure(:final message) => DsEmptyState(
+                    icon: AppIcons.error,
+                    title: 'Could not load profile',
+                    message: message,
+                    actionLabel: 'Retry',
+                    onAction: () => context.read<ProfileCubit>().load(),
+                  ),
+                  ProfileLoaded(:final profile) ||
+                  ProfileSaving(:final profile) ||
+                  ProfileSaveFailure(:final profile) => _ProfileBody(
+                    profile: profile,
+                    saving: state is ProfileSaving,
+                  ),
+                };
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

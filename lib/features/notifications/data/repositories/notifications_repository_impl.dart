@@ -40,6 +40,10 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
     }
   }
 
+  @override
+  Stream<bool> watchHasUnread() => _remote.watchHasUnread();
+
+
   FailureResult<T> _firebaseFailure<T>(FirebaseException e) {
     switch (e.code) {
       case 'permission-denied':

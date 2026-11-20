@@ -13,6 +13,7 @@ import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_tab_switcher.dart';
 import '../../../../core/widgets/ds_toast.dart';
 import '../../domain/entities/project.dart';
+import '../../../shell/presentation/widgets/inbox_badge_builder.dart';
 import '../cubit/projects_cubit.dart';
 import '../widgets/devsync_bottom_nav.dart';
 import '../widgets/project_background.dart';
@@ -264,28 +265,35 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
       body: ProjectBackground(
         child: Column(
           children: [
-            DsAppBar(
-              // Brand eyebrow stays global. Page titles for Discover /
-              // My projects live in the body (DsPageHeader.page).
-              title: _selectedIndex <= 1 ? '' : _title,
-              eyebrow: 'DEVSYNC',
-              showMenu: true,
-              onMenu: _showMenu,
-              actions: [
-                DsIconButton(
-                  icon: AppIcons.notifications,
-                  tooltip: 'Notifications',
-                  onPressed: () {
-                    Navigator.of(context).pushNamed(AppRoutes.notifications);
-                  },
-                ),
-                DsIconButton(
-                  icon: AppIcons.externalLink,
-                  tooltip: 'List a project',
-                  active: true,
-                  onPressed: _openEditor,
-                ),
-              ],
+            InboxBadgeBuilder(
+              builder: (context, hasUnreadNotifications, _) {
+                return DsAppBar(
+                  // Brand eyebrow stays global. Page titles for Discover /
+                  // My projects live in the body (DsPageHeader.page).
+                  title: _selectedIndex <= 1 ? '' : _title,
+                  eyebrow: 'DEVSYNC',
+                  showMenu: true,
+                  onMenu: _showMenu,
+                  actions: [
+                    DsIconButton(
+                      icon: AppIcons.notifications,
+                      tooltip: 'Notifications',
+                      showBadge: hasUnreadNotifications,
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).pushNamed(AppRoutes.notifications);
+                      },
+                    ),
+                    DsIconButton(
+                      icon: AppIcons.externalLink,
+                      tooltip: 'List a project',
+                      active: true,
+                      onPressed: _openEditor,
+                    ),
+                  ],
+                );
+              },
             ),
             Expanded(
               child: BlocListener<ProjectsCubit, ProjectsState>(

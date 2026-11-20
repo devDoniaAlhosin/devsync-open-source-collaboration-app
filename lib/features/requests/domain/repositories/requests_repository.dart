@@ -14,4 +14,7 @@ abstract class RequestsRepository {
     required RequestStatus status,
     required String requestId,
   });
+
+  /// Live signal for the Requests tab green dot (pending received).
+  Stream<bool> watchHasPendingReceived();
 }

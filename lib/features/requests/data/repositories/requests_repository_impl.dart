@@ -31,6 +31,10 @@ class RequestsRepositoryImpl implements RequestsRepository {
   }
 
   @override
+  Stream<bool> watchHasPendingReceived() => _remote.watchHasPendingReceived();
+
+
+  @override
   Future<Result<Set<String>>> getUnavailableProjectIds() async {
     try {
       return Success(await _remote.fetchUnavailableProjectIds());

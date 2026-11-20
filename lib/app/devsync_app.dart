@@ -249,7 +249,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.tasks => const StubScreen(
         title: 'Task board',
         owner: 'Donia',
-        description: 'If-time board for collaboration tasks.',
+        description: 'Task board is not available right now.',
       ),
       AppRoutes.aiInsights => const AiAnalyticsScreen(),
       AppRoutes.insights => const InsightsScreen(),
@@ -257,7 +257,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.community => const StubScreen(
         title: 'Community',
         owner: 'If time',
-        description: 'Community screen is planned after the core freeze.',
+        description: 'Community is not available right now.',
       ),
       AppRoutes.notifications => const NotificationsScreen(),
       _ => null,

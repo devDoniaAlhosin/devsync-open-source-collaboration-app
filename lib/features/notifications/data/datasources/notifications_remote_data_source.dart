@@ -42,6 +42,21 @@ class NotificationsRemoteDataSource {
     await _inbox.doc(id).update({'read': true});
   }
 
+  /// Emits whether the signed-in user has at least one unread inbox doc.
+  Stream<bool> watchHasUnread() {
+    return _auth.authStateChanges().asyncExpand((user) {
+      if (user == null) return Stream.value(false);
+      return _firestore
+          .collection(FirestoreCollections.users)
+          .doc(user.uid)
+          .collection(FirestoreCollections.notifications)
+          .where('read', isEqualTo: false)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.isNotEmpty);
+    });
+  }
+
   AppNotification _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     final created = data['createdAt'];

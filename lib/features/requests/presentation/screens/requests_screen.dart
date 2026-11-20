@@ -12,6 +12,7 @@ import 'package:devsync_open_source_collaboration_app/core/widgets/ds_toast.dart
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/cubit/requests_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/segmented_tabs.dart';
+import 'package:devsync_open_source_collaboration_app/features/shell/presentation/widgets/inbox_badge_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -53,108 +54,116 @@ class _RequestsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.ds.background,
-      appBar: DsAppBar(
-        title: 'Requests',
-        eyebrow: 'INBOX',
-        showMenu: true,
-        onMenu: () {
-          if (onMenuPressed != null) {
-            onMenuPressed!();
-            return;
-          }
-          openHostDrawer(context);
-        },
-        onNotifications: () {
-          Navigator.of(context).pushNamed(AppRoutes.notifications);
-        },
-        notificationBadge: true,
-      ),
-      body: DsPageFade(
-        child: BlocListener<RequestsCubit, RequestsState>(
-          listenWhen: (previous, current) =>
-              current is RequestsLoaded &&
-              current.actionError != null &&
-              current.actionError !=
-                  (previous is RequestsLoaded ? previous.actionError : null),
-          listener: (context, state) {
-            if (state case RequestsLoaded(actionError: final message?)) {
-              showDsToast(context, message, tone: DsToastTone.error);
-            }
-          },
-          child: BlocBuilder<RequestsCubit, RequestsState>(
-            builder: (context, state) {
-              return switch (state) {
-                RequestsInitial() || RequestsLoading() => const Center(
-                  child: CircularProgressIndicator(color: AppColors.teal),
-                ),
-                RequestsFailure(:final message) => DsEmptyState(
-                  icon: AppIcons.error,
-                  title: 'Could not load requests',
-                  message: message,
-                  actionLabel: 'Retry',
-                  onAction: () => context.read<RequestsCubit>().load(),
-                ),
-                RequestsLoaded(:final tab, :final visible) => Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: SegmentedTabs(
-                        index: tab,
-                        onChanged: (i) =>
-                            context.read<RequestsCubit>().setTab(i),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: AppAnimations.normal,
-                        switchInCurve: AppAnimations.emphasized,
-                        switchOutCurve: Curves.easeIn,
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          );
-                        },
-                        child: visible.isEmpty
-                            ? DsEmptyState(
-                                key: ValueKey('empty-$tab'),
-                                icon: AppIcons.inbox,
-                                title: _emptyTitle(tab),
-                                message: _emptyMessage(tab),
-                              )
-                            : ListView.builder(
-                                key: ValueKey(tab),
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  0,
-                                  16,
-                                  24,
-                                ),
-                                itemCount: visible.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: DsItemEnter(
-                                      index: index,
-                                      child: ExpandedRequestCard(
-                                        item: visible[index],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
-              };
+    return InboxBadgeBuilder(
+      builder: (context, hasUnreadNotifications, _) {
+        return Scaffold(
+          backgroundColor: context.ds.background,
+          appBar: DsAppBar(
+            title: 'Requests',
+            eyebrow: 'INBOX',
+            showMenu: true,
+            onMenu: () {
+              if (onMenuPressed != null) {
+                onMenuPressed!();
+                return;
+              }
+              openHostDrawer(context);
             },
+            onNotifications: () {
+              Navigator.of(context).pushNamed(AppRoutes.notifications);
+            },
+            notificationBadge: hasUnreadNotifications,
           ),
-        ),
-      ),
+          body: DsPageFade(
+            child: BlocListener<RequestsCubit, RequestsState>(
+              listenWhen: (previous, current) =>
+                  current is RequestsLoaded &&
+                  current.actionError != null &&
+                  current.actionError !=
+                      (previous is RequestsLoaded
+                          ? previous.actionError
+                          : null),
+              listener: (context, state) {
+                if (state case RequestsLoaded(actionError: final message?)) {
+                  showDsToast(context, message, tone: DsToastTone.error);
+                }
+              },
+              child: BlocBuilder<RequestsCubit, RequestsState>(
+                builder: (context, state) {
+                  return switch (state) {
+                    RequestsInitial() || RequestsLoading() => const Center(
+                      child: CircularProgressIndicator(color: AppColors.teal),
+                    ),
+                    RequestsFailure(:final message) => DsEmptyState(
+                      icon: AppIcons.error,
+                      title: 'Could not load requests',
+                      message: message,
+                      actionLabel: 'Retry',
+                      onAction: () => context.read<RequestsCubit>().load(),
+                    ),
+                    RequestsLoaded(:final tab, :final visible) => Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                          child: SegmentedTabs(
+                            index: tab,
+                            onChanged: (i) =>
+                                context.read<RequestsCubit>().setTab(i),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: AppAnimations.normal,
+                            switchInCurve: AppAnimations.emphasized,
+                            switchOutCurve: Curves.easeIn,
+                            transitionBuilder: (child, animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              );
+                            },
+                            child: visible.isEmpty
+                                ? DsEmptyState(
+                                    key: ValueKey('empty-$tab'),
+                                    icon: AppIcons.inbox,
+                                    title: _emptyTitle(tab),
+                                    message: _emptyMessage(tab),
+                                  )
+                                : ListView.builder(
+                                    key: ValueKey(tab),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      0,
+                                      16,
+                                      24,
+                                    ),
+                                    itemCount: visible.length,
+                                    itemBuilder: (context, index) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: DsItemEnter(
+                                          index: index,
+                                          child: ExpandedRequestCard(
+                                            item: visible[index],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  };
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -18,6 +18,7 @@ import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../../../core/widgets/ds_toast.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../shell/presentation/widgets/inbox_badge_builder.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/failures/matching_failures.dart';
 import '../cubit/matching_cubit.dart';
@@ -74,34 +75,42 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 state.errorMessage == null &&
                 state.viewMode == MatchingViewMode.deck &&
                 state.currentDeckMatch == null;
-            return Scaffold(
-              appBar: DsAppBar(
-                title: isEmptyFeed ? 'Your matches' : 'For you',
-                eyebrow: 'DEVSYNC',
-                showMenu: true,
-                onMenu: () {
-                  if (widget.onMenuPressed != null) {
-                    widget.onMenuPressed!();
-                    return;
-                  }
-                  openHostDrawer(context);
-                },
-                onNotifications: () =>
-                    Navigator.of(context).pushNamed(AppRoutes.notifications),
-                actions: [
-                  DsIconButton(
-                    icon: AppIcons.bookmark,
-                    tooltip: 'Liked matches',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(AppRoutes.likedMatches);
+            return InboxBadgeBuilder(
+              builder: (context, hasUnreadNotifications, _) {
+                return Scaffold(
+                  appBar: DsAppBar(
+                    title: isEmptyFeed ? 'Your matches' : 'For you',
+                    eyebrow: 'DEVSYNC',
+                    showMenu: true,
+                    onMenu: () {
+                      if (widget.onMenuPressed != null) {
+                        widget.onMenuPressed!();
+                        return;
+                      }
+                      openHostDrawer(context);
                     },
+                    onNotifications: () => Navigator.of(
+                      context,
+                    ).pushNamed(AppRoutes.notifications),
+                    notificationBadge: hasUnreadNotifications,
+                    actions: [
+                      DsIconButton(
+                        icon: AppIcons.bookmark,
+                        tooltip: 'Liked matches',
+                        onPressed: () {
+                          Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.likedMatches);
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              body: SafeArea(
-                top: false,
-                child: DsPageFade(child: _buildPageContent(state)),
-              ),
+                  body: SafeArea(
+                    top: false,
+                    child: DsPageFade(child: _buildPageContent(state)),
+                  ),
+                );
+              },
             );
           },
         ),

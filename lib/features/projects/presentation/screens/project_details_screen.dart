@@ -81,14 +81,6 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
     context.read<ProjectsCubit>().markRequestPending(project.id);
   }
 
-  void _previewWorkspace() {
-    showDsToast(
-      context,
-      'Project workspace preview is coming next.',
-      tone: DsToastTone.info,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<ProjectsCubit, ProjectsState>(
@@ -197,13 +189,6 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
                     _buildRepoMetrics(stats),
                     const SizedBox(height: 20),
                     _buildOwnerCard(stats),
-                    const SizedBox(height: 18),
-                    ProjectActionButton(
-                      label: 'Preview project workspace',
-                      trailingIcon: AppIcons.forward,
-                      variant: ProjectActionButtonVariant.secondary,
-                      onPressed: _previewWorkspace,
-                    ),
                   ],
                 ),
               ),
