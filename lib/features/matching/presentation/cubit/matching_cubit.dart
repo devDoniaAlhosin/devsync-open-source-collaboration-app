@@ -83,7 +83,17 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   Future<void> loadInitialData() => _loadMatches(isGenerating: false);
 
-  Future<void> generateMatches() => _loadMatches(isGenerating: true);
+  Future<void> generateMatches([MatchingPreferences? preferences]) async {
+    if (preferences != null) {
+      emit(state.copyWith(preferences: preferences));
+    }
+    await _loadMatches(isGenerating: true);
+  }
+
+  /// Saves updated preferences without immediately triggering generation.
+  void savePreferences(MatchingPreferences preferences) {
+    emit(state.copyWith(preferences: preferences));
+  }
 
   /// Retry the last failed operation, repeating the last request.
   Future<void> retry() async {
@@ -140,8 +150,8 @@ class MatchingCubit extends Cubit<MatchingState> {
       return;
     }
 
-    final prompt = state.preferences.prompt.trim();
-    if (prompt.length > 1000) {
+    final prompt = isGenerating ? state.preferences.prompt.trim() : '';
+    if (isGenerating && prompt.length > 1000) {
       emit(
         state.copyWith(
           status: MatchingStatus.failure,
@@ -178,12 +188,16 @@ class MatchingCubit extends Cubit<MatchingState> {
         });
       }
 
+      final effectivePrompt = isGenerating && prompt.isNotEmpty ? prompt : null;
+      final effectiveTags =
+          isGenerating && state.preferences.selectedTags.isNotEmpty
+          ? state.preferences.selectedTags
+          : null;
+
       final results = await _getRankedMatchesUseCase(
         profile,
-        prompt: prompt.isEmpty ? null : prompt,
-        tags: state.preferences.selectedTags.isEmpty
-            ? null
-            : state.preferences.selectedTags,
+        prompt: effectivePrompt,
+        tags: effectiveTags,
         candidateProjects: candidateProjects,
       );
 

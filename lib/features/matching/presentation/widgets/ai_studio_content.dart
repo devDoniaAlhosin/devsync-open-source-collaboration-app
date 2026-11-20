@@ -97,7 +97,12 @@ class _AiStudioContentState extends State<AiStudioContent> {
             matches: widget.matches,
             onViewProjectDetails: widget.onViewProjectDetails,
           ),
-          AiStudioScoringCard(onExploreAnalytics: widget.onExploreAnalytics),
+          AiStudioScoringCard(
+            source: widget.matches.isNotEmpty
+                ? widget.matches.first.source
+                : null,
+            onExploreAnalytics: widget.onExploreAnalytics,
+          ),
         ],
       ),
     );
