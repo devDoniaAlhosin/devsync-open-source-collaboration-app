@@ -14,7 +14,6 @@ import '../widgets/ai_analytics_transparency_card.dart';
 import '../widgets/ai_analytics_trend_chart.dart';
 import '../widgets/ai_analytics_tuning_card.dart';
 
-/// Displays analytics and insights for recent match results.
 class AiAnalyticsScreen extends StatefulWidget {
   const AiAnalyticsScreen({super.key, this.cubit});
   final MatchingCubit? cubit;

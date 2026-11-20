@@ -9,7 +9,6 @@ import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
 import '../cubit/matching_cubit.dart';
 
-/// Displays progress while generating match recommendations.
 class MatchingProgressScreen extends StatefulWidget {
   const MatchingProgressScreen({super.key, this.cubit});
   final MatchingCubit? cubit;

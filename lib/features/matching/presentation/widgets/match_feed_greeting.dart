@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_brand_icon.dart';
 
-/// Greeting widget displaying the day of week and personalized welcome.
 class MatchFeedGreeting extends StatelessWidget {
   const MatchFeedGreeting({super.key, this.userName = 'there', this.dayName});
 

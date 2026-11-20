@@ -6,7 +6,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../domain/failures/matching_failures.dart';
 
-/// Widget for displaying error states with user-friendly messages and retry.
 class ErrorStateWidget extends StatelessWidget {
   const ErrorStateWidget({required this.failure, this.onRetry, super.key});
 
@@ -24,11 +23,9 @@ class ErrorStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Error icon
             Icon(_getIconForFailure(failure), size: 64, color: ds.textMuted),
             const SizedBox(height: AppSpacing.lg),
 
-            // Error message
             Text(
               failure.userMessage,
               style: textTheme.bodyLarge?.copyWith(color: ds.textPrimary),
@@ -36,7 +33,6 @@ class ErrorStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Retry button (if retryable or onRetry provided)
             if (onRetry != null &&
                 failure is! ProfileIncompleteFailure &&
                 failure is! AuthFailure)

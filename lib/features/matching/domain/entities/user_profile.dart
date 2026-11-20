@@ -1,4 +1,3 @@
-/// Domain model representing the user's matching profile.
 class UserProfile {
   const UserProfile({
     required this.uid,

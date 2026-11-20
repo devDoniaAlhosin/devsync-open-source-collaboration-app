@@ -14,13 +14,6 @@ import '../models/match_item_model.dart';
 import '../models/match_request_model.dart';
 import '../utils/profile_hash.dart';
 
-/// Coordinates remote matching API requests and local caching.
-///
-/// Implements cache-first strategy:
-/// 1. Check cache validity (profile hash + TTL)
-/// 2. Return cached results if valid
-/// 3. Fetch from API if cache miss/expired
-/// 4. Update cache with new results
 class MatchingRepositoryImpl implements MatchingRepository {
   MatchingRepositoryImpl({
     required this.remoteDataSource,
@@ -44,13 +37,11 @@ class MatchingRepositoryImpl implements MatchingRepository {
     Profile? userProfile,
     List<CandidateProject>? candidateProjects,
   }) async {
-    // Generate profile hash for cache validation
     final profileHash = userProfile != null
         ? ProfileHashGenerator.fromProfile(userProfile)
         : _generateHashFromUserProfile(profile);
 
     try {
-      // Try cache first
       final isCacheValid = await cacheDataSource.isCacheValid(profileHash);
       if (isCacheValid) {
         final cachedMatches = await cacheDataSource.getCachedMatches();
@@ -59,7 +50,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
         }
       }
 
-      // Cache miss or expired - fetch from API
       final request = MatchRequestModel.fromProfile(
         profile,
         projects: candidateProjects,
@@ -68,10 +58,8 @@ class MatchingRepositoryImpl implements MatchingRepository {
       );
       final response = await remoteDataSource.getMatches(request);
 
-      // If candidate projects were provided, drop any results whose projectId was not sent
       final allowedIds = candidateProjects?.map((p) => p.projectId).toSet();
 
-      // Filter out non-matching candidates (score <= 0 or missing all required skills or unknown id)
       final relevantMatches = response.matches.where((match) {
         if (allowedIds != null && !allowedIds.contains(match.projectId)) {
           return false;
@@ -88,7 +76,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
         return true;
       }).toList();
 
-      // Check if we got any matching results
       if (relevantMatches.isEmpty) {
         throw const NoMatchesFailure();
       }
@@ -121,7 +108,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
 
       _promptVersion = response.promptVersion;
 
-      // Update cache with new results
       await cacheDataSource.cacheMatches(
         finalMatches,
         profileHash: profileHash,
@@ -133,8 +119,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
         throw const AuthFailure();
       }
       if (error.statusCode == 400) {
-        // The API may reject a profile payload that is valid in Firestore.
-        // If projects were loaded, keep matching usable with saved skills.
         final fallback = _computeFallbackMatches(
           profile: profile,
           candidates: candidateProjects,
@@ -155,11 +139,10 @@ class MatchingRepositoryImpl implements MatchingRepository {
         return List<MatchItem>.unmodifiable(fallback);
       }
 
-      // Map HTTP errors to domain failures
       throw switch (error.statusCode) {
         429 => const RateLimitFailure(),
         >= 500 => const ServerFailure(),
-        0 => const NetworkFailure(), // No status code = network error
+        0 => const NetworkFailure(),
         _ => UnknownFailure(error.message),
       };
     } on SocketException {
@@ -187,7 +170,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
     }
   }
 
-  /// Computes deterministic skill-overlap matches when the AI backend is unavailable.
   List<MatchItemModel>? _computeFallbackMatches({
     required UserProfile profile,
     required List<CandidateProject>? candidates,
@@ -198,7 +180,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
 
     final results = <MatchItemModel>[];
     for (final candidate in candidates) {
-      // Exclude the user's own projects (mirror the AI path)
       if (candidate.maintainerId != null &&
           candidate.maintainerId!.isNotEmpty &&
           candidate.maintainerId == profile.uid) {
@@ -206,15 +187,12 @@ class MatchingRepositoryImpl implements MatchingRepository {
       }
 
       final needed = normalizedSkills(candidate.neededSkills);
-      // Skip projects with no requirements
       if (needed.isEmpty) continue;
 
-      // Actual overlapping skills only
       final matchingSkills = candidate.neededSkills
           .where((skill) => userSkills.contains(skill.trim().toLowerCase()))
           .toList();
 
-      // Skip projects with no overlap
       if (matchingSkills.isEmpty) continue;
 
       final score = (matchingSkills.length / needed.length) * 100;
@@ -236,7 +214,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
       );
     }
 
-    // Sort score desc, id asc
     results.sort((a, b) {
       final byScore = b.score.compareTo(a.score);
       return byScore != 0 ? byScore : a.projectId.compareTo(b.projectId);
@@ -245,9 +222,6 @@ class MatchingRepositoryImpl implements MatchingRepository {
     return results;
   }
 
-  /// Generate hash from UserProfile when Profile entity is not available.
-  ///
-  /// Falls back to basic hash generation using UserProfile fields.
   String _generateHashFromUserProfile(UserProfile profile) {
     return ProfileHashGenerator.fromProfile(
       Profile(

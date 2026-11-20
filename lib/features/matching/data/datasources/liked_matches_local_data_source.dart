@@ -8,7 +8,6 @@ import '../../domain/entities/match_item.dart';
 import '../../../projects/data/models/project_model.dart';
 import '../models/match_record_model.dart';
 
-/// Storage contract for managing liked matches.
 abstract class LikedMatchesLocalDataSource {
   Future<List<MatchItem>> getLikedMatches();
   Future<void> addLikedMatch(MatchItem match, {String? promptVersion});
@@ -16,7 +15,6 @@ abstract class LikedMatchesLocalDataSource {
   Future<void> clearLikedMatches();
 }
 
-/// Firestore implementation for persisting liked matches per user in the `match` collection.
 class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   FirestoreLikedMatchesDataSource({
     required FirebaseFirestore firestore,
@@ -262,7 +260,6 @@ class LikedMatchesException implements Exception {
   String toString() => message;
 }
 
-/// In-memory implementation of liked matches for testing.
 class InMemoryLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   InMemoryLikedMatchesDataSource();
 

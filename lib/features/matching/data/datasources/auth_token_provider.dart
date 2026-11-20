@@ -1,11 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Provides Firebase ID tokens for API calls.
 abstract class AuthTokenProvider {
   Future<String?> getIdToken({bool forceRefresh = false});
 }
 
-/// Firebase Auth implementation of [AuthTokenProvider].
 class FirebaseAuthTokenProvider implements AuthTokenProvider {
   FirebaseAuthTokenProvider(this._firebaseAuth);
 
@@ -28,7 +26,6 @@ class FirebaseAuthTokenProvider implements AuthTokenProvider {
   }
 }
 
-/// Thrown when ID token retrieval fails.
 class AuthTokenException implements Exception {
   const AuthTokenException(this.message);
 

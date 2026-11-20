@@ -3,7 +3,6 @@ import '../../data/models/match_request_model.dart';
 import '../entities/match_item.dart';
 import '../entities/user_profile.dart';
 
-/// Repository contract for fetching and caching match recommendations.
 abstract class MatchingRepository {
   Future<List<MatchItem>> getRankedMatches(
     UserProfile profile, {

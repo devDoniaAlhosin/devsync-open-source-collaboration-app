@@ -12,7 +12,6 @@ import '../widgets/ai_studio_content.dart';
 import 'ai_analytics_screen.dart';
 import 'project_details_screen.dart';
 
-/// Screen for fine-tuning match prompts and preferences.
 class AiMatchingStudioScreen extends StatefulWidget {
   final MatchingCubit? cubit;
 

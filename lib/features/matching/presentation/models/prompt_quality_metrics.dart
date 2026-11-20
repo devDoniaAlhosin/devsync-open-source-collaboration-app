@@ -9,7 +9,6 @@ class PromptQualityVersion {
   final double relevance;
 }
 
-/// UI metrics model for prompt quality evaluation.
 @immutable
 class PromptQualityMetrics {
   PromptQualityMetrics({

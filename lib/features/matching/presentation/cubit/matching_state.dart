@@ -21,7 +21,6 @@ class MatchActionRecord extends Equatable {
   List<Object?> get props => [index, action, match, removesSavedMatchOnUndo];
 }
 
-/// State for [MatchingCubit].
 final class MatchingState extends Equatable {
   const MatchingState({
     this.status = MatchingStatus.initial,

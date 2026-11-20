@@ -2,10 +2,6 @@ import '../../../../core/result/result.dart';
 import '../entities/feedback_record.dart';
 import '../repositories/feedback_repository.dart';
 
-/// Returns the current user's feedback records, deduplicated by project.
-///
-/// Sorted descending by timestamp; latest doc per projectId wins.
-/// Zero feedback → empty list (not a failure).
 class GetUserFeedbackUseCase {
   const GetUserFeedbackUseCase(this._repository);
 
@@ -14,8 +10,6 @@ class GetUserFeedbackUseCase {
   Future<Result<List<FeedbackRecord>>> call() async {
     final result = await _repository.getUserFeedback();
     return result.fold(FailureResult.new, (records) {
-      // Sort descending by timestamp (nulls last), then deduplicate by
-      // projectId keeping the latest record per project.
       final sorted = [...records]
         ..sort((a, b) {
           final ta = a.timestamp;

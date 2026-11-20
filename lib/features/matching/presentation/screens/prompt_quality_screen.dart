@@ -9,10 +9,6 @@ import '../../../../core/widgets/ds_empty_state.dart';
 import '../models/prompt_quality_metrics.dart';
 import '../widgets/prompt_quality_trend.dart';
 
-/// Read-only prompt evaluation snapshot.
-///
-/// Shows "No data yet" when real metrics are unavailable.
-/// Never presents demo data as real.
 class PromptQualityScreen extends StatelessWidget {
   final PromptQualityMetrics? metrics;
 

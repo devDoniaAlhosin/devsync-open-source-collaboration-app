@@ -9,15 +9,6 @@ import '../../../../core/result/result.dart';
 import '../../domain/entities/feedback_record.dart';
 import '../../domain/repositories/feedback_repository.dart';
 
-/// Read-only Firestore implementation for user feedback.
-///
-/// Reads `feedback` where `userId == currentUser.uid` using a one-shot get().
-/// Sorting is done in Dart to avoid a composite index requirement.
-///
-/// NOTE: Firestore rules must allow:
-///   allow read: if request.auth != null
-///               && request.auth.uid == resource.data.userId;
-/// (Coordinate with Yousef if the read returns PERMISSION_DENIED.)
 class FirestoreFeedbackRepository implements FeedbackRepository {
   const FirestoreFeedbackRepository({
     required FirebaseFirestore firestore,
@@ -53,8 +44,6 @@ class FirestoreFeedbackRepository implements FeedbackRepository {
         final action = data['action'] as String?;
         final promptVersion = data['promptVersion'] as String?;
 
-        // Skip malformed docs silently; unknown actions are kept — the use
-        // case or caller decides what to do with them.
         if (projectId == null || userId == null || action == null) continue;
 
         DateTime? timestamp;

@@ -7,7 +7,6 @@ import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
 import '../../domain/entities/match_item.dart';
 
-/// Card presenting ranked matches in AI Studio, mirroring the feed.
 class AiStudioSuggestedMatchesCard extends StatelessWidget {
   const AiStudioSuggestedMatchesCard({
     super.key,

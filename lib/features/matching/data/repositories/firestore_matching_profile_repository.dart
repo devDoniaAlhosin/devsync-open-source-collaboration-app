@@ -7,7 +7,6 @@ import '../../../../core/result/result.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/matching_profile_repository.dart';
 
-/// Loads and updates user matching profile data from Firestore `users/{uid}`.
 class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
   FirestoreMatchingProfileRepository({
     required FirebaseFirestore firestore,
@@ -118,7 +117,6 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
       maxLength: 100,
     );
 
-    // Merge skills from profile map and root fields in users/{uid}
     final mergedSkills = <String>{
       ...skillsFromProfileMap,
       ...skillsFromUsersDoc,

@@ -1,6 +1,5 @@
 import '../../domain/entities/user_profile.dart';
 
-/// Candidate project payload for client-sourced candidate matching.
 class CandidateProject {
   const CandidateProject({
     required this.projectId,
@@ -42,7 +41,6 @@ class CandidateProject {
       );
 }
 
-/// Request payload sent to `POST /matches/generate`.
 class MatchRequestModel {
   const MatchRequestModel({
     required this.uid,

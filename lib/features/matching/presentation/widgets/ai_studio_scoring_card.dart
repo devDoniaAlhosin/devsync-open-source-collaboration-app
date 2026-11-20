@@ -5,7 +5,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../domain/entities/match_item.dart';
 
-/// Displays an overview of how matching scores are calculated without invented weights.
 class AiStudioScoringCard extends StatelessWidget {
   const AiStudioScoringCard({
     super.key,

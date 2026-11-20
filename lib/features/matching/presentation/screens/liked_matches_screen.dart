@@ -22,7 +22,6 @@ import '../../domain/entities/match_item.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
 import 'project_details_screen.dart';
 
-/// Screen displaying saved and liked project matches.
 class LikedMatchesScreen extends StatefulWidget {
   const LikedMatchesScreen({super.key, this.dataSource});
 

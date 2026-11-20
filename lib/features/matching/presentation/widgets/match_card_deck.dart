@@ -53,7 +53,6 @@ class MatchCardDeck extends StatelessWidget {
   }
 }
 
-/// Visual layer peeking beneath the top card in the deck.
 class _DeckPeek extends StatelessWidget {
   const _DeckPeek({required this.depth, this.match});
 

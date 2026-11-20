@@ -1,6 +1,5 @@
 import 'matching_priority.dart';
 
-/// User's match preferences and AI prompt tuning parameters.
 class MatchingPreferences {
   const MatchingPreferences({
     required this.prompt,

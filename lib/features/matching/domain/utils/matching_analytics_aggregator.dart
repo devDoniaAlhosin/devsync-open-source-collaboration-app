@@ -1,18 +1,9 @@
 import '../entities/feedback_record.dart';
 import '../entities/matching_analytics.dart';
 
-/// Aggregates raw feedback records and project/profile data into [MatchingAnalytics].
 class MatchingAnalyticsAggregator {
   const MatchingAnalyticsAggregator._();
 
-  /// Computes [MatchingAnalytics] from real user feedback.
-  ///
-  /// - [ratedCount] = count of feedback records.
-  /// - [positivePercentage] = likes ÷ rated * 100 (null if rated == 0).
-  /// - [trendValues] = positive % per day, chronologically ascending.
-  ///   Empty if fewer than 2 distinct days.
-  /// - [skillsMatchedCount] = overlap between [declaredSkills] and skills of
-  ///   liked projects from [projectSkills]. Null if not computable.
   static MatchingAnalytics aggregate({
     required List<FeedbackRecord> feedback,
     required List<String> declaredSkills,
@@ -26,7 +17,6 @@ class MatchingAnalyticsAggregator {
     final likes = feedback.where((f) => f.isLike).toList();
     final positivePercentage = ((likes.length / ratedCount) * 100).round();
 
-    // Trend: positive % per day (needs >= 2 distinct days)
     final dailyTotal = <DateTime, int>{};
     final dailyLikes = <DateTime, int>{};
 
@@ -52,8 +42,6 @@ class MatchingAnalyticsAggregator {
       trendValues = const [];
     }
 
-    // Skills matched: computable only if we have project skills for liked projects
-    // and the user has declared skills.
     int? skillsMatchedCount;
     if (projectSkills != null &&
         declaredSkills.isNotEmpty &&

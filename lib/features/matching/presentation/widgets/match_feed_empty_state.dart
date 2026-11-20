@@ -6,7 +6,6 @@ import '../../../../core/widgets/ds_brand_icon.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_github_icon.dart';
 
-/// Empty state view when no matching projects are available.
 class MatchFeedEmptyState extends StatelessWidget {
   final VoidCallback onAddSkills;
 

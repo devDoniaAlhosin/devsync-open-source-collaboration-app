@@ -7,7 +7,6 @@ import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_chip.dart';
 import '../../domain/entities/matching_priority.dart';
 
-/// Card for selecting recommendation prioritization and refining the prompt.
 class AiAnalyticsTuningCard extends StatelessWidget {
   const AiAnalyticsTuningCard({
     super.key,

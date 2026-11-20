@@ -35,7 +35,6 @@ import 'ai_matching_studio_screen.dart';
 import 'project_details_screen.dart';
 import 'prompt_quality_screen.dart';
 
-/// Main matching screen with recommendations deck.
 class MatchFeedScreen extends StatefulWidget {
   final MatchingCubit? cubit;
   final MatchingViewMode? initialViewMode;
@@ -147,13 +146,11 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       );
     }
 
-    // Handle failure
     if (state.status == MatchingStatus.failure || state.failure != null) {
       final failure = state.failure ?? UnknownFailure(state.errorMessage);
       return ErrorStateWidget(failure: failure, onRetry: _cubit.retry);
     }
 
-    // Legacy error message handling
     final error = state.errorMessage;
     if (error != null) {
       return DsEmptyState(
@@ -184,12 +181,10 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   Widget _buildDeckView(MatchingState state) {
     final match = state.currentDeckMatch;
     if (match == null) {
-      // Use EmptyMatchesWidget for legitimately empty results
       if (state.matches.isEmpty && !state.hasError) {
         return EmptyMatchesWidget(onRefresh: _cubit.retry);
       }
 
-      // Legacy empty state
       return MatchFeedEmptyState(
         hasSkills: state.profile.declaredSkills.isNotEmpty,
         hasReviewedAll: state.matches.isNotEmpty,
@@ -261,9 +256,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       } else if (auth is AuthNeedsVerification) {
         user = auth.user;
       }
-    } catch (_) {
-      // AuthCubit not provided
-    }
+    } catch (_) {}
 
     final display = user?.displayName?.trim() ?? '';
     if (display.isNotEmpty) {

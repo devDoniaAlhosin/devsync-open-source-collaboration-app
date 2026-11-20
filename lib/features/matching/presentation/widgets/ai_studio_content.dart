@@ -10,7 +10,6 @@ import 'ai_studio_preferences_card.dart';
 import 'ai_studio_scoring_card.dart';
 import 'ai_studio_suggested_matches_card.dart';
 
-/// AI studio layout widget for tuning prompts and inspecting recommendations.
 class AiStudioContent extends StatefulWidget {
   const AiStudioContent({
     super.key,

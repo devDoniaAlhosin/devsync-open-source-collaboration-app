@@ -1,7 +1,3 @@
-/// Domain failures for the matching feature.
-///
-/// These provide user-friendly error messages and indicate whether
-/// the error is retryable.
 sealed class MatchingFailure {
   const MatchingFailure({
     required this.message,
@@ -9,17 +5,13 @@ sealed class MatchingFailure {
     required this.retryable,
   });
 
-  /// Technical error message (for logging/debugging).
   final String message;
 
-  /// User-friendly error message to display in UI.
   final String userMessage;
 
-  /// Whether the user can retry this operation.
   final bool retryable;
 }
 
-/// Network connectivity failure.
 class NetworkFailure extends MatchingFailure {
   const NetworkFailure()
     : super(
@@ -30,7 +22,6 @@ class NetworkFailure extends MatchingFailure {
       );
 }
 
-/// Authentication/authorization failure.
 class AuthFailure extends MatchingFailure {
   const AuthFailure()
     : super(
@@ -40,7 +31,6 @@ class AuthFailure extends MatchingFailure {
       );
 }
 
-/// Rate limit exceeded.
 class RateLimitFailure extends MatchingFailure {
   const RateLimitFailure()
     : super(
@@ -50,7 +40,6 @@ class RateLimitFailure extends MatchingFailure {
       );
 }
 
-/// Server error (5xx).
 class ServerFailure extends MatchingFailure {
   const ServerFailure()
     : super(
@@ -60,7 +49,6 @@ class ServerFailure extends MatchingFailure {
       );
 }
 
-/// No matches found (not really an error, informational).
 class NoMatchesFailure extends MatchingFailure {
   const NoMatchesFailure()
     : super(
@@ -71,7 +59,6 @@ class NoMatchesFailure extends MatchingFailure {
       );
 }
 
-/// Profile not found or incomplete.
 class ProfileIncompleteFailure extends MatchingFailure {
   const ProfileIncompleteFailure()
     : super(
@@ -82,7 +69,6 @@ class ProfileIncompleteFailure extends MatchingFailure {
       );
 }
 
-/// Invalid request data.
 class ValidationFailure extends MatchingFailure {
   const ValidationFailure(String details)
     : super(
@@ -92,7 +78,6 @@ class ValidationFailure extends MatchingFailure {
       );
 }
 
-/// Generic/unknown failure.
 class UnknownFailure extends MatchingFailure {
   const UnknownFailure([String? details])
     : super(

@@ -8,7 +8,6 @@ import '../repositories/matching_profile_repository.dart';
 import '../utils/matching_analytics_aggregator.dart';
 import 'get_user_feedback_usecase.dart';
 
-/// Loads read-only feedback and supporting profile/project data for analytics.
 class GetMatchingAnalyticsUseCase {
   const GetMatchingAnalyticsUseCase({
     required GetUserFeedbackUseCase getUserFeedback,

@@ -22,7 +22,6 @@ import '../widgets/draggable_match_card.dart';
 
 part 'matching_state.dart';
 
-/// Coordinates matching state, recommendations, and card actions.
 class MatchingCubit extends Cubit<MatchingState> {
   MatchingCubit({
     required MatchingRepository repository,
@@ -52,9 +51,6 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   bool _lastRequestWasGenerating = false;
 
-  /// Analytics view used by existing in-memory deck action consumers.
-  /// The AI Analytics screen reads [MatchingState.analytics], loaded from the
-  /// dedicated read-only use case.
   MatchingAnalytics get analytics {
     final projectSkills = <String, List<String>>{};
     for (final match in state.matches) {
@@ -87,7 +83,6 @@ class MatchingCubit extends Cubit<MatchingState> {
     );
   }
 
-  /// Loads analytics without requesting or changing ranked matches.
   Future<void> loadAnalytics() async {
     if (state.isLoadingAnalytics) return;
 
@@ -144,12 +139,10 @@ class MatchingCubit extends Cubit<MatchingState> {
     await _loadMatches(isGenerating: true);
   }
 
-  /// Saves updated preferences without immediately triggering generation.
   void savePreferences(MatchingPreferences preferences) {
     emit(state.copyWith(preferences: preferences));
   }
 
-  /// Retry the last failed operation, repeating the last request.
   Future<void> retry() async {
     if (_lastRequestWasGenerating) {
       await generateMatches();
@@ -347,7 +340,6 @@ class MatchingCubit extends Cubit<MatchingState> {
     return profile;
   }
 
-  /// Saves updated declared skills to user profile.
   Future<bool> saveDeclaredSkills(List<String> skills) async {
     final profileRepository = _profileRepository;
     if (profileRepository == null || state.isSaving) return false;
@@ -378,7 +370,6 @@ class MatchingCubit extends Cubit<MatchingState> {
     return true;
   }
 
-  /// Handles swipe actions on deck cards.
   Future<bool> performDeckAction(
     MatchItem match,
     MatchSwipeAction action,

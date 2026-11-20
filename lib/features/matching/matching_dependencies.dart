@@ -8,7 +8,6 @@ import 'data/datasources/matching_local_data_source.dart';
 import 'data/repositories/matching_repository_impl.dart';
 import 'domain/repositories/matching_repository.dart';
 
-/// Creates the production [MatchingRepository] instance.
 MatchingRepository createMatchingRepository(
   FirebaseAuth firebaseAuth,
   FirebaseFirestore firebaseFirestore,

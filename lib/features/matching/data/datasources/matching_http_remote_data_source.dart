@@ -7,7 +7,6 @@ import '../models/match_response_model.dart';
 import 'auth_token_provider.dart';
 import 'matching_remote_data_source.dart';
 
-/// Remote data source calling `POST /matches/generate`.
 class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
   MatchingHttpRemoteDataSource({
     required AuthTokenProvider authTokenProvider,
@@ -42,7 +41,6 @@ class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
     try {
       var token = await _getToken();
       var response = await _send(request, token);
-      // Retry once on 401 with refreshed token.
       if (response.statusCode == HttpStatus.unauthorized) {
         token = await _getToken(forceRefresh: true);
         response = await _send(request, token);
@@ -156,7 +154,6 @@ class MatchingHttpRemoteDataSource implements MatchingRemoteDataSource {
   }
 }
 
-/// Safe, user-facing failure from the matching API.
 class MatchingApiException implements Exception {
   const MatchingApiException(this.message, {this.statusCode = 0});
 

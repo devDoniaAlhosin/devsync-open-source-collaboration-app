@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Firestore representation of a user's liked match row matching the ERD schema.
 class MatchRecordModel {
   const MatchRecordModel({
     required this.userId,

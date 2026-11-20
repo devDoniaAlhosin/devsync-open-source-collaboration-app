@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 
-/// Card showing bar chart visual of match relevance trend across sessions.
 class AiAnalyticsTrendChart extends StatelessWidget {
   const AiAnalyticsTrendChart({super.key, required this.trendValues});
 

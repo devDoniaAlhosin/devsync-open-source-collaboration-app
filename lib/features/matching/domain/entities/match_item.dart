@@ -1,6 +1,5 @@
 enum MatchSource { ai, fallback }
 
-/// Represents a ranked project match.
 class MatchItem {
   const MatchItem({
     required this.projectId,

@@ -6,7 +6,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import 'match_card_skeleton.dart';
 
-/// Progress indicator content shown while generating matches.
 class MatchingProgressContent extends StatelessWidget {
   final MatchingProgressPhase phase;
 

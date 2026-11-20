@@ -6,7 +6,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_icon.dart';
 
-/// Card displaying data policy and privacy guarantees.
 class AiAnalyticsTransparencyCard extends StatelessWidget {
   const AiAnalyticsTransparencyCard({super.key});
 

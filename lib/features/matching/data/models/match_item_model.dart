@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/match_item.dart';
 
-/// Data model for [MatchItem] serialization with JSON and Firestore.
 class MatchItemModel extends MatchItem {
   const MatchItemModel({
     required super.projectId,

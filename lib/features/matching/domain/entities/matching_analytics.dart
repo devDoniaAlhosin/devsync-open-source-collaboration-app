@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// Aggregated metrics from user feedback for matching recommendations.
 class MatchingAnalytics extends Equatable {
   const MatchingAnalytics({
     required this.ratedCount,
@@ -9,19 +8,12 @@ class MatchingAnalytics extends Equatable {
     this.skillsMatchedCount,
   });
 
-  /// Total number of matches rated by the user.
   final int ratedCount;
 
-  /// Percentage of ratings that were positive (likes ÷ rated * 100).
-  /// Null if [ratedCount] == 0.
   final int? positivePercentage;
 
-  /// Daily positive percentage trend (chronologically ascending).
-  /// Requires at least 2 distinct days to be considered meaningful.
   final List<double> trendValues;
 
-  /// Unique skills matched between the user's declared skills and liked projects.
-  /// Null if not computable (e.g. no project skills available).
   final int? skillsMatchedCount;
 
   bool get isEmpty => ratedCount == 0;

@@ -21,7 +21,6 @@ class ProjectDetailsArguments {
   });
 }
 
-/// Screen displaying detailed information for a selected match.
 class ProjectDetailsScreen extends StatelessWidget {
   final ProjectDetailsArguments? arguments;
 

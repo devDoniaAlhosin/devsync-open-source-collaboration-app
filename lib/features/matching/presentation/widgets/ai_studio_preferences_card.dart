@@ -7,7 +7,6 @@ import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_chip.dart';
 
-/// Card for customizing natural language matching preferences and quick skill tags.
 class AiStudioPreferencesCard extends StatelessWidget {
   final List<String> availableTags;
   final TextEditingController promptController;

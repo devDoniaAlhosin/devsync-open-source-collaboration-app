@@ -17,7 +17,6 @@ class ExploreDevSyncItem {
   });
 }
 
-/// Horizontal carousel highlighting DevSync core capabilities.
 class ExploreDevSyncSection extends StatefulWidget {
   final List<ExploreDevSyncItem> items;
 

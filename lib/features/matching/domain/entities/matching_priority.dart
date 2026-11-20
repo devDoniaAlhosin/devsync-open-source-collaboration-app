@@ -1,4 +1,3 @@
-/// Priority options for tuning matching recommendations.
 enum MatchingPriority {
   skills(
     label: 'Skills',
