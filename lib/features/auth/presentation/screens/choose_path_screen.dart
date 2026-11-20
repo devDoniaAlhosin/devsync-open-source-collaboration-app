@@ -15,15 +15,13 @@ class ChoosePathScreen extends StatelessWidget {
   const ChoosePathScreen({super.key});
 
   void _findProjects(BuildContext context) {
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil(AppRoutes.connectGithub, (route) => false);
+    // Keep Choose path under the stack so Back can return here.
+    Navigator.of(context).pushNamed(AppRoutes.connectGithub);
   }
 
   void _publishProject(BuildContext context) {
-    Navigator.of(context).pushNamedAndRemoveUntil(
+    Navigator.of(context).pushNamed(
       AppRoutes.editProfile,
-      (route) => false,
       arguments: const EditProfileRouteArgs(
         asOnboarding: true,
         homeTabIndex: 2,

@@ -299,12 +299,20 @@ class _TitleBlock extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          item.subtitle,
+          _statusLabel(item.status),
           style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
         ),
       ],
     );
   }
+}
+
+String _statusLabel(RequestStatus status) {
+  return switch (status) {
+    RequestStatus.pending || RequestStatus.isNew => 'Pending',
+    RequestStatus.accepted => 'Accepted',
+    RequestStatus.declined => 'Declined',
+  };
 }
 
 class _StatusBadge extends StatelessWidget {

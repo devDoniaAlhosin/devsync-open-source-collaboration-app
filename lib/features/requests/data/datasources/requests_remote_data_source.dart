@@ -174,15 +174,26 @@ class RequestsRemoteDataSource {
         throw StateError('Request is no longer pending.');
       }
 
+      final subtitle = switch (status) {
+        RequestStatus.accepted => 'Accepted',
+        RequestStatus.declined => 'Declined',
+        RequestStatus.pending || RequestStatus.isNew => 'Pending',
+      };
+
       transaction.update(ref, {
         'status': status.name,
+        'subtitle': subtitle,
         'respondedAt': FieldValue.serverTimestamp(),
       });
 
       return RequestModel.fromFirestore(
         snapshot,
         currentUserId: uid,
-      ).copyWith(status: status, respondedAt: DateTime.now());
+      ).copyWith(
+        status: status,
+        subtitle: subtitle,
+        respondedAt: DateTime.now(),
+      );
     });
   }
 }
