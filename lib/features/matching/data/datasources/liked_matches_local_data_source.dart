@@ -202,6 +202,20 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
       '${userId}_$projectId';
 
   Future<MatchItem> _toMatchItem(MatchRecordModel record) async {
+    if (record.projectName.isNotEmpty && record.neededSkills.isNotEmpty) {
+      return MatchItem(
+        projectId: record.projectId,
+        projectName: record.projectName,
+        description: record.description.isNotEmpty
+            ? record.description
+            : 'Open source project',
+        githubUrl: record.githubUrl,
+        neededSkills: record.neededSkills,
+        score: record.score,
+        reason: record.reason,
+      );
+    }
+
     try {
       final snapshot = await _projects
           .doc(record.projectId)

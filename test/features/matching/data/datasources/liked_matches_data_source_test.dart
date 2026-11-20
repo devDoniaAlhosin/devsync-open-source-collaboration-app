@@ -51,7 +51,7 @@ void main() {
   test(
     'writes real match fields into the match collection (ERD schema)',
     () async {
-      await source.addLikedMatch(_match);
+      await source.addLikedMatch(_match, promptVersion: 'ranker-v1');
 
       expect(firestore.paths, contains('match/user-a_project-1'));
       final data = firestore.writes.first;
@@ -60,6 +60,7 @@ void main() {
       expect(data['projectId'], _match.projectId);
       expect(data['score'], 82);
       expect(data['reason'], _match.reason);
+      expect(data['promptVersion'], 'ranker-v1');
       expect(data['projectName'], _match.projectName);
       expect(data['createdAt'], isA<FieldValue>());
     },
