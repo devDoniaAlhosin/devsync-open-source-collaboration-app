@@ -24,12 +24,19 @@ class AiAnalyticsTrendChart extends StatelessWidget {
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Your daily positive feedback over time.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
+          ),
           const SizedBox(height: AppSpacing.md),
           if (trendValues.length < 2)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: Text(
-                'Not enough data yet',
+                'Rate matches on at least two different days to see a trend.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: ds.textMuted),

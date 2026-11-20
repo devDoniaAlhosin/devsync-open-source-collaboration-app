@@ -58,7 +58,7 @@ class FirestoreFeedbackRepository implements FeedbackRepository {
         if (projectId == null || userId == null || action == null) continue;
 
         DateTime? timestamp;
-        final raw = data['timestamp'];
+        final raw = data['timestamp'] ?? data['createdAt'] ?? data['updatedAt'];
         if (raw is Timestamp) {
           timestamp = raw.toDate();
         }

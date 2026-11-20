@@ -7,8 +7,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
-import '../cubit/matching_cubit.dart';
 import '../../domain/entities/matching_priority.dart';
+import '../cubit/matching_cubit.dart';
 import '../widgets/ai_analytics_stat_card.dart';
 import '../widgets/ai_analytics_transparency_card.dart';
 import '../widgets/ai_analytics_trend_chart.dart';
@@ -33,8 +33,8 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
     super.initState();
     _ownsCubit = widget.cubit == null;
     _cubit = widget.cubit ?? getIt<MatchingCubit>();
-    if (_ownsCubit) _cubit.loadInitialData();
     _selectedPriority = _cubit.state.preferences.priority;
+    _cubit.loadAnalytics();
   }
 
   @override
@@ -58,20 +58,20 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
           child: BlocBuilder<MatchingCubit, MatchingState>(
             bloc: _cubit,
             builder: (context, state) {
-              if (state.isLoading || state.isGenerating) {
+              if (state.isLoadingAnalytics) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (state.errorMessage != null) {
+              if (state.analyticsErrorMessage != null) {
                 return DsEmptyState(
                   icon: AppIcons.error,
                   title: 'Could not load insights',
-                  message: state.errorMessage,
+                  message: state.analyticsErrorMessage,
                   actionLabel: 'Retry',
-                  onAction: _cubit.loadInitialData,
+                  onAction: _cubit.loadAnalytics,
                 );
               }
 
-              final analytics = _cubit.analytics;
+              final analytics = state.analytics;
               if (analytics.isEmpty) {
                 return const DsEmptyState(
                   icon: AppIcons.info,
@@ -80,8 +80,6 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                       'Swipe or rate projects in your feed to see your matching trends and model transparency.',
                 );
               }
-
-              final matches = state.matches;
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -123,19 +121,20 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: AiAnalyticsStatCard(
-                            value: '${analytics.positivePercentage}%',
+                            value: analytics.positivePercentage == null
+                                ? '—'
+                                : '${analytics.positivePercentage}%',
                             label: 'Positive signals',
                           ),
                         ),
-                        if (analytics.skillsMatchedCount != null) ...[
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: AiAnalyticsStatCard(
-                              value: '${analytics.skillsMatchedCount}',
-                              label: 'Skills matched',
-                            ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: AiAnalyticsStatCard(
+                            value:
+                                analytics.skillsMatchedCount?.toString() ?? '—',
+                            label: 'Skills matched',
                           ),
-                        ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -151,24 +150,6 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     const AiAnalyticsTransparencyCard(),
-                    if (matches.isEmpty) ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        'No matches yet. Add skills to your profile or try again later.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: context.ds.textMuted,
-                        ),
-                      ),
-                    ],
-                    if (state.promptVersion != null) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        'Scoring version: ${state.promptVersion}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: context.ds.textMuted,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               );

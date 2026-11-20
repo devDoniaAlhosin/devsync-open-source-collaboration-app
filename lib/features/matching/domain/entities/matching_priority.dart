@@ -5,14 +5,14 @@ enum MatchingPriority {
     promptTemplate: 'Prioritize projects matching my declared skills.',
   ),
   beginnerFriendly(
-    label: 'Beginner-friendly',
+    label: 'Interests',
     promptTemplate:
-        'Prefer beginner-friendly, well-documented projects with clear contribution steps.',
+        'Prioritize projects related to my interests and prefer beginner-friendly, well-documented contribution opportunities.',
   ),
   recentActivity(
-    label: 'Recent activity',
+    label: 'Activity',
     promptTemplate:
-        'Prefer projects with recent activity where that information is available.',
+        'Prioritize projects with recent GitHub activity where that information is available.',
   );
 
   const MatchingPriority({required this.label, required this.promptTemplate});

@@ -14,6 +14,7 @@ import '../../domain/entities/user_profile.dart';
 import '../../domain/failures/matching_failures.dart';
 import '../../domain/repositories/matching_profile_repository.dart';
 import '../../domain/repositories/matching_repository.dart';
+import '../../domain/usecases/get_matching_analytics_usecase.dart';
 import '../../domain/usecases/get_ranked_matches_usecase.dart';
 import '../../domain/usecases/get_user_feedback_usecase.dart';
 import '../../domain/utils/matching_analytics_aggregator.dart';
@@ -30,6 +31,7 @@ class MatchingCubit extends Cubit<MatchingState> {
     MatchingProfileRepository? profileRepository,
     GetProjects? getProjects,
     GetUserFeedbackUseCase? getUserFeedbackUseCase,
+    GetMatchingAnalyticsUseCase? getMatchingAnalyticsUseCase,
     UserProfile? profile,
   }) : _repository = repository,
        _getRankedMatchesUseCase = getRankedMatchesUseCase,
@@ -37,6 +39,7 @@ class MatchingCubit extends Cubit<MatchingState> {
        _profileRepository = profileRepository,
        _getProjects = getProjects,
        _getUserFeedbackUseCase = getUserFeedbackUseCase,
+       _getMatchingAnalyticsUseCase = getMatchingAnalyticsUseCase,
        super(MatchingState(profile: profile ?? UserProfile.empty));
 
   final MatchingRepository _repository;
@@ -45,28 +48,31 @@ class MatchingCubit extends Cubit<MatchingState> {
   final MatchingProfileRepository? _profileRepository;
   final GetProjects? _getProjects;
   final GetUserFeedbackUseCase? _getUserFeedbackUseCase;
+  final GetMatchingAnalyticsUseCase? _getMatchingAnalyticsUseCase;
 
   bool _lastRequestWasGenerating = false;
 
-  /// Aggregated metrics from real user feedback.
+  /// Analytics view used by existing in-memory deck action consumers.
+  /// The AI Analytics screen reads [MatchingState.analytics], loaded from the
+  /// dedicated read-only use case.
   MatchingAnalytics get analytics {
     final projectSkills = <String, List<String>>{};
-    for (final m in state.matches) {
-      projectSkills[m.projectId] = m.neededSkills;
+    for (final match in state.matches) {
+      projectSkills[match.projectId] = match.neededSkills;
     }
-    for (final a in state.actionHistory) {
-      projectSkills[a.match.projectId] = a.match.neededSkills;
+    for (final action in state.actionHistory) {
+      projectSkills[action.match.projectId] = action.match.neededSkills;
     }
 
-    final effectiveFeedback = state.feedback.isNotEmpty
+    final feedback = state.feedback.isNotEmpty
         ? state.feedback
         : state.actionHistory
               .map(
-                (a) => FeedbackRecord(
-                  id: 'history_${a.index}',
+                (action) => FeedbackRecord(
+                  id: 'history_${action.index}',
                   userId: state.profile.uid,
-                  projectId: a.match.projectId,
-                  action: a.action == MatchSwipeAction.request
+                  projectId: action.match.projectId,
+                  action: action.action == MatchSwipeAction.request
                       ? 'like'
                       : 'skip',
                   timestamp: DateTime.now(),
@@ -75,10 +81,57 @@ class MatchingCubit extends Cubit<MatchingState> {
               .toList();
 
     return MatchingAnalyticsAggregator.aggregate(
-      feedback: effectiveFeedback,
+      feedback: feedback,
       declaredSkills: state.profile.declaredSkills,
       projectSkills: projectSkills,
     );
+  }
+
+  /// Loads analytics without requesting or changing ranked matches.
+  Future<void> loadAnalytics() async {
+    if (state.isLoadingAnalytics) return;
+
+    final getMatchingAnalytics = _getMatchingAnalyticsUseCase;
+    if (getMatchingAnalytics == null) {
+      emit(
+        state.copyWith(
+          analyticsErrorMessage: 'Analytics are unavailable right now.',
+          isLoadingAnalytics: false,
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(isLoadingAnalytics: true, clearAnalyticsError: true));
+    try {
+      final result = await getMatchingAnalytics();
+      if (isClosed) return;
+      result.fold(
+        (_) => emit(
+          state.copyWith(
+            isLoadingAnalytics: false,
+            analyticsErrorMessage:
+                'Could not load your insights. Please try again.',
+          ),
+        ),
+        (analytics) => emit(
+          state.copyWith(
+            isLoadingAnalytics: false,
+            analytics: analytics,
+            clearAnalyticsError: true,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          isLoadingAnalytics: false,
+          analyticsErrorMessage:
+              'Could not load your insights. Please try again.',
+        ),
+      );
+    }
   }
 
   Future<void> loadInitialData() => _loadMatches(isGenerating: false);
@@ -344,7 +397,10 @@ class MatchingCubit extends Cubit<MatchingState> {
           (savedMatch) => savedMatch.projectId == match.projectId,
         );
         if (!alreadySaved) {
-          await _likedMatchesDataSource.addLikedMatch(match);
+          await _likedMatchesDataSource.addLikedMatch(
+            match,
+            promptVersion: state.promptVersion ?? _repository.promptVersion,
+          );
           removeSavedMatchOnUndo = true;
         }
       } on LikedMatchesException catch (error) {

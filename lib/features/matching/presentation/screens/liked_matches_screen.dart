@@ -130,7 +130,7 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                       title: 'Liked matches',
                       eyebrow: '${_likedMatches.length} saved',
                       body:
-                          'Projects you saved from the matching feed. Scores reflect the recommendation when it was saved.',
+                          'A heart on Matches saves a project here. Your likes help tune future recommendations.',
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     DsStagger(
@@ -166,8 +166,8 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'Liked matches help ranking — they are not a separate '
-                      'Favorites product.',
+                      'Saved matches stay linked to their project details and '
+                      'recommendation score.',
                       style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
                     ),
                   ],
@@ -219,6 +219,8 @@ class _LikedMatchCard extends StatelessWidget {
                   children: [
                     Text(
                       match.projectName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -226,6 +228,8 @@ class _LikedMatchCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       match.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
                     ),
                   ],

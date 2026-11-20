@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../../core/constants/firestore_collections.dart';
 import '../../domain/entities/match_item.dart';
-import '../models/match_item_model.dart';
+import '../../../projects/data/models/project_model.dart';
+import '../models/match_record_model.dart';
 
 /// Storage contract for managing liked matches.
 abstract class LikedMatchesLocalDataSource {
   Future<List<MatchItem>> getLikedMatches();
-  Future<void> addLikedMatch(MatchItem match);
+  Future<void> addLikedMatch(MatchItem match, {String? promptVersion});
   Future<void> removeLikedMatch(String projectId);
   Future<void> clearLikedMatches();
 }
@@ -28,35 +31,54 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   final FirebaseAuth _auth;
   final Duration _operationTimeout;
 
-  static const String _collectionName = 'liked_matches';
-  static const String _subCollectionName = 'matches';
+  CollectionReference<Map<String, dynamic>> get _matches =>
+      _firestore.collection(FirestoreCollections.matches);
+
+  CollectionReference<Map<String, dynamic>> get _projects =>
+      _firestore.collection(FirestoreCollections.projects);
 
   @override
   Future<List<MatchItem>> getLikedMatches() => _run(
     'Could not load saved matches. Please try again.',
-    (collection, _) async {
+    (collection, userId) async {
       final snapshot = await collection
-          .orderBy('likedAt', descending: true)
+          .where('userId', isEqualTo: userId)
           .get()
           .timeout(_operationTimeout);
-      return snapshot.docs.map((doc) {
-        final match = MatchItemModel.fromFirestore(doc.data()).toEntity();
-        if (match.projectId != doc.id) {
-          throw const FormatException('Saved match ID does not match');
-        }
-        return match;
-      }).toList();
+      final records = snapshot.docs
+          .map(MatchRecordModel.fromFirestore)
+          .toList(growable: false)
+        ..sort((a, b) {
+          final aDate = a.createdAt;
+          final bDate = b.createdAt;
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+          return bDate.compareTo(aDate);
+        });
+
+      return Future.wait(records.map(_toMatchItem));
     },
   );
 
   @override
-  Future<void> addLikedMatch(MatchItem match) => _run(
+  Future<void> addLikedMatch(
+    MatchItem match, {
+    String? promptVersion,
+  }) =>
+      _run(
     'Could not save this match. Please try again.',
-    (collection, _) async {
+    (collection, userId) async {
       _validateProjectId(match.projectId);
-      final model = MatchItemModel.fromEntity(match);
+      final model = MatchRecordModel(
+        userId: userId,
+        projectId: match.projectId,
+        score: match.score,
+        reason: match.reason,
+        promptVersion: promptVersion ?? '',
+      );
       await collection
-          .doc(match.projectId)
+          .doc(_matchDocumentId(userId, match.projectId))
           .set(model.toFirestore())
           .timeout(_operationTimeout);
     },
@@ -65,9 +87,12 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   @override
   Future<void> removeLikedMatch(String projectId) => _run(
     'Could not remove this saved match. Please try again.',
-    (collection, _) async {
+    (collection, userId) async {
       _validateProjectId(projectId);
-      await collection.doc(projectId).delete().timeout(_operationTimeout);
+      await collection
+          .doc(_matchDocumentId(userId, projectId))
+          .delete()
+          .timeout(_operationTimeout);
     },
   );
 
@@ -75,7 +100,10 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   Future<void> clearLikedMatches() => _run(
     'Could not clear saved matches. Please try again.',
     (collection, userId) async {
-      final snapshot = await collection.get().timeout(_operationTimeout);
+      final snapshot = await collection
+          .where('userId', isEqualTo: userId)
+          .get()
+          .timeout(_operationTimeout);
       // Firestore allows at most 500 writes per batch.
       for (var offset = 0; offset < snapshot.docs.length; offset += 500) {
         _ensureCurrentUser(userId);
@@ -104,11 +132,7 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
     }
 
     try {
-      final collection = _firestore
-          .collection(_collectionName)
-          .doc(userId)
-          .collection(_subCollectionName);
-      final result = await operation(collection, userId);
+      final result = await operation(_matches, userId);
       _ensureCurrentUser(userId);
       return result;
     } on FirebaseException {
@@ -143,6 +167,43 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
       );
     }
   }
+
+  String _matchDocumentId(String userId, String projectId) => base64Url
+      .encode(utf8.encode('$userId:$projectId'))
+      .replaceAll('=', '');
+
+  Future<MatchItem> _toMatchItem(MatchRecordModel record) async {
+    final snapshot = await _projects
+        .doc(record.projectId)
+        .get()
+        .timeout(_operationTimeout);
+    if (!snapshot.exists) {
+      return MatchItem(
+        projectId: record.projectId,
+        projectName: record.projectId,
+        description: 'This project is no longer available.',
+        githubUrl: '',
+        neededSkills: const [],
+        score: record.score,
+        reason: record.reason,
+      );
+    }
+
+    final project = ProjectModel.fromFirestore(
+      snapshot,
+      currentUserId: record.userId,
+    );
+    return MatchItem(
+      projectId: record.projectId,
+      projectName: project.title.isEmpty ? record.projectId : project.title,
+      description: project.description,
+      githubUrl: project.githubUrl,
+      neededSkills: project.techStack,
+      score: record.score,
+      reason: record.reason,
+      maintainerId: project.ownerId.isEmpty ? null : project.ownerId,
+    );
+  }
 }
 
 class LikedMatchesException implements Exception {
@@ -167,7 +228,10 @@ class InMemoryLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   Future<List<MatchItem>> getLikedMatches() async => List.unmodifiable(_items);
 
   @override
-  Future<void> addLikedMatch(MatchItem match) async {
+  Future<void> addLikedMatch(
+    MatchItem match, {
+    String? promptVersion,
+  }) async {
     if (_items.any((m) => m.projectId == match.projectId)) return;
     _items.insert(0, match);
   }

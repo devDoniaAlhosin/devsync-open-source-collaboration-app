@@ -28,7 +28,9 @@ final class MatchingState extends Equatable {
     this.isLoading = false,
     this.isGenerating = false,
     this.isSaving = false,
+    this.isLoadingAnalytics = false,
     this.errorMessage,
+    this.analyticsErrorMessage,
     this.actionErrorMessage,
     this.failure,
     this.matches = const [],
@@ -37,6 +39,7 @@ final class MatchingState extends Equatable {
     this.currentDeckIndex = 0,
     this.actionHistory = const [],
     this.feedback = const [],
+    this.analytics = MatchingAnalytics.empty,
     this.promptVersion,
     required this.profile,
   });
@@ -45,7 +48,9 @@ final class MatchingState extends Equatable {
   final bool isLoading;
   final bool isGenerating;
   final bool isSaving;
+  final bool isLoadingAnalytics;
   final String? errorMessage;
+  final String? analyticsErrorMessage;
   final String? actionErrorMessage;
   final MatchingFailure? failure;
   final List<MatchItem> matches;
@@ -54,6 +59,7 @@ final class MatchingState extends Equatable {
   final int currentDeckIndex;
   final List<MatchActionRecord> actionHistory;
   final List<FeedbackRecord> feedback;
+  final MatchingAnalytics analytics;
   final String? promptVersion;
   final UserProfile profile;
 
@@ -82,8 +88,11 @@ final class MatchingState extends Equatable {
     bool? isLoading,
     bool? isGenerating,
     bool? isSaving,
+    bool? isLoadingAnalytics,
     String? errorMessage,
     bool clearError = false,
+    String? analyticsErrorMessage,
+    bool clearAnalyticsError = false,
     String? actionErrorMessage,
     bool clearActionError = false,
     MatchingFailure? failure,
@@ -94,6 +103,7 @@ final class MatchingState extends Equatable {
     int? currentDeckIndex,
     List<MatchActionRecord>? actionHistory,
     List<FeedbackRecord>? feedback,
+    MatchingAnalytics? analytics,
     String? promptVersion,
     bool clearPromptVersion = false,
     UserProfile? profile,
@@ -103,7 +113,11 @@ final class MatchingState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isGenerating: isGenerating ?? this.isGenerating,
       isSaving: isSaving ?? this.isSaving,
+      isLoadingAnalytics: isLoadingAnalytics ?? this.isLoadingAnalytics,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      analyticsErrorMessage: clearAnalyticsError
+          ? null
+          : (analyticsErrorMessage ?? this.analyticsErrorMessage),
       actionErrorMessage: clearActionError
           ? null
           : (actionErrorMessage ?? this.actionErrorMessage),
@@ -114,6 +128,7 @@ final class MatchingState extends Equatable {
       currentDeckIndex: currentDeckIndex ?? this.currentDeckIndex,
       actionHistory: actionHistory ?? this.actionHistory,
       feedback: feedback ?? this.feedback,
+      analytics: analytics ?? this.analytics,
       promptVersion: clearPromptVersion
           ? null
           : (promptVersion ?? this.promptVersion),
@@ -127,7 +142,9 @@ final class MatchingState extends Equatable {
     isLoading,
     isGenerating,
     isSaving,
+    isLoadingAnalytics,
     errorMessage,
+    analyticsErrorMessage,
     actionErrorMessage,
     failure,
     matches,
@@ -136,6 +153,7 @@ final class MatchingState extends Equatable {
     currentDeckIndex,
     actionHistory,
     feedback,
+    analytics,
     promptVersion,
     profile,
   ];

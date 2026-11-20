@@ -15,18 +15,27 @@ class AiAnalyticsTransparencyCard extends StatelessWidget {
     final ds = context.ds;
 
     return DsCard(
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DsIcon(AppIcons.shield, color: AppColors.teal, size: 22),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              'Scores and explanations come from the matching service. Skill-based matches are the service’s fallback when AI scoring is unavailable. These scores are recommendations, not guarantees.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: ds.textPrimary,
-                height: 1.55,
+          Row(
+            children: [
+              const DsIcon(AppIcons.shield, color: AppColors.teal, size: 22),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Scoring breakdown',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'The matching service considers your skills, GitHub activity, and prompt preferences. These insights summarize your likes and skips; changing a priority does not reorder the current feed or change its scores.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: ds.textPrimary,
+              height: 1.55,
             ),
           ),
         ],

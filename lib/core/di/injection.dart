@@ -33,6 +33,7 @@ import '../../features/matching/data/repositories/firestore_feedback_repository.
 import '../../features/matching/domain/repositories/feedback_repository.dart';
 import '../../features/matching/domain/repositories/matching_repository.dart';
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
+import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
 import '../../features/matching/domain/usecases/get_user_feedback_usecase.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
@@ -165,6 +166,15 @@ void _registerMatching() {
       ),
     )
     ..registerLazySingleton(() => GetUserFeedbackUseCase(getIt()))
+    ..registerLazySingleton(
+      () => GetMatchingAnalyticsUseCase(
+        getUserFeedback: getIt<GetUserFeedbackUseCase>(),
+        profileRepository: getIt<MatchingProfileRepository>(),
+        getProjects: getIt.isRegistered<GetProjects>()
+            ? getIt<GetProjects>()
+            : null,
+      ),
+    )
     ..registerFactory(
       () => MatchingCubit(
         repository: getIt<MatchingRepository>(),
@@ -176,6 +186,10 @@ void _registerMatching() {
             : null,
         getUserFeedbackUseCase: getIt.isRegistered<GetUserFeedbackUseCase>()
             ? getIt<GetUserFeedbackUseCase>()
+            : null,
+        getMatchingAnalyticsUseCase:
+            getIt.isRegistered<GetMatchingAnalyticsUseCase>()
+            ? getIt<GetMatchingAnalyticsUseCase>()
             : null,
       ),
     );
