@@ -69,9 +69,7 @@ class MatchingRepositoryImpl implements MatchingRepository {
       final response = await remoteDataSource.getMatches(request);
 
       // If candidate projects were provided, drop any results whose projectId was not sent
-      final allowedIds = candidateProjects != null
-          ? candidateProjects.map((p) => p.projectId).toSet()
-          : null;
+      final allowedIds = candidateProjects?.map((p) => p.projectId).toSet();
 
       // Filter out non-matching candidates (score <= 0 or missing all required skills or unknown id)
       final relevantMatches = response.matches.where((match) {
@@ -135,6 +133,16 @@ class MatchingRepositoryImpl implements MatchingRepository {
         throw const AuthFailure();
       }
       if (error.statusCode == 400) {
+        // The API may reject a profile payload that is valid in Firestore.
+        // If projects were loaded, keep matching usable with saved skills.
+        final fallback = _computeFallbackMatches(
+          profile: profile,
+          candidates: candidateProjects,
+        );
+        if (fallback != null) {
+          if (fallback.isEmpty) throw const NoMatchesFailure();
+          return List<MatchItem>.unmodifiable(fallback);
+        }
         throw ValidationFailure(error.message);
       }
 
