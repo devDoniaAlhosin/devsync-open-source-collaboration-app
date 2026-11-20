@@ -137,7 +137,10 @@ class _AiAnalyticsScreenState extends State<AiAnalyticsScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    AiAnalyticsTrendChart(trendValues: analytics.trendValues),
+                    AiAnalyticsTrendChart(
+                      trendValues: analytics.trendValues,
+                      isDemo: analytics.trendValues.isNotEmpty,
+                    ),
                     const SizedBox(height: AppSpacing.lg),
                     AiAnalyticsTuningCard(
                       selectedPriority: _selectedPriority,

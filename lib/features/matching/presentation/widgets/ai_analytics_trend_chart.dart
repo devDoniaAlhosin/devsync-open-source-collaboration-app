@@ -5,9 +5,16 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 
 class AiAnalyticsTrendChart extends StatelessWidget {
-  const AiAnalyticsTrendChart({super.key, required this.trendValues});
+  const AiAnalyticsTrendChart({
+    super.key,
+    required this.trendValues,
+    this.isDemo = false,
+  });
 
   final List<double> trendValues;
+
+  /// When true, shows a caption below the chart indicating demo values.
+  final bool isDemo;
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +31,6 @@ class AiAnalyticsTrendChart extends StatelessWidget {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Your daily positive feedback over time.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
-          ),
-          const SizedBox(height: AppSpacing.md),
           if (trendValues.length < 2)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -38,13 +38,13 @@ class AiAnalyticsTrendChart extends StatelessWidget {
                 'Rate matches on at least two different days to see a trend.',
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: ds.textMuted),
+                ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
               ),
             )
           else ...[
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.md),
             SizedBox(
-              height: 140,
+              height: 120,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -68,11 +68,7 @@ class AiAnalyticsTrendChart extends StatelessWidget {
                                   constraints.maxHeight,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [ds.surfaceAlt, AppColors.teal],
-                                  ),
+                                  color: AppColors.teal,
                                   borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(AppSpacing.radiusSm),
                                   ),
@@ -85,6 +81,16 @@ class AiAnalyticsTrendChart extends StatelessWidget {
                     ),
                   ],
                 ],
+              ),
+            ),
+          ],
+          if (isDemo && trendValues.length >= 2) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Demo values showing how recommendations can improve with feedback.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: ds.textMuted,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ],
