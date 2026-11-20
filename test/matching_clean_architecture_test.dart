@@ -52,7 +52,8 @@ class _DefaultRemoteDataSource implements MatchingRemoteDataSource {
           githubUrl: 'https://github.com/appwrite/appwrite',
           neededSkills: ['Flutter', 'REST APIs', 'Docker'],
           score: 78,
-          reason: 'Flutter SDK experience aligns well; REST API skills are a bonus.',
+          reason:
+              'Flutter SDK experience aligns well; REST API skills are a bonus.',
         ),
         MatchItemModel(
           projectId: 'sample-3',

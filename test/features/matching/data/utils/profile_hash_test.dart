@@ -103,7 +103,10 @@ void main() {
       );
 
       final profile2 = profile1.copyWith(
-        topRepositories: const ['https://github.com/test/repo1', 'https://github.com/test/repo2'],
+        topRepositories: const [
+          'https://github.com/test/repo1',
+          'https://github.com/test/repo2',
+        ],
       );
 
       final hash1 = ProfileHashGenerator.fromProfile(profile1);

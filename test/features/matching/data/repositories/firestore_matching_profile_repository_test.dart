@@ -40,14 +40,13 @@ void main() {
 
       final result = await repository.getProfile();
       expect(result, isA<Success<UserProfile>>());
-      result.fold(
-        (failure) => fail('Expected Success: ${failure.message}'),
-        (profile) {
-          expect(profile.uid, 'user-123');
-          expect(profile.declaredSkills, ['Flutter', 'Dart', 'Firebase']);
-          expect(profile.bio, 'Mobile developer');
-        },
-      );
+      result.fold((failure) => fail('Expected Success: ${failure.message}'), (
+        profile,
+      ) {
+        expect(profile.uid, 'user-123');
+        expect(profile.declaredSkills, ['Flutter', 'Dart', 'Firebase']);
+        expect(profile.bio, 'Mobile developer');
+      });
     });
 
     test('reads skills from users collection data["declaredSkills"]', () async {
@@ -57,67 +56,82 @@ void main() {
 
       final result = await repository.getProfile();
       expect(result, isA<Success<UserProfile>>());
-      result.fold(
-        (failure) => fail('Expected Success'),
-        (profile) {
-          expect(profile.declaredSkills, ['Python', 'Django']);
-        },
-      );
+      result.fold((failure) => fail('Expected Success'), (profile) {
+        expect(profile.declaredSkills, ['Python', 'Django']);
+      });
     });
 
-    test('merges unique skills from both "skills" and "declaredSkills"', () async {
-      firestore.documentData['users/user-123'] = {
-        'skills': ['Flutter', 'Dart'],
-        'declaredSkills': ['Dart', 'Firebase', 'Clean Architecture'],
-      };
+    test(
+      'merges unique skills from both "skills" and "declaredSkills"',
+      () async {
+        firestore.documentData['users/user-123'] = {
+          'skills': ['Flutter', 'Dart'],
+          'declaredSkills': ['Dart', 'Firebase', 'Clean Architecture'],
+        };
 
-      final result = await repository.getProfile();
-      expect(result, isA<Success<UserProfile>>());
-      result.fold(
-        (failure) => fail('Expected Success'),
-        (profile) {
+        final result = await repository.getProfile();
+        expect(result, isA<Success<UserProfile>>());
+        result.fold((failure) => fail('Expected Success'), (profile) {
           expect(
             profile.declaredSkills,
             containsAll(['Flutter', 'Dart', 'Firebase', 'Clean Architecture']),
           );
           expect(profile.declaredSkills.length, 4);
-        },
-      );
-    });
+        });
+      },
+    );
 
-    test('updateDeclaredSkills writes to both "skills" and "declaredSkills" in users/{uid}', () async {
-      final result = await repository.updateDeclaredSkills(['Flutter', 'Dart', 'Firebase']);
+    test(
+      'updateDeclaredSkills writes to both "skills" and "declaredSkills" in users/{uid}',
+      () async {
+        final result = await repository.updateDeclaredSkills([
+          'Flutter',
+          'Dart',
+          'Firebase',
+        ]);
 
-      expect(result, isA<Success<UserProfile>>());
-      expect(firestore.writes.length, 1);
-      final written = firestore.writes.first;
-      expect(written['skills'], ['Flutter', 'Dart', 'Firebase']);
-      expect(written['declaredSkills'], ['Flutter', 'Dart', 'Firebase']);
-      expect(written.containsKey('matchingProfileUpdatedAt'), isTrue);
-    });
+        expect(result, isA<Success<UserProfile>>());
+        expect(firestore.writes.length, 1);
+        final written = firestore.writes.first;
+        expect(written['skills'], ['Flutter', 'Dart', 'Firebase']);
+        expect(written['declaredSkills'], ['Flutter', 'Dart', 'Firebase']);
+        expect(written.containsKey('matchingProfileUpdatedAt'), isTrue);
+      },
+    );
 
-    test('updateDeclaredSkills rejects skills longer than 100 characters', () async {
-      final longSkill = 'A' * 101;
-      final result = await repository.updateDeclaredSkills(['Flutter', longSkill]);
+    test(
+      'updateDeclaredSkills rejects skills longer than 100 characters',
+      () async {
+        final longSkill = 'A' * 101;
+        final result = await repository.updateDeclaredSkills([
+          'Flutter',
+          longSkill,
+        ]);
 
-      expect(result, isA<FailureResult<UserProfile>>());
-      result.fold(
-        (failure) {
+        expect(result, isA<FailureResult<UserProfile>>());
+        result.fold((failure) {
           expect(failure, isA<ValidationFailure>());
           expect((failure as ValidationFailure).field, 'skills');
-        },
-        (_) => fail('Expected ValidationFailure'),
-      );
-      expect(firestore.writes, isEmpty);
-    });
+        }, (_) => fail('Expected ValidationFailure'));
+        expect(firestore.writes, isEmpty);
+      },
+    );
 
-    test('updateDeclaredSkills normalizes and removes duplicate skills', () async {
-      final result = await repository.updateDeclaredSkills([' Flutter ', 'flutter', 'DART', 'Dart']);
+    test(
+      'updateDeclaredSkills normalizes and removes duplicate skills',
+      () async {
+        final result = await repository.updateDeclaredSkills([
+          ' Flutter ',
+          'flutter',
+          'DART',
+          'Dart',
+        ]);
 
-      expect(result, isA<Success<UserProfile>>());
-      final written = firestore.writes.first;
-      expect(written['skills'], ['Flutter', 'DART']);
-    });
+        expect(result, isA<Success<UserProfile>>());
+        final written = firestore.writes.first;
+        expect(written['skills'], ['Flutter', 'DART']);
+      },
+    );
   });
 }
 
@@ -165,7 +179,9 @@ class _TestDocument extends Fake
   final String docPath;
 
   @override
-  Future<DocumentSnapshot<Map<String, dynamic>>> get([GetOptions? options]) async {
+  Future<DocumentSnapshot<Map<String, dynamic>>> get([
+    GetOptions? options,
+  ]) async {
     final data = store.documentData[docPath] ?? <String, dynamic>{};
     return _TestDocumentSnapshot(docPath, data);
   }

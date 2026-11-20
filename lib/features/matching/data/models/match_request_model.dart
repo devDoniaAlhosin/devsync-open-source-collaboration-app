@@ -27,14 +27,19 @@ class CandidateProject {
     if (maintainerId != null) 'maintainerId': maintainerId,
   };
 
-  factory CandidateProject.fromJson(Map<String, dynamic> json) => CandidateProject(
-    projectId: json['projectId'] as String? ?? '',
-    projectName: json['projectName'] as String? ?? '',
-    description: json['description'] as String? ?? '',
-    githubUrl: json['githubUrl'] as String? ?? '',
-    neededSkills: (json['neededSkills'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
-    maintainerId: json['maintainerId'] as String?,
-  );
+  factory CandidateProject.fromJson(Map<String, dynamic> json) =>
+      CandidateProject(
+        projectId: json['projectId'] as String? ?? '',
+        projectName: json['projectName'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        githubUrl: json['githubUrl'] as String? ?? '',
+        neededSkills:
+            (json['neededSkills'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
+        maintainerId: json['maintainerId'] as String?,
+      );
 }
 
 /// Request payload sent to `POST /matches/generate`.
