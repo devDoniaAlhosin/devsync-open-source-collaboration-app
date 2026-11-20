@@ -9,12 +9,13 @@ import 'package:devsync_open_source_collaboration_app/core/widgets/ds_icon.dart'
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_staggered_entrance.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_text_field.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_toast.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/domain/entities/profile.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/connect_github_entry.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/github_connection_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/skills_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:devsync_open_source_collaboration_app/features/profile/domain/entities/profile.dart';
 
 class EditProfileResult {
   const EditProfileResult({required this.bio, required this.skills});
@@ -87,6 +88,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
+  Future<void> _connectGithub(BuildContext context) async {
+    final connected = await Navigator.of(context).pushNamed(
+      AppRoutes.connectGithub,
+      arguments: const ConnectGithubRouteArgs(popOnSuccess: true),
+    );
+    if (connected == true && context.mounted) {
+      await context.read<ProfileCubit>().load();
+    }
+  }
+
   void _save() {
     FocusScope.of(context).unfocus();
     final bio = _bio.text.trim();
@@ -144,8 +155,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   DsStagger(
                     spacing: AppSpacing.lg,
                     children: [
-                      GithubConnectionCard(
-                        username: widget.data.githubUsername,
+                      BlocBuilder<ProfileCubit, ProfileState>(
+                        buildWhen: (prev, curr) =>
+                            curr is ProfileLoaded || curr is ProfileSaving,
+                        builder: (context, state) {
+                          final profile = switch (state) {
+                            ProfileLoaded(:final profile) ||
+                            ProfileSaving(:final profile) ||
+                            ProfileSaveFailure(:final profile) => profile,
+                            _ => widget.data,
+                          };
+                          return GithubConnectionCard(
+                            username: profile.githubUsername,
+                            onConnect: profile.hasGithub
+                                ? null
+                                : () => _connectGithub(context),
+                          );
+                        },
                       ),
                       DsTextField(
                         label: 'Short bio',

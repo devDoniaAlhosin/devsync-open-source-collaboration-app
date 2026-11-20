@@ -14,6 +14,7 @@ class Project {
     this.ownerName = '',
     this.createdAt,
     this.hasPendingRequest = false,
+    this.isJoined = false,
   });
 
   final String id;
@@ -37,9 +38,12 @@ class Project {
   final String ownerName;
   final DateTime? createdAt;
 
-  /// True when the signed-in user already has a pending request for this
-  /// project (viewer-relative, resolved by the data layer).
+  /// Viewer has a pending / isNew request for this project.
   final bool hasPendingRequest;
+
+  final bool? isJoined;
+
+  bool get joined => isJoined ?? false;
 
   String get initials => initialsFromTitle(title);
 
@@ -78,6 +82,7 @@ class Project {
     String? ownerName,
     DateTime? createdAt,
     bool? hasPendingRequest,
+    bool? isJoined,
   }) {
     return Project(
       id: id ?? this.id,
@@ -94,8 +99,11 @@ class Project {
       ownerName: ownerName ?? this.ownerName,
       createdAt: createdAt ?? this.createdAt,
       hasPendingRequest: hasPendingRequest ?? this.hasPendingRequest,
+      isJoined: isJoined ?? this.isJoined,
     );
   }
+
+  bool get canRequestJoin => !isOwner && !hasPendingRequest && !joined;
 }
 
 /// Initials helper shared by project UI and other features (matching, requests).

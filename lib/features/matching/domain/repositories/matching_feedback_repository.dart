@@ -5,6 +5,7 @@ abstract class MatchingFeedbackRepository {
   Future<Result<MatchFeedbackAction?>> saveFeedback({
     required String projectId,
     required MatchFeedbackAction action,
+    String? promptVersion,
   });
 
   Future<Result<void>> clearFeedback({required String projectId});

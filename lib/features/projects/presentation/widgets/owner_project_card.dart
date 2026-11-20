@@ -49,13 +49,6 @@ class _OwnerProjectCardState extends State<OwnerProjectCard> {
                 ? AppColors.teal.withValues(alpha: 0.30)
                 : context.ds.border,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _hovered ? 0.26 : 0.12),
-              blurRadius: _hovered ? 26 : 16,
-              offset: const Offset(0, 9),
-            ),
-          ],
         ),
         child: Material(
           color: Colors.transparent,

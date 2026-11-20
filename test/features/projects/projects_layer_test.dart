@@ -43,6 +43,22 @@ void main() {
 
       expect(model.isOwner, isTrue);
       expect(model.hasPendingRequest, isTrue);
+
+      // Accepted (and pending) IDs from Discover mark the request CTA as spent.
+      final accepted = ProjectModel.fromMap(
+        'p2',
+        {
+          'ownerId': 'u2',
+          'title': 'joined-app',
+          'description': 'Already accepted',
+          'githubUrl': 'https://github.com/devsync/joined',
+          'techStack': const ['Dart'],
+          'requiredContributors': 1,
+        },
+        currentUserId: 'viewer',
+        pendingRequestProjectIds: const {'p2'},
+      );
+      expect(accepted.hasPendingRequest, isTrue);
       expect(model.matchPercentage, 100);
       expect(model.github.stars, 12);
       expect(model.alignments.single.label, 'Dart');

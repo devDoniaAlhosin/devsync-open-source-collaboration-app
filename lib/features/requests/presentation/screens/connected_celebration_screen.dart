@@ -3,14 +3,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../app/app_routes.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_avatar.dart';
 import '../../../../core/widgets/ds_button.dart';
+import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_merge_mark.dart';
+import '../../../../core/widgets/ds_toast.dart';
+import '../../../projects/domain/usecases/get_project.dart';
+import '../../../projects/presentation/screens/project_details_screen.dart';
 
 /// Arguments for prototype **15. Connected (celebration)**.
 class ConnectedCelebrationArgs {
@@ -18,12 +24,14 @@ class ConnectedCelebrationArgs {
     required this.collaboratorName,
     required this.collaboratorInitials,
     required this.projectName,
+    this.projectId = '',
     this.myInitials = 'N',
   });
 
   final String collaboratorName;
   final String collaboratorInitials;
   final String projectName;
+  final String projectId;
   final String myInitials;
 }
 
@@ -43,6 +51,7 @@ class _ConnectedCelebrationScreenState extends State<ConnectedCelebrationScreen>
   late final AnimationController _orbit;
   late final AnimationController _copy;
   late final AnimationController _check;
+  bool _openingProject = false;
 
   @override
   void initState() {
@@ -66,6 +75,34 @@ class _ConnectedCelebrationScreenState extends State<ConnectedCelebrationScreen>
     _copy.dispose();
     _check.dispose();
     super.dispose();
+  }
+
+  Future<void> _accessProject() async {
+    if (_openingProject) return;
+    final projectId = widget.args.projectId.trim();
+    if (projectId.isEmpty) {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.projects,
+        (route) => route.settings.name == AppRoutes.home,
+      );
+      return;
+    }
+
+    setState(() => _openingProject = true);
+    final result = await getIt<GetProject>()(GetProjectParams(projectId));
+    if (!mounted) return;
+    setState(() => _openingProject = false);
+
+    switch (result) {
+      case Success(:final data):
+        await Navigator.of(context).pushReplacement(
+          DsFadePageRoute<void>(
+            builder: (_) => ProjectDetailsScreen(project: data),
+          ),
+        );
+      case FailureResult(:final failure):
+        showDsToast(context, failure.message, tone: DsToastTone.error);
+    }
   }
 
   Animation<double> _slot(double begin, double end) {
@@ -302,13 +339,8 @@ class _ConnectedCelebrationScreenState extends State<ConnectedCelebrationScreen>
                 child: Column(
                   children: [
                     DsButton(
-                      label: 'Open task board',
-                      onPressed: () {
-                        Navigator.of(context).pushNamedAndRemoveUntil(
-                          AppRoutes.tasks,
-                          (route) => route.settings.name == AppRoutes.home,
-                        );
-                      },
+                      label: _openingProject ? 'Opening…' : 'Access project',
+                      onPressed: _openingProject ? null : _accessProject,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     TextButton(

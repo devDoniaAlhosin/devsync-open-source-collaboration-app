@@ -43,16 +43,17 @@ class ProjectsRemoteDataSource {
   Future<List<Project>> fetchProjects() async {
     final snapshot = await _projects.limit(_projectsPageSize).get();
     final uid = _currentUserId;
-    final pendingIds = uid == null
-        ? const <String>{}
-        : await _pendingProjectIds(uid);
+    final flags = uid == null
+        ? const _ViewerRequestFlags.empty()
+        : await _viewerRequestFlags(uid);
 
     final projects = snapshot.docs
         .map(
           (doc) => ProjectModel.fromFirestore(
             doc,
             currentUserId: uid,
-            pendingRequestProjectIds: pendingIds,
+            pendingRequestProjectIds: flags.pendingIds,
+            joinedProjectIds: flags.joinedIds,
           ),
         )
         .toList(growable: false);
@@ -65,14 +66,15 @@ class ProjectsRemoteDataSource {
     if (!snapshot.exists) throw const ProjectNotFoundException();
 
     final uid = _currentUserId;
-    final pendingIds = uid == null
-        ? const <String>{}
-        : await _pendingProjectIds(uid);
+    final flags = uid == null
+        ? const _ViewerRequestFlags.empty()
+        : await _viewerRequestFlags(uid);
 
     return ProjectModel.fromFirestore(
       snapshot,
       currentUserId: uid,
-      pendingRequestProjectIds: pendingIds,
+      pendingRequestProjectIds: flags.pendingIds,
+      joinedProjectIds: flags.joinedIds,
     );
   }
 
@@ -128,6 +130,7 @@ class ProjectsRemoteDataSource {
       ownerName: ownerName,
       createdAt: project.createdAt ?? (isNew ? DateTime.now() : null),
       hasPendingRequest: project.hasPendingRequest,
+      isJoined: project.joined,
     );
 
     if (!isNew) {
@@ -255,20 +258,32 @@ class ProjectsRemoteDataSource {
     });
   }
 
-  Future<Set<String>> _pendingProjectIds(String uid) async {
+  Future<_ViewerRequestFlags> _viewerRequestFlags(String uid) async {
     try {
-      final snapshot = await _requests
-          .where('senderId', isEqualTo: uid)
-          .where('status', isEqualTo: 'pending')
-          .get();
-      return {
-        for (final doc in snapshot.docs)
-          if (_string(doc.data()['projectId']).isNotEmpty)
-            _string(doc.data()['projectId']),
-      };
+      final snapshot = await _requests.where('senderId', isEqualTo: uid).get();
+      final pendingIds = <String>{};
+      final joinedIds = <String>{};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final projectId = _string(data['projectId']);
+        if (projectId.isEmpty) continue;
+        switch (data['status']) {
+          case 'accepted':
+            joinedIds.add(projectId);
+            pendingIds.remove(projectId);
+          case 'pending':
+          case 'isNew':
+            if (!joinedIds.contains(projectId)) {
+              pendingIds.add(projectId);
+            }
+        }
+      }
+      return _ViewerRequestFlags(
+        pendingIds: pendingIds,
+        joinedIds: joinedIds,
+      );
     } catch (_) {
-      // A missing index or offline cache should not block Discover.
-      return const <String>{};
+      return const _ViewerRequestFlags.empty();
     }
   }
 
@@ -395,6 +410,20 @@ class ProjectsRemoteDataSource {
   static String _string(Object? value) => value is String ? value.trim() : '';
 
   static String _two(int value) => value.toString().padLeft(2, '0');
+}
+
+class _ViewerRequestFlags {
+  const _ViewerRequestFlags({
+    required this.pendingIds,
+    required this.joinedIds,
+  });
+
+  const _ViewerRequestFlags.empty()
+    : pendingIds = const {},
+      joinedIds = const {};
+
+  final Set<String> pendingIds;
+  final Set<String> joinedIds;
 }
 
 class _OwnerProfile {

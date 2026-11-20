@@ -55,7 +55,8 @@ void navigateToHome(BuildContext context, {int tabIndex = 0}) {
   );
 }
 
-/// First-time setup: Choose path → Connect GitHub (optional) / Edit profile → Home.
+/// Optional setup hint only. Prefer [navigateToHome] after auth so users can
+/// explore, add projects, and connect GitHub when they choose.
 void navigateToOnboarding(BuildContext context) {
   Navigator.of(
     context,

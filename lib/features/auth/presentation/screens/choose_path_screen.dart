@@ -5,28 +5,18 @@ import '../../../../app/devsync_app.dart';
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../matching/presentation/widgets/setup_scaffold.dart';
-import '../../../profile/presentation/screens/edit_profile_entry.dart';
+import '../widgets/auth_gate.dart';
 
-/// Post-auth choice: find projects (match) vs publish a project (maintainer).
+/// Optional post-auth hint. Never blocks home — GitHub / profile stay optional.
 class ChoosePathScreen extends StatelessWidget {
   const ChoosePathScreen({super.key});
 
-  void _findProjects(BuildContext context) {
-    // Keep Choose path under the stack so Back can return here.
-    Navigator.of(context).pushNamed(AppRoutes.connectGithub);
-  }
-
-  void _publishProject(BuildContext context) {
-    Navigator.of(context).pushNamed(
-      AppRoutes.editProfile,
-      arguments: const EditProfileRouteArgs(
-        asOnboarding: true,
-        homeTabIndex: 2,
-      ),
-    );
+  void _goHome(BuildContext context, {int tab = 0}) {
+    navigateToHome(context, tabIndex: tab);
   }
 
   @override
@@ -35,11 +25,16 @@ class ChoosePathScreen extends StatelessWidget {
     final ds = context.ds;
 
     return SetupScaffold(
-      eyebrow: 'Account setup',
+      eyebrow: 'Quick start',
       title: 'How will you start?',
-      stepLabel: '01 / 03',
+      stepLabel: 'Optional',
       onThemeToggle: DevSyncApp.toggleTheme,
-      onBack: () => Navigator.of(context).maybePop(),
+      onBack: () => _goHome(context),
+      bottom: DsButton(
+        label: 'Explore the app',
+        variant: DsButtonVariant.quiet,
+        onPressed: () => _goHome(context),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -52,22 +47,29 @@ class ChoosePathScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'You can do both later. Connect GitHub is optional if you only want to publish.',
+            'You can explore freely. Connect GitHub or add a project whenever you are ready.',
             style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
           ),
           const SizedBox(height: AppSpacing.xl),
           _PathCard(
             icon: AppIcons.feed,
             title: 'Find projects',
-            subtitle: 'Match with open-source work that fits your skills.',
-            onTap: () => _findProjects(context),
+            subtitle: 'Browse matches. Connect GitHub later from Profile if you want.',
+            onTap: () => _goHome(context),
           ),
           const SizedBox(height: AppSpacing.md),
           _PathCard(
             icon: AppIcons.projects,
             title: 'Publish a project',
-            subtitle: 'List your repo and invite collaborators. No GitHub scan required.',
-            onTap: () => _publishProject(context),
+            subtitle: 'Open Projects and add a listing when you are ready.',
+            onTap: () => _goHome(context, tab: 2),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _PathCard(
+            icon: AppIcons.github,
+            title: 'Connect GitHub',
+            subtitle: 'Optional — scan repos and languages for better matches.',
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.connectGithub),
           ),
         ],
       ),

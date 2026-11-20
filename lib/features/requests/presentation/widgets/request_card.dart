@@ -180,10 +180,10 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
           )
         else if (_status == RequestStatus.accepted)
           _ActionButton(
-            label: 'Open task board',
+            label: _openingProject ? 'Opening…' : 'Access project',
             background: colors.primary,
             foreground: colors.onPrimary,
-            onTap: () => Navigator.of(context).pushNamed(AppRoutes.tasks),
+            onTap: _openingProject ? () {} : _openProject,
           )
         else if (_status == RequestStatus.declined)
           _ActionButton(
@@ -227,6 +227,7 @@ class _ExpandedRequestCardState extends State<ExpandedRequestCard> {
         collaboratorName: item.displayName,
         collaboratorInitials: item.initials,
         projectName: item.targetName.isEmpty ? 'your project' : item.targetName,
+        projectId: item.projectId,
       ),
     );
   }

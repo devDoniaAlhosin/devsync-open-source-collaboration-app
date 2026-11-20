@@ -122,7 +122,7 @@ class _VerifyEmailOtpViewState extends State<_VerifyEmailOtpView> {
             );
           case VerifyCodeSuccess():
             getIt<AuthCubit>().refresh();
-            navigateToOnboarding(context);
+            navigateToHome(context);
           case VerifyCodeFailure(:final message):
             showDsToast(context, message, tone: DsToastTone.error);
           default:

@@ -28,11 +28,13 @@ void main() {
 
   test('wipe steps stay in cascade order', () {
     expect(AccountCleanupRemoteDataSource.wipeSteps, [
-      'feedback.userId',
+      'feedbacks.userId',
+      'matches.userId',
       'requests.senderId',
       'requests.ownerId',
       'projects.ownerId',
       'views.viewerId',
+      'users.notifications',
       'users.fcmTokens',
       'users.doc',
     ]);

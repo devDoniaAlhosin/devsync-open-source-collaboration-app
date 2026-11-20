@@ -109,12 +109,7 @@ class AppDrawer extends StatelessWidget {
                       label: 'Collaboration requests',
                       onTap: () => _openTab(context, 3),
                     ),
-                    _Link(
-                      icon: AppIcons.success,
-                      label: 'Task board',
-                      onTap: () => _openRoute(context, AppRoutes.tasks),
-                    ),
-                    const _Group('Intelligence & community'),
+                    const _Group('Intelligence'),
                     _Link(
                       icon: AppIcons.sparkle,
                       label: 'AI Prompt Studio',
@@ -124,21 +119,6 @@ class AppDrawer extends StatelessWidget {
                       icon: AppIcons.chart,
                       label: 'AI analytics',
                       onTap: () => _openRoute(context, AppRoutes.aiInsights),
-                    ),
-                    _Link(
-                      icon: AppIcons.chart,
-                      label: 'Contribution insights',
-                      onTap: () => _openRoute(context, AppRoutes.insights),
-                    ),
-                    _Link(
-                      icon: AppIcons.profile,
-                      label: 'Community',
-                      onTap: () => _openRoute(context, AppRoutes.community),
-                    ),
-                    _Link(
-                      icon: AppIcons.notifications,
-                      label: 'Notifications',
-                      onTap: () => _openRoute(context, AppRoutes.notifications),
                     ),
                     const _Group('Account'),
                     _Link(

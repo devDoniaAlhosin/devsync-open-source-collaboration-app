@@ -92,7 +92,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           switch (state) {
             case RegisterSuccess():
               _closeGitHubDialog();
-              navigateToOnboarding(context);
+              // Let people explore Matches / Projects immediately; GitHub &
+              // profile setup stay optional from Profile and empty states.
+              navigateToHome(context);
             case RegisterNeedsVerification(:final email):
               _closeGitHubDialog();
               Navigator.of(context).pushNamedAndRemoveUntil(

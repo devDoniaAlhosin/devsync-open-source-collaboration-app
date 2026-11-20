@@ -12,8 +12,32 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+class ConnectGithubRouteArgs {
+  const ConnectGithubRouteArgs({this.popOnSuccess = false});
+
+  final bool popOnSuccess;
+
+  static ConnectGithubRouteArgs from(Object? arguments) {
+    if (arguments is ConnectGithubRouteArgs) return arguments;
+    if (arguments is bool) return ConnectGithubRouteArgs(popOnSuccess: arguments);
+    if (arguments is Map) {
+      return ConnectGithubRouteArgs(
+        popOnSuccess: arguments['popOnSuccess'] as bool? ?? false,
+      );
+    }
+    return const ConnectGithubRouteArgs();
+  }
+}
+
 class ConnectGithubEntry extends StatefulWidget {
-  const ConnectGithubEntry({super.key});
+  const ConnectGithubEntry({super.key, this.popOnSuccess = false});
+
+  final bool popOnSuccess;
+
+  factory ConnectGithubEntry.fromArgs(Object? arguments) {
+    final args = ConnectGithubRouteArgs.from(arguments);
+    return ConnectGithubEntry(popOnSuccess: args.popOnSuccess);
+  }
 
   @override
   State<ConnectGithubEntry> createState() => _ConnectGithubEntryState();
@@ -59,6 +83,14 @@ class _ConnectGithubEntryState extends State<ConnectGithubEntry> {
     }
   }
 
+  void _onConnected(BuildContext context) {
+    if (widget.popOnSuccess) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    Navigator.of(context).pushReplacementNamed(AppRoutes.editProfile);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_resolving) {
@@ -83,7 +115,7 @@ class _ConnectGithubEntryState extends State<ConnectGithubEntry> {
             current is ProfileLoaded || current is ProfileFailure,
         listener: (context, state) {
           if (state is ProfileLoaded) {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.editProfile);
+            _onConnected(context);
           } else if (state is ProfileFailure) {
             showDsToast(context, state.message, tone: DsToastTone.error);
           }

@@ -260,6 +260,7 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
     return Scaffold(
       backgroundColor: context.ds.background,
       extendBody: true,
+      resizeToAvoidBottomInset: widget.showBottomNav,
       body: ProjectBackground(
         child: Column(
           children: [

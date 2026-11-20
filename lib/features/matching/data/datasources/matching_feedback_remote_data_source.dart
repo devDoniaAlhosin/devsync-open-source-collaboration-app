@@ -19,9 +19,11 @@ class MatchingFeedbackRemoteDataSource {
   Future<MatchFeedbackAction?> saveFeedback({
     required String projectId,
     required MatchFeedbackAction action,
+    String? promptVersion,
   }) async {
     final uid = _currentUserId;
     final normalizedProjectId = projectId.trim();
+    final version = promptVersion?.trim();
     final ref = _feedbackRef(uid, normalizedProjectId);
     return _firestore.runTransaction<MatchFeedbackAction?>((transaction) async {
       final previous = await transaction.get(ref);
@@ -31,11 +33,13 @@ class MatchingFeedbackRemoteDataSource {
         _ => null,
       };
 
+      // Full replace so legacy fields (e.g. timestamp) cannot break rules.
       transaction.set(ref, {
         'userId': uid,
         'projectId': normalizedProjectId,
         'action': action.name,
         'updatedAt': FieldValue.serverTimestamp(),
+        if (version != null && version.isNotEmpty) 'promptVersion': version,
       });
 
       return previousAction;
@@ -69,6 +73,6 @@ class MatchingFeedbackRemoteDataSource {
       throw ArgumentError('Project ID is too long.');
     }
 
-    return _firestore.collection(FirestoreCollections.feedback).doc(documentId);
+    return _firestore.collection(FirestoreCollections.feedbacks).doc(documentId);
   }
 }

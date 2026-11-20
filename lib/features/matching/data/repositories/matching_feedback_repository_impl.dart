@@ -17,11 +17,13 @@ class MatchingFeedbackRepositoryImpl implements MatchingFeedbackRepository {
   Future<Result<MatchFeedbackAction?>> saveFeedback({
     required String projectId,
     required MatchFeedbackAction action,
+    String? promptVersion,
   }) async {
     try {
       final previousAction = await _remoteDataSource.saveFeedback(
         projectId: projectId,
         action: action,
+        promptVersion: promptVersion,
       );
       return Success(previousAction);
     } on StateError {

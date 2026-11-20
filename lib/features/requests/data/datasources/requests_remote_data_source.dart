@@ -57,6 +57,29 @@ class RequestsRemoteDataSource {
     return items;
   }
 
+  /// Sent requests that block another join attempt for the same project.
+  Future<Set<String>> fetchUnavailableProjectIds() async {
+    final uid = _uid;
+    final snapshot = await _requests.where('senderId', isEqualTo: uid).get();
+    return unavailableProjectIdsFrom(snapshot.docs.map((doc) => doc.data()));
+  }
+
+  /// `pending` / `isNew` / `accepted` project IDs from raw request docs.
+  static Set<String> unavailableProjectIdsFrom(
+    Iterable<Map<String, dynamic>> requests,
+  ) {
+    final ids = <String>{};
+    for (final data in requests) {
+      final status = data['status'];
+      if (status != 'pending' && status != 'isNew' && status != 'accepted') {
+        continue;
+      }
+      final projectId = (data['projectId'] as String?)?.trim() ?? '';
+      if (projectId.isNotEmpty) ids.add(projectId);
+    }
+    return ids;
+  }
+
   Future<RequestItem> createRequest({required RequestItem item}) async {
     final uid = _uid;
     final projectId = item.projectId.trim();
@@ -174,6 +197,7 @@ class RequestsRemoteDataSource {
         throw StateError('Request is no longer pending.');
       }
 
+      // Rules allow only status + respondedAt on owner respond.
       final subtitle = switch (status) {
         RequestStatus.accepted => 'Accepted',
         RequestStatus.declined => 'Declined',
@@ -182,7 +206,6 @@ class RequestsRemoteDataSource {
 
       transaction.update(ref, {
         'status': status.name,
-        'subtitle': subtitle,
         'respondedAt': FieldValue.serverTimestamp(),
       });
 

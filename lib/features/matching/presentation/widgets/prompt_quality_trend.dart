@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../models/prompt_quality_metrics.dart';
+import '../../domain/entities/prompt_quality_metrics.dart';
 
 class PromptQualityTrend extends StatelessWidget {
   const PromptQualityTrend({super.key, required this.metrics});

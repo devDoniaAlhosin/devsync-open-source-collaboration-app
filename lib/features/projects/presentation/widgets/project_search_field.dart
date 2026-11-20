@@ -81,6 +81,7 @@ class _ProjectSearchFieldState extends State<ProjectSearchField> {
               focusNode: _focusNode,
               onChanged: widget.onChanged,
               textInputAction: TextInputAction.search,
+              scrollPadding: const EdgeInsets.only(bottom: 80),
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontSize: 15),

@@ -28,14 +28,19 @@ import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/auth/presentation/cubit/verify_code_cubit.dart';
 import '../../features/auth/presentation/cubit/register_cubit.dart';
 import '../../features/matching/data/datasources/liked_matches_local_data_source.dart';
+import '../../features/matching/data/datasources/matching_feedback_remote_data_source.dart';
 import '../../features/matching/data/repositories/firestore_feedback_repository.dart';
 import '../../features/matching/data/repositories/firestore_matching_profile_repository.dart';
+import '../../features/matching/data/repositories/matching_feedback_repository_impl.dart';
 import '../../features/matching/domain/repositories/feedback_repository.dart';
+import '../../features/matching/domain/repositories/matching_feedback_repository.dart';
 import '../../features/matching/domain/repositories/matching_profile_repository.dart';
 import '../../features/matching/domain/repositories/matching_repository.dart';
 import '../../features/matching/domain/usecases/get_matching_analytics_usecase.dart';
 import '../../features/matching/domain/usecases/get_ranked_matches_usecase.dart';
+import '../../features/matching/domain/usecases/get_prompt_quality_metrics.dart';
 import '../../features/matching/domain/usecases/get_user_feedback_usecase.dart';
+import '../../features/matching/domain/usecases/save_match_feedback.dart';
 import '../../features/matching/matching_dependencies.dart';
 import '../../features/matching/presentation/cubit/matching_cubit.dart';
 import '../../features/profile/data/datasources/github_profile_remote_data_source.dart';
@@ -47,10 +52,18 @@ import '../../features/profile/domain/usecases/update_profile.dart';
 import '../../features/profile/presentation/cubit/profile_cubit.dart';
 import '../../features/projects/domain/usecases/get_projects.dart';
 import '../../features/projects/projects_dependencies.dart';
+import '../../features/notifications/data/datasources/notifications_remote_data_source.dart';
+import '../../features/notifications/data/datasources/notify_remote_data_source.dart';
+import '../../features/notifications/data/repositories/notifications_repository_impl.dart';
+import '../../features/notifications/domain/repositories/notifications_repository.dart';
+import '../../features/notifications/domain/usecases/get_notifications.dart';
+import '../../features/notifications/domain/usecases/mark_notification_read.dart';
+import '../../features/notifications/presentation/cubit/notifications_cubit.dart';
 import '../../features/requests/data/datasources/requests_remote_data_source.dart';
 import '../../features/requests/data/repositories/requests_repository_impl.dart';
 import '../../features/requests/domain/repositories/requests_repository.dart';
 import '../../features/requests/domain/usecases/get_requests.dart';
+import '../../features/requests/domain/usecases/get_unavailable_project_ids.dart';
 import '../../features/requests/domain/usecases/update_request_status.dart';
 import '../../features/requests/presentation/cubit/requests_cubit.dart';
 import '../../features/requests/domain/usecases/create_request.dart';
@@ -142,6 +155,7 @@ Future<void> configureDependencies({
   _registerMatching();
   _registerProfile();
   registerProjectsDependencies(getIt);
+  _registerNotifications();
   _registerRequests();
   _registerFcmService(onForegroundMessage, onNotificationOpened);
 }
@@ -189,6 +203,16 @@ void _registerMatching() {
         auth: getIt<FirebaseAuth>(),
       ),
     )
+    ..registerLazySingleton(
+      () => MatchingFeedbackRemoteDataSource(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
+    ..registerLazySingleton<MatchingFeedbackRepository>(
+      () => MatchingFeedbackRepositoryImpl(remoteDataSource: getIt()),
+    )
+    ..registerLazySingleton(() => SaveMatchFeedback(getIt()))
     ..registerLazySingleton(() => GetRankedMatchesUseCase(getIt()))
     ..registerLazySingleton<FeedbackRepository>(
       () => FirestoreFeedbackRepository(
@@ -197,6 +221,7 @@ void _registerMatching() {
       ),
     )
     ..registerLazySingleton(() => GetUserFeedbackUseCase(getIt()))
+    ..registerLazySingleton(() => GetPromptQualityMetrics(getIt()))
     ..registerLazySingleton(
       () => GetMatchingAnalyticsUseCase(
         getUserFeedback: getIt<GetUserFeedbackUseCase>(),
@@ -211,9 +236,14 @@ void _registerMatching() {
         repository: getIt<MatchingRepository>(),
         likedMatchesDataSource: getIt<LikedMatchesLocalDataSource>(),
         getRankedMatchesUseCase: getIt<GetRankedMatchesUseCase>(),
+        saveMatchFeedback: getIt<SaveMatchFeedback>(),
         profileRepository: getIt<MatchingProfileRepository>(),
         getProjects: getIt.isRegistered<GetProjects>()
             ? getIt<GetProjects>()
+            : null,
+        getUnavailableProjectIds:
+            getIt.isRegistered<GetUnavailableProjectIds>()
+            ? getIt<GetUnavailableProjectIds>()
             : null,
         getUserFeedbackUseCase: getIt.isRegistered<GetUserFeedbackUseCase>()
             ? getIt<GetUserFeedbackUseCase>()
@@ -258,6 +288,30 @@ void _registerProfile() {
     );
 }
 
+void _registerNotifications() {
+  if (getIt.isRegistered<NotificationsRepository>()) return;
+
+  getIt
+    ..registerLazySingleton(() => NotifyRemoteDataSource(auth: getIt()))
+    ..registerLazySingleton(
+      () => NotificationsRemoteDataSource(
+        firestore: getIt<FirebaseFirestore>(),
+        auth: getIt<FirebaseAuth>(),
+      ),
+    )
+    ..registerLazySingleton<NotificationsRepository>(
+      () => NotificationsRepositoryImpl(remoteDataSource: getIt()),
+    )
+    ..registerLazySingleton(() => GetNotifications(getIt()))
+    ..registerLazySingleton(() => MarkNotificationRead(getIt()))
+    ..registerFactory(
+      () => NotificationsCubit(
+        getNotifications: getIt(),
+        markNotificationRead: getIt(),
+      ),
+    );
+}
+
 void _registerRequests() {
   if (getIt.isRegistered<RequestsRepository>()) return;
 
@@ -271,9 +325,13 @@ void _registerRequests() {
     ..registerLazySingleton<RequestsRepository>(
       () => RequestsRepositoryImpl(
         remoteDataSource: getIt<RequestsRemoteDataSource>(),
+        notifyRemoteDataSource: getIt.isRegistered<NotifyRemoteDataSource>()
+            ? getIt<NotifyRemoteDataSource>()
+            : null,
       ),
     )
     ..registerLazySingleton(() => GetRequests(getIt()))
+    ..registerLazySingleton(() => GetUnavailableProjectIds(getIt()))
     ..registerLazySingleton(() => UpdateRequestStatus(getIt()))
     ..registerLazySingleton(() => CreateRequest(getIt()))
     ..registerFactory(

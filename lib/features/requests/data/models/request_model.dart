@@ -33,6 +33,10 @@ class RequestModel extends RequestItem {
     final data = doc.data()!;
     final senderId = data['senderId'] as String?;
     final ownerId = data['ownerId'] as String?;
+    final status = RequestStatus.values.firstWhere(
+      (e) => e.name == data['status'],
+      orElse: () => RequestStatus.pending,
+    );
 
     return RequestModel(
       id: doc.id,
@@ -41,11 +45,15 @@ class RequestModel extends RequestItem {
       ownerId: ownerId,
       initials: data['initials'] ?? '',
       title: data['title'] ?? '',
-      subtitle: data['subtitle'] ?? '',
-      status: RequestStatus.values.firstWhere(
-        (e) => e.name == data['status'],
-        orElse: () => RequestStatus.pending,
-      ),
+      subtitle: switch (status) {
+        RequestStatus.accepted => 'Accepted',
+        RequestStatus.declined => 'Declined',
+        RequestStatus.pending || RequestStatus.isNew =>
+          (data['subtitle'] as String?)?.trim().isNotEmpty == true
+              ? data['subtitle'] as String
+              : 'Pending',
+      },
+      status: status,
       type: ownerId == currentUserId && senderId != currentUserId
           ? RequestType.received
           : RequestType.sent,

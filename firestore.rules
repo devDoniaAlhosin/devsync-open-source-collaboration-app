@@ -10,27 +10,29 @@ service cloud.firestore {
         allow read, write: if request.auth != null
           && request.auth.uid == userId;
       }
+
+      // Inbox docs are created by Admin (Vercel /notify). Owner may read/mark.
+      match /notifications/{notificationId} {
+        allow read, update, delete: if request.auth != null
+          && request.auth.uid == userId;
+        allow create: if false;
+      }
     }
 
-    match /feedback/{feedbackId} {
+    // Like / skip analytics. Doc id = `{uid}_{projectId}`.
+    // Do not use hasOnly — merge writes may keep legacy fields (e.g. timestamp).
+    match /feedbacks/{feedbackId} {
       function validFeedback(data) {
-        return data.keys().hasAll([
-            'userId',
-            'projectId',
-            'action',
-            'updatedAt'
-          ])
-          && data.keys().hasOnly([
-            'userId',
-            'projectId',
-            'action',
-            'updatedAt'
-          ])
-          && data.userId == request.auth.uid
+        return data.userId == request.auth.uid
           && data.projectId is string
           && data.projectId.size() > 0
           && data.action in ['like', 'skip']
-          && data.updatedAt == request.time;
+          && data.updatedAt is timestamp
+          && data.updatedAt == request.time
+          && (
+            !('promptVersion' in data)
+            || data.promptVersion is string
+          );
       }
 
       allow read: if request.auth != null
@@ -283,28 +285,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Match table (liked matches per ERD)
-    match /match/{matchId} {
-      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
-    }
-
-    // Legacy matches collection for backward compatibility
+    // Liked matches (Heart / Save) — plural, same style as projects/requests.
     match /matches/{matchId} {
       allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
       allow create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
 
-    // Feedback (like / skip actions) – each user writes their own records.
-    match /feedback/{feedbackId} {
-      allow read: if request.auth != null
-                  && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.action in ['like', 'skip']
-                    && request.resource.data.projectId is string
-                    && request.resource.data.timestamp is timestamp;
-      allow update, delete: if false;
-    }
   }
 }

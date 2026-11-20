@@ -18,7 +18,7 @@ List<List<T>> chunkForBatch<T>(List<T> items, int size) {
 
 /// Removes a user's Firestore docs before Auth delete.
 ///
-/// Order: feedback → requests (sent, owned) → projects → views →
+/// Order: feedbacks → matches → requests (sent, owned) → projects → views →
 /// FCM tokens → `users/{uid}`.
 class AccountCleanupRemoteDataSource {
   AccountCleanupRemoteDataSource({FirebaseFirestore? firestore})
@@ -31,11 +31,13 @@ class AccountCleanupRemoteDataSource {
 
   /// Wipe order used by tests.
   static const wipeSteps = <String>[
-    'feedback.userId',
+    'feedbacks.userId',
+    'matches.userId',
     'requests.senderId',
     'requests.ownerId',
     'projects.ownerId',
     'views.viewerId',
+    'users.notifications',
     'users.fcmTokens',
     'users.doc',
   ];
@@ -52,7 +54,10 @@ class AccountCleanupRemoteDataSource {
     if (trimmed.isEmpty) return;
 
     await _runStep(
-      () => _deleteByField(FirestoreCollections.feedback, 'userId', trimmed),
+      () => _deleteByField(FirestoreCollections.feedbacks, 'userId', trimmed),
+    );
+    await _runStep(
+      () => _deleteByField(FirestoreCollections.matches, 'userId', trimmed),
     );
     await _runStep(
       () => _deleteByField(FirestoreCollections.requests, 'senderId', trimmed),
@@ -65,6 +70,12 @@ class AccountCleanupRemoteDataSource {
     );
     await _runStep(
       () => _deleteByField(FirestoreCollections.views, 'viewerId', trimmed),
+    );
+    await _runStep(
+      () => _deleteSubcollection(
+        trimmed,
+        FirestoreCollections.notifications,
+      ),
     );
     await _runStep(
       () => _deleteSubcollection(trimmed, FirestoreCollections.fcmTokens),

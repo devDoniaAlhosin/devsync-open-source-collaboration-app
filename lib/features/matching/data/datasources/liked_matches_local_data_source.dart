@@ -29,9 +29,6 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   final Duration _operationTimeout;
 
   CollectionReference<Map<String, dynamic>> get _match =>
-      _firestore.collection(FirestoreCollections.match);
-
-  CollectionReference<Map<String, dynamic>> get _matchesLegacy =>
       _firestore.collection(FirestoreCollections.matches);
 
   CollectionReference<Map<String, dynamic>> get _projects =>
@@ -41,22 +38,10 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
   Future<List<MatchItem>> getLikedMatches() => _run(
     'Could not load saved matches. Please try again.',
     (collection, userId) async {
-      var snapshot = await collection
+      final snapshot = await collection
           .where('userId', isEqualTo: userId)
           .get()
           .timeout(_operationTimeout);
-
-      if (snapshot.docs.isEmpty && collection.path != _matchesLegacy.path) {
-        try {
-          final legacySnapshot = await _matchesLegacy
-              .where('userId', isEqualTo: userId)
-              .get()
-              .timeout(_operationTimeout);
-          if (legacySnapshot.docs.isNotEmpty) {
-            snapshot = legacySnapshot;
-          }
-        } catch (_) {}
-      }
 
       final records =
           snapshot.docs
@@ -99,15 +84,6 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
           .doc(docId)
           .set(model.toFirestore())
           .timeout(_operationTimeout);
-
-      if (collection.path != _matchesLegacy.path) {
-        try {
-          await _matchesLegacy
-              .doc(docId)
-              .set(model.toFirestore())
-              .timeout(_operationTimeout);
-        } catch (_) {}
-      }
     },
   );
 
@@ -118,12 +94,6 @@ class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
       _validateProjectId(projectId);
       final docId = _matchDocumentId(userId, projectId);
       await collection.doc(docId).delete().timeout(_operationTimeout);
-
-      if (collection.path != _matchesLegacy.path) {
-        try {
-          await _matchesLegacy.doc(docId).delete().timeout(_operationTimeout);
-        } catch (_) {}
-      }
     },
   );
 

@@ -69,6 +69,10 @@ macos/Runner/GoogleService-Info.plist
 **/serviceAccount*.json
 **/*-firebase-adminsdk-*.json
 
+# Node (Admin seed scripts)
+/node_modules/
+/package-lock.json
+
 # Personal / local notes
 docs/saga_whatIdo.md
 

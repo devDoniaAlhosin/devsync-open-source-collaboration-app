@@ -109,6 +109,10 @@ class _FakeRequestsRepository implements RequestsRepository {
   Future<Result<List<RequestItem>>> getRequests() async => requestsResult;
 
   @override
+  Future<Result<Set<String>>> getUnavailableProjectIds() async =>
+      const Success(<String>{});
+
+  @override
   Future<Result<RequestItem>> createRequest({
     required RequestItem item,
   }) async => createResult ?? Success(item);

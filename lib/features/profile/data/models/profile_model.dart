@@ -17,6 +17,7 @@ abstract final class ProfileModel {
       languages: _languages(map['languages']),
       skills: _strings(map['skills']),
       suggestedSkills: _strings(map['suggestedSkills']),
+      topRepositories: _strings(map['topRepositories']),
     );
   }
 
@@ -35,6 +36,7 @@ abstract final class ProfileModel {
       'activity': [for (final week in p.activity) ...week],
       'skills': p.skills,
       'suggestedSkills': p.suggestedSkills,
+      'topRepositories': p.topRepositories,
     };
   }
 

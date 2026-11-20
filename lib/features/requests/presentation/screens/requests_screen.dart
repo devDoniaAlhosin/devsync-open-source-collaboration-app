@@ -12,7 +12,6 @@ import 'package:devsync_open_source_collaboration_app/core/widgets/ds_toast.dart
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/cubit/requests_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/segmented_tabs.dart';
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/team_message_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -34,6 +33,23 @@ class _RequestsView extends StatelessWidget {
   const _RequestsView({this.onMenuPressed});
 
   final VoidCallback? onMenuPressed;
+
+  static String _emptyTitle(int tab) {
+    return switch (tab) {
+      1 => 'No received requests',
+      2 => 'No sent requests',
+      _ => 'No requests yet',
+    };
+  }
+
+  static String _emptyMessage(int tab) {
+    return switch (tab) {
+      1 => 'When someone asks to join your project, it will show up here.',
+      2 => 'Requests you send to join projects will appear here.',
+      _ =>
+        'When you send or receive collaboration requests, they will show up here.',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,31 +118,34 @@ class _RequestsView extends StatelessWidget {
                             child: child,
                           );
                         },
-                        child: ListView.builder(
-                          key: ValueKey(tab),
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                          itemCount: visible.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == visible.length) {
-                              return const Padding(
-                                padding: EdgeInsets.only(top: 10),
-                                child: DsItemEnter(
-                                  index: 0,
-                                  child: TeamMessagesButton(),
+                        child: visible.isEmpty
+                            ? DsEmptyState(
+                                key: ValueKey('empty-$tab'),
+                                icon: AppIcons.inbox,
+                                title: _emptyTitle(tab),
+                                message: _emptyMessage(tab),
+                              )
+                            : ListView.builder(
+                                key: ValueKey(tab),
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  24,
                                 ),
-                              );
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: DsItemEnter(
-                                index: index,
-                                child: ExpandedRequestCard(
-                                  item: visible[index],
-                                ),
+                                itemCount: visible.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: DsItemEnter(
+                                      index: index,
+                                      child: ExpandedRequestCard(
+                                        item: visible[index],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
                       ),
                     ),
                   ],

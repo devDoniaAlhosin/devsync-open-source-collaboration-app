@@ -73,6 +73,7 @@ class ProjectModel extends Project {
     super.ownerName,
     super.createdAt,
     super.hasPendingRequest,
+    super.isJoined,
     this.updatedAt,
     this.matchSummary = '',
     this.alignments = const [],
@@ -90,12 +91,14 @@ class ProjectModel extends Project {
     DocumentSnapshot<Map<String, dynamic>> doc, {
     String? currentUserId,
     Set<String> pendingRequestProjectIds = const {},
+    Set<String> joinedProjectIds = const {},
   }) {
     return ProjectModel.fromMap(
       doc.id,
       doc.data() ?? const <String, dynamic>{},
       currentUserId: currentUserId,
       pendingRequestProjectIds: pendingRequestProjectIds,
+      joinedProjectIds: joinedProjectIds,
     );
   }
 
@@ -104,6 +107,7 @@ class ProjectModel extends Project {
     Map<String, dynamic> data, {
     String? currentUserId,
     Set<String> pendingRequestProjectIds = const {},
+    Set<String> joinedProjectIds = const {},
   }) {
     final ownerId = _asString(data['ownerId'] ?? data['ownerUid']);
     return ProjectModel(
@@ -123,6 +127,7 @@ class ProjectModel extends Project {
       ownerName: _asString(data['ownerName']),
       createdAt: _asDate(data['createdAt']),
       hasPendingRequest: pendingRequestProjectIds.contains(id),
+      isJoined: joinedProjectIds.contains(id),
       updatedAt: _asDate(data['updatedAt']),
       matchSummary: _asString(data['matchSummary']),
       alignments: _asAlignments(data['alignments']),

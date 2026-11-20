@@ -10,8 +10,13 @@ class SaveMatchFeedback {
   Future<Result<MatchFeedbackAction?>> call({
     required String projectId,
     required MatchFeedbackAction action,
+    String? promptVersion,
   }) {
-    return _repository.saveFeedback(projectId: projectId, action: action);
+    return _repository.saveFeedback(
+      projectId: projectId,
+      action: action,
+      promptVersion: promptVersion,
+    );
   }
 
   Future<Result<void>> clear({required String projectId}) {

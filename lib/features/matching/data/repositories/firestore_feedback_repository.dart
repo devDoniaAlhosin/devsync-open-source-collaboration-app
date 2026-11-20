@@ -31,7 +31,7 @@ class FirestoreFeedbackRepository implements FeedbackRepository {
 
     try {
       final snapshot = await _firestore
-          .collection(FirestoreCollections.feedback)
+          .collection(FirestoreCollections.feedbacks)
           .where('userId', isEqualTo: uid)
           .get()
           .timeout(_timeout);

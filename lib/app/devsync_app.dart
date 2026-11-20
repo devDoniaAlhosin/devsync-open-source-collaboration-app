@@ -27,6 +27,7 @@ import '../features/matching/presentation/screens/ai_analytics_screen.dart';
 import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
 import '../features/matching/presentation/screens/liked_matches_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
+import '../features/matching/presentation/screens/prompt_quality_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart'
     as matching_details;
 import '../features/requests/presentation/screens/connected_celebration_screen.dart';
@@ -224,7 +225,8 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.projects => const ProjectsShell(initialTab: 1),
       AppRoutes.projectDetail => _projectDetailPage(settings.arguments),
       AppRoutes.profile => const ProfileScreen(),
-      AppRoutes.connectGithub => const ConnectGithubEntry(),
+      AppRoutes.connectGithub =>
+          ConnectGithubEntry.fromArgs(settings.arguments),
       AppRoutes.requests => const RequestsScreen(),
       AppRoutes.notificationPermission => NotificationPermissionScreen(
         args: settings.arguments is NotificationPermissionArgs
@@ -251,6 +253,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       ),
       AppRoutes.aiInsights => const AiAnalyticsScreen(),
       AppRoutes.insights => const InsightsScreen(),
+      AppRoutes.promptQuality => const PromptQualityScreen(),
       AppRoutes.community => const StubScreen(
         title: 'Community',
         owner: 'If time',

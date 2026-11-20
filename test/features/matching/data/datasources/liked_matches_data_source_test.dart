@@ -54,7 +54,7 @@ void main() {
     () async {
       await source.addLikedMatch(_match, promptVersion: 'ranker-v1');
 
-      expect(firestore.paths, contains('match/user-a_project-1'));
+      expect(firestore.paths, contains('matches/user-a_project-1'));
       final data = firestore.writes.first;
       expect(data['matchId'], 'user-a_project-1');
       expect(data['userId'], 'user-a');
@@ -148,7 +148,7 @@ void main() {
     gate.complete();
 
     await expectLater(request, throwsA(isA<LikedMatchesException>()));
-    expect(firestore.paths, contains('match'));
+    expect(firestore.paths, contains('matches'));
     expect(firestore.paths.any((path) => path.contains('user-b')), isFalse);
   });
 

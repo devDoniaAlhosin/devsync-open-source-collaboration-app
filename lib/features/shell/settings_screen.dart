@@ -88,12 +88,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final providers = authState is AuthAuthenticated
         ? authState.user.authProviders
         : const <String>[];
-    final needsPassword = providers.contains('password');
+    final reauth = providers.contains('password')
+        ? _DeleteReauth.password
+        : providers.contains('google.com')
+        ? _DeleteReauth.google
+        : providers.contains('github.com')
+        ? _DeleteReauth.github
+        : _DeleteReauth.none;
 
     final confirmed = await showDialog<_DeleteAccountResult>(
       context: context,
       barrierColor: const Color(0x9E050F0E),
-      builder: (context) => _DeleteAccountDialog(needsPassword: needsPassword),
+      builder: (context) => _DeleteAccountDialog(reauth: reauth),
     );
     if (confirmed == null || !mounted) return;
 
@@ -278,11 +284,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: ds.textMuted,
                             ),
                             onTap: () {
-                              showDsToast(
+                              Navigator.of(
                                 context,
-                                'Prompt quality is an if-time screen',
-                                tone: DsToastTone.info,
-                              );
+                              ).pushNamed(AppRoutes.promptQuality);
                             },
                           ),
                           DsInfoRow(
@@ -427,6 +431,8 @@ class _SessionBusyView extends StatelessWidget {
   }
 }
 
+enum _DeleteReauth { password, google, github, none }
+
 class _DeleteAccountResult {
   const _DeleteAccountResult({this.password});
 
@@ -434,9 +440,9 @@ class _DeleteAccountResult {
 }
 
 class _DeleteAccountDialog extends StatefulWidget {
-  const _DeleteAccountDialog({required this.needsPassword});
+  const _DeleteAccountDialog({required this.reauth});
 
-  final bool needsPassword;
+  final _DeleteReauth reauth;
 
   @override
   State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
@@ -454,18 +460,41 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
     super.dispose();
   }
 
+  bool get _needsPassword => widget.reauth == _DeleteReauth.password;
+
   bool get _canDelete {
     if (_confirm.text.trim().toUpperCase() != 'DELETE') return false;
-    if (widget.needsPassword && _password.text.isEmpty) return false;
+    if (_needsPassword && _password.text.isEmpty) return false;
     return true;
   }
+
+  String get _body {
+    const base =
+        'This permanently deletes your profile, projects, join requests, '
+        'and match feedback. It can’t be undone.';
+    return switch (widget.reauth) {
+      _DeleteReauth.google =>
+        '$base\n\nNext, Google will ask you to confirm it’s you.',
+      _DeleteReauth.github =>
+        '$base\n\nNext, GitHub will ask you to confirm it’s you.',
+      _DeleteReauth.password =>
+        '$base\n\nEnter your password to confirm.',
+      _DeleteReauth.none => base,
+    };
+  }
+
+  String get _ctaLabel => switch (widget.reauth) {
+    _DeleteReauth.google => 'Continue with Google',
+    _DeleteReauth.github => 'Continue with GitHub',
+    _ => 'Delete account',
+  };
 
   void _submit() {
     if (!_canDelete || _submitting) return;
     setState(() => _submitting = true);
     Navigator.of(context).pop(
       _DeleteAccountResult(
-        password: widget.needsPassword ? _password.text : null,
+        password: _needsPassword ? _password.text : null,
       ),
     );
   }
@@ -507,13 +536,12 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'This permanently deletes your profile, projects, join requests, '
-                'and match feedback. It can’t be undone.',
+                _body,
                 style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.lg),
-              if (widget.needsPassword) ...[
+              if (_needsPassword) ...[
                 DsTextField(
                   label: 'Password',
                   controller: _password,
@@ -529,7 +557,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               ),
               const SizedBox(height: AppSpacing.lg),
               DsButton(
-                label: 'Delete account',
+                label: _ctaLabel,
                 variant: DsButtonVariant.dangerFilled,
                 isLoading: _submitting,
                 onPressed: _canDelete && !_submitting ? _submit : null,

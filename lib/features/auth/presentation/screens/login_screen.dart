@@ -5,17 +5,14 @@ import '../../../../app/app_routes.dart';
 import '../../../../app/devsync_app.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
-import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/usecase/usecase.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_page_header.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../../../core/widgets/ds_text_field.dart';
 import '../../../../core/widgets/ds_toast.dart';
-import '../../../profile/domain/usecases/get_profile.dart';
 import '../cubit/login_cubit.dart';
 import '../widgets/auth_divider.dart';
 import '../widgets/auth_gate.dart';
@@ -53,15 +50,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _routeAfterLogin() async {
-    if (getIt.isRegistered<GetProfile>()) {
-      final result = await getIt<GetProfile>()(const NoParams());
-      if (!mounted) return;
-      if (result case Success(:final data) when data.needsOnboarding) {
-        navigateToOnboarding(context);
-        return;
-      }
-    }
     if (!mounted) return;
+    // Never block exploration behind Connect GitHub / Edit profile.
     navigateToHome(context);
   }
 

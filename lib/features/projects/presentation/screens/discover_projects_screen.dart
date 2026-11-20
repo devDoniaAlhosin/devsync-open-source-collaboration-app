@@ -29,13 +29,28 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
   bool _hasEntered = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<ProjectsCubit>().load(silent: true);
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   List<Project> _visibleProjects(List<Project> source) {
-    final query = _query.trim().toLowerCase();
+    final tokens = _query
+        .trim()
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((token) => token.isNotEmpty)
+        .toList(growable: false);
+
     final projects = source.where((project) {
       if (project.isOwner) {
         return false;
@@ -44,17 +59,18 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
           !project.isBeginnerFriendly) {
         return false;
       }
-      if (query.isEmpty) {
+      if (tokens.isEmpty) {
         return true;
       }
       final searchable = [
         project.title,
         project.description,
         project.githubUrl,
+        project.cleanGithubUrl,
         project.ownerName,
         ...project.techStack,
       ].join(' ').toLowerCase();
-      return searchable.contains(query);
+      return tokens.every(searchable.contains);
     }).toList();
 
     switch (_filter) {
@@ -90,7 +106,6 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
     );
     if (!mounted || !sent) return;
 
-    // RequestsCubit owns the write; keep the Discover feed in sync locally.
     context.read<ProjectsCubit>().markRequestPending(project.id);
   }
 
@@ -118,123 +133,105 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
             ? state.discoverProjects
             : const <Project>[];
         final projects = _visibleProjects(source);
+        final gutter = ProjectLayout.gutterFor(MediaQuery.sizeOf(context).width);
+        final bottomPad =
+            ProjectLayout.bottomNavSpace +
+            MediaQuery.viewInsetsOf(context).bottom;
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final gutter = ProjectLayout.gutterFor(constraints.maxWidth);
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                gutter,
-                18,
-                gutter,
-                ProjectLayout.bottomNavSpace,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: ProjectLayout.maxWidth,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      DsPageHeader(
-                        style: DsPageHeaderStyle.page,
-                        title: 'Discover',
-                        eyebrow: '${projects.length} listed',
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.ds.surface.withValues(alpha: 0.58),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: context.ds.border),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                AppIcons.sparkle,
-                                size: 13,
-                                color: AppColors.teal,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Smart match',
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(
-                                      fontSize: 11,
-                                      color: context.ds.textPrimary,
-                                      letterSpacing: 0,
-                                    ),
-                              ),
-                            ],
-                          ),
+        return CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(gutter, 18, gutter, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DsPageHeader(
+                      style: DsPageHeaderStyle.page,
+                      title: 'Discover',
+                      eyebrow: '${projects.length} listed',
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.ds.surface.withValues(alpha: 0.58),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: context.ds.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              AppIcons.sparkle,
+                              size: 13,
+                              color: AppColors.teal,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Smart match',
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(
+                                    fontSize: 11,
+                                    color: context.ds.textPrimary,
+                                    letterSpacing: 0,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      ProjectSearchField(
-                        controller: _searchController,
-                        onChanged: (value) => setState(() {
-                          _markEntered();
-                          _query = value;
-                        }),
-                      ),
-                      const SizedBox(height: 14),
-                      ProjectFilterBar(
-                        selected: _filter,
-                        onSelected: (filter) => setState(() {
-                          _markEntered();
-                          _filter = filter;
-                        }),
-                      ),
-                      const SizedBox(height: 16),
-                      if (projects.isEmpty)
-                        _EmptyDiscoverState(
-                          hasQuery: _query.trim().isNotEmpty,
-                          onReset: () {
-                            _searchController.clear();
-                            setState(() {
-                              _query = '';
-                              _filter = ProjectFilter.forYou;
-                            });
-                          },
-                        )
-                      else
-                        LayoutBuilder(
-                          builder: (context, listConstraints) {
-                            if (listConstraints.maxWidth >= 860) {
-                              final cardWidth =
-                                  (listConstraints.maxWidth - 16) / 2;
-                              return Wrap(
-                                spacing: 16,
-                                runSpacing: 16,
-                                children: [
-                                  for (var i = 0; i < projects.length; i++)
-                                    SizedBox(
-                                      width: cardWidth,
-                                      child: _listItem(projects[i], i),
-                                    ),
-                                ],
-                              );
-                            }
-                            return Column(
-                              children: [
-                                for (var i = 0; i < projects.length; i++) ...[
-                                  if (i > 0) const SizedBox(height: 14),
-                                  _listItem(projects[i], i),
-                                ],
-                              ],
-                            );
-                          },
-                        ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    ProjectSearchField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() {
+                        _markEntered();
+                        _query = value;
+                      }),
+                    ),
+                    const SizedBox(height: 14),
+                    ProjectFilterBar(
+                      selected: _filter,
+                      onSelected: (filter) => setState(() {
+                        _markEntered();
+                        _filter = filter;
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
-            );
-          },
+            ),
+            if (projects.isEmpty)
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(gutter, 0, gutter, bottomPad),
+                sliver: SliverToBoxAdapter(
+                  child: _EmptyDiscoverState(
+                    hasQuery: _query.trim().isNotEmpty,
+                    onReset: () {
+                      _searchController.clear();
+                      setState(() {
+                        _query = '';
+                        _filter = ProjectFilter.forYou;
+                      });
+                    },
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(gutter, 0, gutter, bottomPad),
+                sliver: SliverList.separated(
+                  itemCount: projects.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 14),
+                  itemBuilder: (context, index) {
+                    return _listItem(projects[index], index);
+                  },
+                ),
+              ),
+          ],
         );
       },
     );
@@ -243,7 +240,6 @@ class _DiscoverProjectsScreenState extends State<DiscoverProjectsScreen> {
   Widget _card(Project project) {
     return DiscoverProjectCard(
       project: project,
-      requested: project.hasPendingRequest,
       onTap: () => widget.onOpenProject(project),
       onRequest: () => _requestToJoin(project),
     );

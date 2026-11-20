@@ -138,8 +138,7 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
             ),
             body: ProjectBackground(child: body),
             bottomNavigationBar: _DetailsActionBar(
-              requested: project.hasPendingRequest,
-              isOwner: project.isOwner,
+              project: project,
               isLoading: _requesting,
               onRequest: stats == null
                   ? null
@@ -448,22 +447,27 @@ class _SectionHeading extends StatelessWidget {
 
 class _DetailsActionBar extends StatelessWidget {
   const _DetailsActionBar({
-    required this.requested,
-    required this.isOwner,
+    required this.project,
     required this.isLoading,
     required this.onRequest,
     required this.onClose,
   });
 
-  final bool requested;
-  final bool isOwner;
+  final Project project;
   final bool isLoading;
   final VoidCallback? onRequest;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    final disabled = requested || isOwner || isLoading;
+    final disabled = !project.canRequestJoin || isLoading;
+    final label = project.isOwner
+        ? 'You own this project'
+        : project.joined
+        ? 'Joined'
+        : project.hasPendingRequest
+        ? 'Request sent'
+        : 'Request to collaborate';
 
     return Material(
       color: context.ds.background,
@@ -487,14 +491,10 @@ class _DetailsActionBar extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ProjectActionButton(
-                      label: isOwner
-                          ? 'You own this project'
-                          : requested
-                          ? 'Request sent'
-                          : 'Request to collaborate',
-                      icon: requested
+                      label: label,
+                      icon: project.joined || project.hasPendingRequest
                           ? AppIcons.success
-                          : (isOwner ? AppIcons.projects : null),
+                          : (project.isOwner ? AppIcons.projects : null),
                       variant: disabled
                           ? ProjectActionButtonVariant.secondary
                           : ProjectActionButtonVariant.primary,

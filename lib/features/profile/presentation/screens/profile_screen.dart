@@ -14,9 +14,12 @@ import 'package:devsync_open_source_collaboration_app/core/widgets/ds_page_fade.
 import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/domain/entities/profile.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/connect_github_entry.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/github_stats_list_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/contribution_heatmap.dart';
+import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/github_connection_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/language_breakdown.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/profile_identity.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/widgets/profile_stat_card.dart';
@@ -103,6 +106,24 @@ class _ProfileBody extends StatelessWidget {
   final Profile profile;
   final bool saving;
 
+  VoidCallback? _statTap(
+    BuildContext context, {
+    required GithubStatKind kind,
+    required bool enabled,
+  }) {
+    if (!enabled) return null;
+    return () {
+      Navigator.of(context).push(
+        DsFadePageRoute<void>(
+          builder: (_) => GithubStatsListScreen(
+            kind: kind,
+            profile: profile,
+          ),
+        ),
+      );
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -114,24 +135,60 @@ class _ProfileBody extends StatelessWidget {
         githubUrl: profile.githubUrl,
         completion: profile.completion,
       ),
-      Text(
-        profile.bio,
-        style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
-      ),
+      if (!profile.hasGithub)
+        GithubConnectionCard(
+          username: '',
+          onConnect: () async {
+            final connected = await Navigator.of(context).pushNamed(
+              AppRoutes.connectGithub,
+              arguments: const ConnectGithubRouteArgs(popOnSuccess: true),
+            );
+            if (connected == true && context.mounted) {
+              context.read<ProfileCubit>().load();
+            }
+          },
+        ),
+      if (profile.bio.trim().isNotEmpty)
+        Text(
+          profile.bio,
+          style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
+        ),
       Row(
         children: [
           Expanded(
-            child: ProfileStatCard(value: profile.repos, label: 'Repos'),
+            child: ProfileStatCard(
+              value: profile.repos,
+              label: 'Repos',
+              onTap: _statTap(
+                context,
+                kind: GithubStatKind.repos,
+                enabled: profile.hasGithub && profile.repos > 0,
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: ProfileStatCard(value: profile.commits, label: 'Commits'),
+            child: ProfileStatCard(
+              value: profile.commits,
+              label: 'Commits',
+              onTap: _statTap(
+                context,
+                kind: GithubStatKind.commits,
+                enabled: profile.hasGithub && profile.commits > 0,
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: ProfileStatCard(
               value: profile.languageCount,
               label: 'Languages',
+              onTap: _statTap(
+                context,
+                kind: GithubStatKind.languages,
+                enabled: profile.hasGithub &&
+                    (profile.languageCount > 0 || profile.languages.isNotEmpty),
+              ),
             ),
           ),
         ],

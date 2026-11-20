@@ -15,7 +15,6 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/privacy_note_card.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/setup_scaffold.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/edit_profile_entry.dart';
 
 class ConnectGithubScreen extends StatefulWidget {
   const ConnectGithubScreen({
@@ -115,11 +114,9 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
                 variant: DsButtonVariant.quiet,
                 onPressed: scanning
                     ? null
-                    : () => Navigator.of(context).pushReplacementNamed(
-                          AppRoutes.editProfile,
-                          arguments: const EditProfileRouteArgs(
-                            asOnboarding: true,
-                          ),
+                    : () => Navigator.of(context).pushNamedAndRemoveUntil(
+                          AppRoutes.home,
+                          (route) => false,
                         ),
               ),
             ],

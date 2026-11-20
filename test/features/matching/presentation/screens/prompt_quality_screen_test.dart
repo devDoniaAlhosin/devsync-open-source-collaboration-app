@@ -1,35 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:devsync_open_source_collaboration_app/features/matching/presentation/models/prompt_quality_metrics.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/prompt_quality_metrics.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/prompt_quality_screen.dart';
 
 void main() {
   group('PromptQualityScreen', () {
-    testWidgets('shows "No data yet" unavailable state when metrics are null', (
+    testWidgets('shows "No data yet" when metrics are null and nothing loads', (
       tester,
     ) async {
       await tester.pumpWidget(
         const MaterialApp(home: PromptQualityScreen(metrics: null)),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Prompt quality'), findsOneWidget);
       expect(find.text('No data yet'), findsOneWidget);
-      expect(
-        find.textContaining('Prompt quality metrics are not available yet'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Like or skip matches'), findsOneWidget);
     });
 
     testWidgets('shows "No data yet" when metrics versions are empty', (
       tester,
     ) async {
-      final emptyMetrics = PromptQualityMetrics(
-        versions: const [],
-        averageMatchTime: Duration.zero,
-        timelyAlertsPercentage: 0,
-      );
+      final emptyMetrics = PromptQualityMetrics(versions: const []);
 
       await tester.pumpWidget(
         MaterialApp(home: PromptQualityScreen(metrics: emptyMetrics)),
@@ -60,6 +53,23 @@ void main() {
       expect(find.text('Timely alerts'), findsOneWidget);
       expect(find.text('95%'), findsOneWidget);
       expect(find.text('Relevance by prompt version'), findsOneWidget);
+    });
+
+    testWidgets('hides timing cards when timing metrics are absent', (
+      tester,
+    ) async {
+      final metrics = PromptQualityMetrics(
+        versions: const [PromptQualityVersion(label: 'v1', relevance: 60)],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(home: PromptQualityScreen(metrics: metrics)),
+      );
+      await tester.pump();
+
+      expect(find.text('Relevance by prompt version'), findsOneWidget);
+      expect(find.text('Avg match time'), findsNothing);
+      expect(find.text('Timely alerts'), findsNothing);
     });
   });
 }
