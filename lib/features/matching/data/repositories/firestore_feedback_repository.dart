@@ -51,6 +51,7 @@ class FirestoreFeedbackRepository implements FeedbackRepository {
         final projectId = data['projectId'] as String?;
         final userId = data['userId'] as String?;
         final action = data['action'] as String?;
+        final promptVersion = data['promptVersion'] as String?;
 
         // Skip malformed docs silently; unknown actions are kept — the use
         // case or caller decides what to do with them.
@@ -69,6 +70,7 @@ class FirestoreFeedbackRepository implements FeedbackRepository {
             projectId: projectId,
             action: action,
             timestamp: timestamp,
+            promptVersion: promptVersion,
           ),
         );
       }

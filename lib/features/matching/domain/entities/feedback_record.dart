@@ -10,6 +10,7 @@ class FeedbackRecord extends Equatable {
     required this.projectId,
     required this.action,
     this.timestamp,
+    this.promptVersion,
   });
 
   final String id;
@@ -22,9 +23,19 @@ class FeedbackRecord extends Equatable {
   /// Nullable: Yousef's doc may omit this field.
   final DateTime? timestamp;
 
+  /// Optional: version of the prompt associated with this recommendation.
+  final String? promptVersion;
+
   bool get isLike => action == 'like';
   bool get isSkip => action == 'skip';
 
   @override
-  List<Object?> get props => [id, userId, projectId, action, timestamp];
+  List<Object?> get props => [
+    id,
+    userId,
+    projectId,
+    action,
+    timestamp,
+    promptVersion,
+  ];
 }

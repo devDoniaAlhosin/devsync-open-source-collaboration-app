@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
@@ -9,6 +10,9 @@ import '../models/prompt_quality_metrics.dart';
 import '../widgets/prompt_quality_trend.dart';
 
 /// Read-only prompt evaluation snapshot.
+///
+/// Shows "No data yet" when real metrics are unavailable.
+/// Never presents demo data as real.
 class PromptQualityScreen extends StatelessWidget {
   final PromptQualityMetrics? metrics;
 
@@ -16,7 +20,7 @@ class PromptQualityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (metrics == null) {
+    if (metrics == null || metrics!.versions.isEmpty) {
       return Scaffold(
         backgroundColor: context.ds.background,
         appBar: DsAppBar(
@@ -28,9 +32,10 @@ class PromptQualityScreen extends StatelessWidget {
         body: const SafeArea(
           child: Center(
             child: DsEmptyState(
-              title: 'No prompt metrics yet',
+              icon: AppIcons.info,
+              title: 'No data yet',
               message:
-                  'Prompt quality metrics will be displayed here once prompt evaluation is configured.',
+                  'Prompt quality metrics are not available yet. Real per-version evaluation requires promptVersion tracking across feedback.',
             ),
           ),
         ),
