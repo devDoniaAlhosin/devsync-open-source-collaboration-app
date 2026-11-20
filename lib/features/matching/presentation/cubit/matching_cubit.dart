@@ -88,9 +88,15 @@ class MatchingCubit extends Cubit<MatchingState> {
 
     final getMatchingAnalytics = _getMatchingAnalyticsUseCase;
     if (getMatchingAnalytics == null) {
+      final computed = analytics;
+      // Data today: fall back to demoAnalytics when no real feedback exists yet.
+      // Replace with real Firestore aggregation once feedback collection is wired.
+      final effective = computed.isEmpty
+          ? MatchingAnalytics.demoAnalytics
+          : computed;
       emit(
         state.copyWith(
-          analytics: analytics,
+          analytics: effective,
           isLoadingAnalytics: false,
           clearAnalyticsError: true,
         ),

@@ -393,19 +393,23 @@ void main() {
       expect(find.text('Skills matched'), findsOneWidget);
     });
 
-    testWidgets('AiAnalyticsScreen renders empty state when zero ratings', (
-      tester,
-    ) async {
-      await tester.runAsync(() async {
-        await cubit.loadInitialData();
-      });
+    testWidgets(
+      'AiAnalyticsScreen shows demo analytics when user has zero ratings',
+      (tester) async {
+        await tester.runAsync(() async {
+          await cubit.loadInitialData();
+        });
 
-      await tester.pumpWidget(
-        MaterialApp(home: AiAnalyticsScreen(cubit: cubit)),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          MaterialApp(home: AiAnalyticsScreen(cubit: cubit)),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Rate matches to see insights'), findsOneWidget);
-    });
+        // With zero real ratings the screen falls back to demoAnalytics
+        // (spec: "Data today: MatchingAnalytics.demoAnalytics").
+        expect(find.text('Recommendation insights'), findsOneWidget);
+        expect(find.text('Matches rated'), findsOneWidget);
+      },
+    );
   });
 }
