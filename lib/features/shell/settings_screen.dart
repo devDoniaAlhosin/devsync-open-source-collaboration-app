@@ -7,6 +7,7 @@ import '../../app/devsync_app.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/di/injection.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/notifications/notification_preferences.dart';
 import '../../core/result/result.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -36,9 +37,67 @@ enum _SessionAction { idle, signingOut, deleting }
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyRequests = true;
   bool _notifyMatches = true;
-  bool _notifyTasks = false;
+  bool _prefsReady = false;
   int _flavor = 0;
   _SessionAction _sessionAction = _SessionAction.idle;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPrefs();
+  }
+
+  Future<void> _loadNotificationPrefs() async {
+    if (!getIt.isRegistered<NotificationPreferencesService>()) {
+      setState(() => _prefsReady = true);
+      return;
+    }
+    final prefs = await getIt<NotificationPreferencesService>().load();
+    if (!mounted) return;
+    setState(() {
+      _notifyRequests = prefs.requests;
+      _notifyMatches = prefs.matches;
+      _prefsReady = true;
+    });
+  }
+
+  Future<void> _setNotifyRequests(bool value) async {
+    setState(() => _notifyRequests = value);
+    final service = getIt.isRegistered<NotificationPreferencesService>()
+        ? getIt<NotificationPreferencesService>()
+        : null;
+    if (service == null) return;
+    try {
+      await service.setRequests(value);
+    } on Object {
+      if (!mounted) return;
+      setState(() => _notifyRequests = !value);
+      showDsToast(
+        context,
+        'Could not save notification setting',
+        tone: DsToastTone.error,
+      );
+    }
+  }
+
+  Future<void> _setNotifyMatches(bool value) async {
+    setState(() => _notifyMatches = value);
+    final service = getIt.isRegistered<NotificationPreferencesService>()
+        ? getIt<NotificationPreferencesService>()
+        : null;
+    if (service == null) return;
+    try {
+      await service.setMatches(value);
+    } on Object {
+      if (!mounted) return;
+      setState(() => _notifyMatches = !value);
+      showDsToast(
+        context,
+        'Could not save notification setting',
+        tone: DsToastTone.error,
+      );
+    }
+  }
 
   int get _themeIndex => switch (DevSyncApp.themeMode) {
     ThemeMode.system => 0,
@@ -181,29 +240,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             trailing: DsToggle(
                               value: _notifyRequests,
                               semanticLabel: 'Requests',
-                              onChanged: (v) =>
-                                  setState(() => _notifyRequests = v),
+                              onChanged: (v) {
+                                if (_prefsReady) _setNotifyRequests(v);
+                              },
                             ),
                           ),
                           DsInfoRow(
                             icon: AppIcons.zap,
                             title: 'New matches',
-                            showDivider: true,
                             trailing: DsToggle(
                               value: _notifyMatches,
                               semanticLabel: 'Matches',
-                              onChanged: (v) =>
-                                  setState(() => _notifyMatches = v),
-                            ),
-                          ),
-                          DsInfoRow(
-                            icon: AppIcons.success,
-                            title: 'Task changes',
-                            trailing: DsToggle(
-                              value: _notifyTasks,
-                              semanticLabel: 'Tasks',
-                              onChanged: (v) =>
-                                  setState(() => _notifyTasks = v),
+                              onChanged: (v) {
+                                if (_prefsReady) _setNotifyMatches(v);
+                              },
                             ),
                           ),
                         ],

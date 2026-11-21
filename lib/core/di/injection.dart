@@ -73,6 +73,7 @@ import '../../features/shell/presentation/cubit/inbox_badges_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/profile/domain/usecases/save_github_scan.dart';
 import '../notifications/fcm_service.dart';
+import '../notifications/notification_preferences.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -82,6 +83,7 @@ Future<void> configureDependencies({
   void Function()? onNotificationOpened,
 }) async {
   if (getIt.isRegistered<AuthRepository>()) {
+    _ensureNotificationPreferences();
     _registerFcmService(onForegroundMessage, onNotificationOpened);
     return;
   }
@@ -92,6 +94,13 @@ Future<void> configureDependencies({
   getIt
     ..registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance)
     ..registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance)
+    ..registerLazySingleton(
+      () => NotificationPreferencesService(
+        prefs: getIt(),
+        auth: getIt(),
+        firestore: getIt(),
+      ),
+    )
     ..registerLazySingleton<GoogleSignIn>(() => GoogleSignIn.instance)
     ..registerLazySingleton<UserRemoteDataSource>(
       () => UserRemoteDataSource(firestore: getIt()),
@@ -157,11 +166,28 @@ Future<void> configureDependencies({
 
   _registerMatching();
   _registerProfile();
-  registerProjectsDependencies(getIt);
+  // Notifications before projects/requests so /notify can be injected.
   _registerNotifications();
+  registerProjectsDependencies(getIt);
   _registerRequests();
   _registerInboxBadges();
   _registerFcmService(onForegroundMessage, onNotificationOpened);
+}
+
+void _ensureNotificationPreferences() {
+  if (getIt.isRegistered<NotificationPreferencesService>()) return;
+  if (!getIt.isRegistered<SharedPreferences>() ||
+      !getIt.isRegistered<FirebaseAuth>() ||
+      !getIt.isRegistered<FirebaseFirestore>()) {
+    return;
+  }
+  getIt.registerLazySingleton(
+    () => NotificationPreferencesService(
+      prefs: getIt(),
+      auth: getIt(),
+      firestore: getIt(),
+    ),
+  );
 }
 
 void _registerFcmService(
@@ -174,12 +200,17 @@ void _registerFcmService(
     return;
   }
 
+  _ensureNotificationPreferences();
+
   getIt.registerSingleton<FcmService>(
     FcmService(
       auth: FirebaseAuth.instance,
       firestore: FirebaseFirestore.instance,
       onForegroundMessage: onForegroundMessage,
       onNotificationOpened: onNotificationOpened,
+      preferences: getIt.isRegistered<NotificationPreferencesService>()
+          ? getIt<NotificationPreferencesService>()
+          : null,
     ),
   );
 }

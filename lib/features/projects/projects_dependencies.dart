@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 
+import '../notifications/data/datasources/notify_remote_data_source.dart';
 import 'data/datasources/github_remote_data_source.dart';
 import 'data/datasources/projects_remote_data_source.dart';
 import 'data/repositories/projects_repository_impl.dart';
@@ -32,7 +33,12 @@ void registerProjectsDependencies([GetIt? registry]) {
   }
   if (!getIt.isRegistered<ProjectsRepository>()) {
     getIt.registerLazySingleton<ProjectsRepository>(
-      () => ProjectsRepositoryImpl(remote: getIt()),
+      () => ProjectsRepositoryImpl(
+        remote: getIt(),
+        notifyRemoteDataSource: getIt.isRegistered<NotifyRemoteDataSource>()
+            ? getIt<NotifyRemoteDataSource>()
+            : null,
+      ),
     );
   }
   if (!getIt.isRegistered<GetProjects>()) {

@@ -34,7 +34,11 @@ class _NotificationsView extends StatelessWidget {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   void _openRequests(BuildContext context) {
-    Navigator.of(context).pushNamed(AppRoutes.requests);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.home,
+      (route) => false,
+      arguments: 3,
+    );
   }
 
   @override

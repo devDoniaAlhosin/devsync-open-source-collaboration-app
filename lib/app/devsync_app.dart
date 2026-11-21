@@ -1,7 +1,6 @@
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/connect_github_entry.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -227,7 +226,8 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.profile => const ProfileScreen(),
       AppRoutes.connectGithub =>
           ConnectGithubEntry.fromArgs(settings.arguments),
-      AppRoutes.requests => const RequestsScreen(),
+      // Always host inside the shell so the menu can open the drawer.
+      AppRoutes.requests => const HomeShellScreen(initialIndex: 3),
       AppRoutes.notificationPermission => NotificationPermissionScreen(
         args: settings.arguments is NotificationPermissionArgs
             ? settings.arguments! as NotificationPermissionArgs

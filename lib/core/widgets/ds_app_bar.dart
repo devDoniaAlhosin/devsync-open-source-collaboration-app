@@ -1,3 +1,5 @@
+import 'dart:ui' show FlutterView;
+
 import 'package:flutter/material.dart';
 
 import '../icons/app_icons.dart';
@@ -43,10 +45,21 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool notificationBadge;
   final List<Widget> actions;
 
-  static const double _height = 64;
+  static const double _toolbarHeight = 64;
+
+  static double _statusBarHeight([FlutterView? view]) {
+    final v =
+        view ?? WidgetsBinding.instance.platformDispatcher.views.first;
+    return v.padding.top / v.devicePixelRatio;
+  }
 
   @override
-  Size get preferredSize => const Size.fromHeight(_height);
+  Size get preferredSize {
+    // Must include the status-bar inset. SafeArea/padding alone (without a
+    // matching preferredSize) lets the toolbar overflow into the body, and
+    // Requests’ tab strip steals menu taps.
+    return Size.fromHeight(_toolbarHeight + _statusBarHeight());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,110 +67,114 @@ class DsAppBar extends StatelessWidget implements PreferredSizeWidget {
     final textTheme = Theme.of(context).textTheme;
     final canPop = Navigator.of(context).canPop();
     final leadBack = !showMenu && (showBack ?? canPop);
+    final topInset = MediaQuery.paddingOf(context).top;
 
     final hasEyebrow = eyebrow != null && eyebrow!.isNotEmpty;
     final hasTitle = title.isNotEmpty;
 
     return Material(
       color: palette.background,
-      child: SafeArea(
-        bottom: false,
-        child: Container(
-          height: _height,
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: palette.border.withValues(alpha: 0.85),
+      child: SizedBox(
+        height: _toolbarHeight + topInset,
+        child: Padding(
+          padding: EdgeInsets.only(top: topInset),
+          child: Container(
+            height: _toolbarHeight,
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: palette.border.withValues(alpha: 0.85),
+                ),
               ),
             ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          child: Row(
-            children: [
-              if (showMenu) ...[
-                DsIconButton(
-                  icon: AppIcons.menu,
-                  tooltip: 'Menu',
-                  onPressed: onMenu,
-                ),
-                const SizedBox(width: 12),
-              ] else if (leadBack) ...[
-                DsIconButton(
-                  icon: AppIcons.back,
-                  tooltip: 'Back',
-                  onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-                ),
-                const SizedBox(width: 12),
-              ],
-              if (brand != null) ...[
-                brand!,
-                const SizedBox(width: 10),
-              ],
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (hasEyebrow)
-                      Text(
-                        eyebrow!.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.labelSmall?.copyWith(
-                          color: palette.textMuted,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 9,
-                          height: 1.3,
-                          letterSpacing: 1.3,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              children: [
+                if (showMenu) ...[
+                  DsIconButton(
+                    icon: AppIcons.menu,
+                    tooltip: 'Menu',
+                    onPressed: onMenu,
+                  ),
+                  const SizedBox(width: 12),
+                ] else if (leadBack) ...[
+                  DsIconButton(
+                    icon: AppIcons.back,
+                    tooltip: 'Back',
+                    onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                if (brand != null) ...[
+                  brand!,
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasEyebrow)
+                        Text(
+                          eyebrow!.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 9,
+                            height: 1.3,
+                            letterSpacing: 1.3,
+                          ),
                         ),
-                      ),
-                    if (hasEyebrow && hasTitle) const SizedBox(height: 2),
-                    if (hasTitle)
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.headlineMedium?.copyWith(
-                          color: palette.textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                          height: 1.25,
-                          letterSpacing: -0.6,
+                      if (hasEyebrow && hasTitle) const SizedBox(height: 2),
+                      if (hasTitle)
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.headlineMedium?.copyWith(
+                            color: palette.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            height: 1.25,
+                            letterSpacing: -0.6,
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              for (final action in actions) ...[
-                const SizedBox(width: 7),
-                action,
+                for (final action in actions) ...[
+                  const SizedBox(width: 7),
+                  action,
+                ],
+                if (onNotifications != null) ...[
+                  const SizedBox(width: 7),
+                  DsIconButton(
+                    icon: AppIcons.notifications,
+                    tooltip: 'Notifications',
+                    showBadge: notificationBadge,
+                    onPressed: onNotifications,
+                  ),
+                ],
+                if (onSettings != null) ...[
+                  const SizedBox(width: 7),
+                  DsIconButton(
+                    icon: AppIcons.settings,
+                    tooltip: 'Settings',
+                    onPressed: onSettings,
+                  ),
+                ],
+                if (onThemeToggle != null) ...[
+                  const SizedBox(width: 7),
+                  DsIconButton(
+                    icon: palette.isDark ? AppIcons.sun : AppIcons.moon,
+                    tooltip: palette.isDark ? 'Light theme' : 'Dark theme',
+                    onPressed: onThemeToggle,
+                  ),
+                ],
               ],
-              if (onNotifications != null) ...[
-                const SizedBox(width: 7),
-                DsIconButton(
-                  icon: AppIcons.notifications,
-                  tooltip: 'Notifications',
-                  showBadge: notificationBadge,
-                  onPressed: onNotifications,
-                ),
-              ],
-              if (onSettings != null) ...[
-                const SizedBox(width: 7),
-                DsIconButton(
-                  icon: AppIcons.settings,
-                  tooltip: 'Settings',
-                  onPressed: onSettings,
-                ),
-              ],
-              if (onThemeToggle != null) ...[
-                const SizedBox(width: 7),
-                DsIconButton(
-                  icon: palette.isDark ? AppIcons.sun : AppIcons.moon,
-                  tooltip: palette.isDark ? 'Light theme' : 'Dark theme',
-                  onPressed: onThemeToggle,
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
