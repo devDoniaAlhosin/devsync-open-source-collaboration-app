@@ -73,6 +73,7 @@ class ProjectModel extends Project {
     super.ownerName,
     super.createdAt,
     super.hasPendingRequest,
+    super.isJoined,
     this.updatedAt,
     this.matchSummary = '',
     this.alignments = const [],
@@ -90,12 +91,14 @@ class ProjectModel extends Project {
     DocumentSnapshot<Map<String, dynamic>> doc, {
     String? currentUserId,
     Set<String> pendingRequestProjectIds = const {},
+    Set<String> joinedProjectIds = const {},
   }) {
     return ProjectModel.fromMap(
       doc.id,
       doc.data() ?? const <String, dynamic>{},
       currentUserId: currentUserId,
       pendingRequestProjectIds: pendingRequestProjectIds,
+      joinedProjectIds: joinedProjectIds,
     );
   }
 
@@ -104,6 +107,7 @@ class ProjectModel extends Project {
     Map<String, dynamic> data, {
     String? currentUserId,
     Set<String> pendingRequestProjectIds = const {},
+    Set<String> joinedProjectIds = const {},
   }) {
     final ownerId = _asString(data['ownerId'] ?? data['ownerUid']);
     return ProjectModel(
@@ -123,6 +127,7 @@ class ProjectModel extends Project {
       ownerName: _asString(data['ownerName']),
       createdAt: _asDate(data['createdAt']),
       hasPendingRequest: pendingRequestProjectIds.contains(id),
+      isJoined: joinedProjectIds.contains(id),
       updatedAt: _asDate(data['updatedAt']),
       matchSummary: _asString(data['matchSummary']),
       alignments: _asAlignments(data['alignments']),
@@ -132,16 +137,30 @@ class ProjectModel extends Project {
   }
 
   /// Payload for create/update. Never writes AI or repository-metric fields.
+  ///
+  /// [ownerId] and [ownerName] are supplied by the data source from the signed
+  /// in Firebase session, never from user-controlled form input. Both are
+  /// denormalized on every write so Discover can resolve a maintainer without
+  /// an extra `users/{uid}` read.
   Map<String, Object?> toFirestore({
     required String ownerId,
+    required String ownerName,
     required bool isNew,
   }) {
+    final normalizedOwnerId = ownerId.trim();
+    if (normalizedOwnerId.isEmpty) {
+      throw StateError('A project must be written with a non-empty ownerId.');
+    }
+
+    final normalizedOwnerName = ownerName.trim();
+    if (normalizedOwnerName.isEmpty) {
+      throw StateError('A project must be written with a non-empty ownerName.');
+    }
+
     final now = DateTime.now();
     return {
-      'ownerId': ownerId,
-      'ownerName': ownerName.trim().isNotEmpty
-          ? ownerName.trim()
-          : 'Maintainer',
+      'ownerId': normalizedOwnerId,
+      'ownerName': normalizedOwnerName,
       'title': title.trim(),
       'description': description.trim(),
       'githubUrl': githubUrl.trim(),

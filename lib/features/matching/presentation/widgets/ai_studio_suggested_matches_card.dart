@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
 import '../../domain/entities/match_item.dart';
 
-/// Card presenting ranked matches with AI scoring bars and action links.
 class AiStudioSuggestedMatchesCard extends StatelessWidget {
   const AiStudioSuggestedMatchesCard({
     super.key,
@@ -56,12 +56,41 @@ class AiStudioSuggestedMatchesCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
+          if (matches.any((m) => m.isFallback)) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: ds.surfaceAlt,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                border: Border.all(color: ds.border),
+              ),
+              child: Row(
+                children: [
+                  Icon(AppIcons.info, size: 16, color: ds.textMuted),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Basic skill match — AI unavailable',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: ds.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (matches.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: Center(
                 child: Text(
-                  'No matches generated yet. Tap "Generate matches" above.',
+                  'No recommendations to show. Update your skills or generate matches again.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: ds.textMuted),
@@ -124,6 +153,54 @@ class _MatchRow extends StatelessWidget {
           ).textTheme.bodySmall?.copyWith(color: ds.textMuted, height: 1.5),
         ),
         const SizedBox(height: AppSpacing.sm),
+        if (match.reason.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Text(
+              match.reason,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: ds.textPrimary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        if (match.neededSkills.isNotEmpty) ...[
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final skill in match.neededSkills.take(5))
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ds.surfaceAlt,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                    border: Border.all(color: ds.border),
+                  ),
+                  child: Text(
+                    skill,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: ds.textMuted),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        if (match.isFallback)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Text(
+              'Skill-based match',
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: ds.textMuted),
+            ),
+          ),
         DsScoreMeter(score: match.score, height: 6, animate: true),
         const SizedBox(height: AppSpacing.xs),
         Align(

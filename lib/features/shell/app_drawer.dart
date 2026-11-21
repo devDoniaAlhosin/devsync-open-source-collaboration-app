@@ -85,9 +85,14 @@ class AppDrawer extends StatelessWidget {
                   children: [
                     const _Group('Workspace'),
                     _Link(
-                      icon: AppIcons.heart,
+                      icon: AppIcons.sparkle,
                       label: 'My matches',
                       onTap: () => _openTab(context, 0),
+                    ),
+                    _Link(
+                      icon: AppIcons.heart,
+                      label: 'Liked matches',
+                      onTap: () => _openRoute(context, AppRoutes.likedMatches),
                     ),
                     _Link(
                       icon: AppIcons.sparkle,
@@ -104,12 +109,7 @@ class AppDrawer extends StatelessWidget {
                       label: 'Collaboration requests',
                       onTap: () => _openTab(context, 3),
                     ),
-                    _Link(
-                      icon: AppIcons.success,
-                      label: 'Task board',
-                      onTap: () => _openRoute(context, AppRoutes.tasks),
-                    ),
-                    const _Group('Intelligence & community'),
+                    const _Group('Intelligence'),
                     _Link(
                       icon: AppIcons.sparkle,
                       label: 'AI Prompt Studio',
@@ -119,21 +119,6 @@ class AppDrawer extends StatelessWidget {
                       icon: AppIcons.chart,
                       label: 'AI analytics',
                       onTap: () => _openRoute(context, AppRoutes.aiInsights),
-                    ),
-                    _Link(
-                      icon: AppIcons.chart,
-                      label: 'Contribution insights',
-                      onTap: () => _openRoute(context, AppRoutes.insights),
-                    ),
-                    _Link(
-                      icon: AppIcons.profile,
-                      label: 'Community',
-                      onTap: () => _openRoute(context, AppRoutes.community),
-                    ),
-                    _Link(
-                      icon: AppIcons.notifications,
-                      label: 'Notifications',
-                      onTap: () => _openRoute(context, AppRoutes.notifications),
                     ),
                     const _Group('Account'),
                     _Link(
@@ -178,8 +163,7 @@ class AppDrawer extends StatelessWidget {
                     DsButton(
                       label: 'Try AI matching →',
                       compact: true,
-                      onPressed: () =>
-                          _openRoute(context, AppRoutes.aiStudio),
+                      onPressed: () => _openRoute(context, AppRoutes.aiStudio),
                     ),
                   ],
                 ),
@@ -204,22 +188,18 @@ class _Group extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: context.ds.textMuted,
-              fontWeight: FontWeight.w800,
-              fontSize: 10,
-              letterSpacing: 1.3,
-            ),
+          color: context.ds.textMuted,
+          fontWeight: FontWeight.w800,
+          fontSize: 10,
+          letterSpacing: 1.3,
+        ),
       ),
     );
   }
 }
 
 class _Link extends StatelessWidget {
-  const _Link({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  const _Link({required this.icon, required this.label, required this.onTap});
 
   final IconData icon;
   final String label;
@@ -246,9 +226,9 @@ class _Link extends StatelessWidget {
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ],

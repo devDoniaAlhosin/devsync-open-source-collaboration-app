@@ -5,6 +5,7 @@ import '../../../../core/error/failures.dart';
 import '../../domain/failures/auth_failures.dart';
 import '../datasources/auth_email_api.dart';
 import '../datasources/auth_remote_data_source.dart';
+import '../datasources/github_device_oauth.dart';
 
 Failure mapAuthError(Object error) {
   if (error is AuthEmailApiException) {
@@ -14,13 +15,15 @@ Failure mapAuthError(Object error) {
   if (error is AuthCancelledException) {
     return const CancelledFailure();
   }
+  if (error is GitHubDeviceOAuthException) {
+    if (error.isCancelled) return const CancelledFailure();
+    return AuthFailure(error.message);
+  }
   if (error is EmailNotVerifiedException) {
     return EmailNotVerifiedFailure(email: error.email);
   }
   if (error is GoogleOnlyAccountException) {
-    return const AuthFailure(
-      'This account uses Google. Continue with Google instead.',
-    );
+    return const GoogleOnlyAccountFailure();
   }
   if (error is FirebaseAuthException) {
     switch (error.code) {

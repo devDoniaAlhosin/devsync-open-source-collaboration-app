@@ -1,210 +1,223 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/icons/app_icons.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_card.dart';
-import '../../../../core/widgets/ds_staggered_entrance.dart';
-import '../models/prompt_quality_metrics.dart';
+import '../../../../core/widgets/ds_empty_state.dart';
+import '../../domain/entities/prompt_quality_metrics.dart';
+import '../../domain/usecases/get_prompt_quality_metrics.dart';
 import '../widgets/prompt_quality_trend.dart';
 
-/// Read-only prompt evaluation snapshot. Uses demo metrics until supplied.
-class PromptQualityScreen extends StatelessWidget {
+class PromptQualityScreen extends StatefulWidget {
   final PromptQualityMetrics? metrics;
 
   const PromptQualityScreen({super.key, this.metrics});
 
   @override
+  State<PromptQualityScreen> createState() => _PromptQualityScreenState();
+}
+
+class _PromptQualityScreenState extends State<PromptQualityScreen> {
+  PromptQualityMetrics? _metrics;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _metrics = widget.metrics;
+    if (_metrics == null) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    if (!getIt.isRegistered<GetPromptQualityMetrics>()) {
+      setState(() {
+        _metrics = null;
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final result = await getIt<GetPromptQualityMetrics>()();
+    if (!mounted) return;
+
+    switch (result) {
+      case Success(:final data):
+        setState(() {
+          _metrics = data;
+          _loading = false;
+        });
+      case FailureResult(:final failure):
+        setState(() {
+          _metrics = null;
+          _loading = false;
+          _error = failure.message;
+        });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final data = metrics ?? PromptQualityMetrics.demo;
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: context.ds.background,
+        appBar: DsAppBar(
+          title: 'Prompt quality',
+          eyebrow: 'DEVSYNC',
+          showBack: true,
+          onBack: () => Navigator.of(context).maybePop(),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final metrics = _metrics;
+    if (metrics == null || metrics.versions.isEmpty) {
+      return Scaffold(
+        backgroundColor: context.ds.background,
+        appBar: DsAppBar(
+          title: 'Prompt quality',
+          eyebrow: 'DEVSYNC',
+          showBack: true,
+          onBack: () => Navigator.of(context).maybePop(),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: DsEmptyState(
+              icon: AppIcons.info,
+              title: 'No data yet',
+              message:
+                  _error ??
+                  'Like or skip matches after generating a feed to build relevance by prompt version.',
+            ),
+          ),
+        ),
+      );
+    }
+
+    final showTiming =
+        metrics.averageMatchTime != null ||
+        metrics.timelyAlertsPercentage != null;
+
     return Scaffold(
       backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: 'Prompt quality',
-        eyebrow: 'WORKSPACE',
+        eyebrow: 'DEVSYNC',
         showBack: true,
         onBack: () => Navigator.of(context).maybePop(),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540),
-          child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
-            children: [
-              DsStagger(
-                spacing: AppSpacing.md,
-                children: [
-                  _RelevanceCard(metrics: data),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final stacked =
-                          constraints.maxWidth < 280 ||
-                          MediaQuery.textScalerOf(context).scale(14) > 21;
-                      final cards = [
-                        _QualityMetric(
-                          value: '${_formatSeconds(data.averageMatchTime)}s',
-                          label: 'Avg match time',
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.screenPadding),
+              children: [
+                Text(
+                  'Snapshot',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: context.ds.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'How well prompt recommendations perform against project requirements over time.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
+                ),
+                if (showTiming) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      if (metrics.averageMatchTime != null)
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Avg match time',
+                            value:
+                                '${metrics.averageMatchTime!.inSeconds}s',
+                          ),
                         ),
-                        _QualityMetric(
-                          value: '${data.timelyAlertsPercentage.round()}%',
-                          label: 'Alerts within 10 s',
+                      if (metrics.averageMatchTime != null &&
+                          metrics.timelyAlertsPercentage != null)
+                        const SizedBox(width: AppSpacing.md),
+                      if (metrics.timelyAlertsPercentage != null)
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Timely alerts',
+                            value:
+                                '${metrics.timelyAlertsPercentage!.toStringAsFixed(0)}%',
+                          ),
                         ),
-                      ];
-                      return stacked
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                cards.first,
-                                const SizedBox(height: AppSpacing.md),
-                                cards.last,
-                              ],
-                            )
-                          : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: cards.first),
-                                const SizedBox(width: AppSpacing.md),
-                                Expanded(child: cards.last),
-                              ],
-                            );
-                    },
+                    ],
                   ),
                 ],
-              ),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                DsCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Relevance by prompt version',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: context.ds.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      PromptQualityTrend(metrics: metrics),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-
-  String _formatSeconds(Duration duration) {
-    final seconds = duration.inMilliseconds / 1000;
-    return seconds == seconds.roundToDouble()
-        ? seconds.toStringAsFixed(0)
-        : seconds.toStringAsFixed(1);
-  }
 }
 
-class _QualityMetric extends StatelessWidget {
+class _MetricCard extends StatelessWidget {
+  final String label;
   final String value;
 
-  final String label;
-  const _QualityMetric({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) => DsCard(
-    borderRadius: AppSpacing.radiusMd,
-    padding: const EdgeInsets.all(AppSpacing.md),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: context.ds.accentText,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
-        ),
-      ],
-    ),
-  );
-}
-
-class _RelevanceCard extends StatelessWidget {
-  final PromptQualityMetrics metrics;
-
-  const _RelevanceCard({required this.metrics});
+  const _MetricCard({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final improvement = metrics.improvementPercentage;
     return DsCard(
-      borderRadius: AppSpacing.radiusMd,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Top-5 rated relevant',
-            style: textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: context.ds.textMuted),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AppSpacing.lg,
-            runSpacing: AppSpacing.sm,
-            children: [
-              Text(
-                metrics.latestRelevance == null
-                    ? '—'
-                    : '${metrics.latestRelevance!.round()}%',
-                style: textTheme.displayLarge?.copyWith(
-                  color: context.ds.accentText,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 48,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.teal,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Target ${metrics.relevanceTarget.round()}%',
-                  style: textTheme.labelMedium?.copyWith(
-                    color: AppColors.onTeal,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (metrics.versions.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-              child: Text(
-                'No prompt evaluations yet.',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: context.ds.textMuted,
-                ),
-              ),
-            )
-          else
-            PromptQualityTrend(metrics: metrics),
-          if (improvement != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text:
-                        '${metrics.versions.first.label} to ${metrics.versions.last.label}: ',
-                  ),
-                  TextSpan(
-                    text:
-                        '${improvement >= 0 ? '+' : ''}${improvement.round()}% relevance. ',
-                    style: TextStyle(color: context.ds.accentText),
-                  ),
-                  TextSpan(
-                    text: 'Target was +${metrics.improvementTarget.round()}%.',
-                  ),
-                ],
-              ),
-              style: textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: context.ds.textPrimary,
             ),
-          ],
+          ),
         ],
       ),
     );

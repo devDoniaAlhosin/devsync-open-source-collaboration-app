@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_avatar.dart';
-import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_score_meter.dart';
 import '../../domain/entities/match_item.dart';
@@ -16,12 +14,10 @@ class ProjectDetailsContent extends StatelessWidget {
     super.key,
     required this.match,
     required this.currentUserSkills,
-    required this.onPreviewWorkspace,
   });
 
   final MatchItem match;
   final List<String> currentUserSkills;
-  final VoidCallback onPreviewWorkspace;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +30,6 @@ class ProjectDetailsContent extends StatelessWidget {
               AppSpacing.xl,
               AppSpacing.md,
               AppSpacing.xl,
-              // Clearance for floating CollaborationAction (md + button + lg).
               AppSpacing.md + AppSpacing.buttonHeight + AppSpacing.lg,
             ),
             child: Center(
@@ -66,15 +61,6 @@ class ProjectDetailsContent extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     MatchFacts(match: match),
-                    if (match.githubUrl.trim().isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xl),
-                      DsButton(
-                        label: 'Preview project workspace',
-                        icon: AppIcons.forward,
-                        variant: DsButtonVariant.quiet,
-                        onPressed: onPreviewWorkspace,
-                      ),
-                    ],
                   ],
                 ),
               ),

@@ -109,6 +109,10 @@ class _FakeRequestsRepository implements RequestsRepository {
   Future<Result<List<RequestItem>>> getRequests() async => requestsResult;
 
   @override
+  Future<Result<Set<String>>> getUnavailableProjectIds() async =>
+      const Success(<String>{});
+
+  @override
   Future<Result<RequestItem>> createRequest({
     required RequestItem item,
   }) async => createResult ?? Success(item);
@@ -118,4 +122,7 @@ class _FakeRequestsRepository implements RequestsRepository {
     required String requestId,
     required RequestStatus status,
   }) async => statusResult;
+
+  @override
+  Stream<bool> watchHasPendingReceived() => Stream.value(false);
 }

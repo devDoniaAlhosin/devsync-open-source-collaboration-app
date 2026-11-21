@@ -5,10 +5,45 @@ import 'package:devsync_open_source_collaboration_app/features/profile/presentat
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class EditProfileEntry extends StatelessWidget {
-  const EditProfileEntry({super.key, this.asOnboarding = true});
+/// Named-route args for onboarding completion tab.
+class EditProfileRouteArgs {
+  const EditProfileRouteArgs({
+    this.asOnboarding = true,
+    this.homeTabIndex = 0,
+  });
 
   final bool asOnboarding;
+  final int homeTabIndex;
+
+  static EditProfileRouteArgs from(Object? arguments) {
+    if (arguments is EditProfileRouteArgs) return arguments;
+    if (arguments is Map) {
+      return EditProfileRouteArgs(
+        asOnboarding: arguments['asOnboarding'] as bool? ?? true,
+        homeTabIndex: arguments['homeTabIndex'] as int? ?? 0,
+      );
+    }
+    return const EditProfileRouteArgs();
+  }
+}
+
+class EditProfileEntry extends StatelessWidget {
+  const EditProfileEntry({
+    super.key,
+    this.asOnboarding = true,
+    this.homeTabIndex = 0,
+  });
+
+  final bool asOnboarding;
+  final int homeTabIndex;
+
+  factory EditProfileEntry.fromArgs(Object? arguments) {
+    final args = EditProfileRouteArgs.from(arguments);
+    return EditProfileEntry(
+      asOnboarding: args.asOnboarding,
+      homeTabIndex: args.homeTabIndex,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +60,10 @@ class EditProfileEntry extends StatelessWidget {
             ProfileLoaded(:final profile) => EditProfileScreen(
               data: profile,
               asOnboarding: asOnboarding,
+              homeTabIndex: homeTabIndex,
             ),
             ProfileFailure(:final message) => Scaffold(
+              backgroundColor: context.ds.background,
               body: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -40,8 +77,9 @@ class EditProfileEntry extends StatelessWidget {
                 ),
               ),
             ),
-            _ => const Scaffold(
-              body: Center(
+            _ => Scaffold(
+              backgroundColor: context.ds.background,
+              body: const Center(
                 child: CircularProgressIndicator(color: AppColors.teal),
               ),
             ),

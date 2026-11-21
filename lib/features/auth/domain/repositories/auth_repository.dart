@@ -1,6 +1,10 @@
 import '../../../../core/result/result.dart';
 import '../entities/app_user.dart';
 
+/// Device-code UI callback. `true` = continue, `false` = cancel.
+typedef GitHubDeviceCodeHandler =
+    Future<bool> Function(String userCode, Uri verificationUri);
+
 abstract class AuthRepository {
   Stream<AppUser?> watchAuthState();
 
@@ -19,11 +23,14 @@ abstract class AuthRepository {
 
   Future<Result<void>> signInWithGoogle();
 
-  Future<Result<void>> signInWithGitHub();
+  Future<Result<void>> signInWithGitHub({
+    GitHubDeviceCodeHandler? onDeviceCode,
+  });
 
   Future<Result<void>> signOut();
 
-  Future<Result<void>> deleteAccount();
+  /// Pass [password] for email accounts; Google/GitHub reauth runs in data.
+  Future<Result<void>> deleteAccount({String? password});
 
   Future<Result<void>> sendPasswordResetEmail(String email);
 

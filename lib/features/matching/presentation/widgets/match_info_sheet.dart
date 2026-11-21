@@ -33,7 +33,7 @@ class MatchInfoSheet extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          'Swipe right to request collaboration or left to skip.',
+          'Swipe right to save this project or left to skip.',
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),

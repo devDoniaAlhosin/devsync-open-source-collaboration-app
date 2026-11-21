@@ -35,6 +35,7 @@ class AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: title ?? '',
         showBack: showBack,

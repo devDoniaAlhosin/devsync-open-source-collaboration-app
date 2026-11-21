@@ -1,7 +1,12 @@
+import 'dart:developer';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../app/app_routes.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/notifications/fcm_service.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -9,6 +14,7 @@ import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../../core/widgets/ds_toast.dart';
 
 /// Arguments for prototype **12. Notification permission**.
 class NotificationPermissionArgs {
@@ -35,6 +41,23 @@ class NotificationPermissionScreen extends StatelessWidget {
       (route) => false,
       arguments: requestsTabIndex,
     );
+  }
+
+  Future<void> _allowNotifications(BuildContext context) async {
+    try {
+      await getIt<FcmService>().requestPermission();
+    } on FirebaseException catch (error) {
+      log('Could not request notification permission.', error: error);
+      if (!context.mounted) return;
+      showDsToast(
+        context,
+        'Could not enable notifications. Please try again.',
+        tone: DsToastTone.error,
+      );
+      return;
+    }
+
+    if (context.mounted) _goToRequests(context);
   }
 
   @override
@@ -99,7 +122,7 @@ class NotificationPermissionScreen extends StatelessWidget {
                   children: [
                     DsButton(
                       label: 'Allow notifications',
-                      onPressed: () => _goToRequests(context),
+                      onPressed: () => _allowNotifications(context),
                     ),
                     DsButton(
                       label: 'Not now',

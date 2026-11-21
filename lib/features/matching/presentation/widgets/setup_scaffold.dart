@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:devsync_open_source_collaboration_app/core/theme/app_colors.dart';
 import 'package:devsync_open_source_collaboration_app/core/theme/app_spacing.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_app_bar.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_chip.dart';
@@ -26,6 +27,7 @@ class SetupScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.ds.background,
       appBar: DsAppBar(
         title: title,
         eyebrow: eyebrow,

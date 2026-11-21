@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../../requests/presentation/collaboration_request_flow.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
@@ -75,23 +76,9 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
     setState(() => _requesting = false);
     if (!sent) return;
 
-    // Mohey's flow persists via RequestsCubit; refresh UI pending flag.
-    if (!project.hasPendingRequest) {
-      context.read<ProjectsCubit>().loadProject(
-        project.copyWith(hasPendingRequest: true),
-        initialStats: stats,
-      );
-    }
-  }
-
-  void _previewWorkspace() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Project workspace preview is coming next.'),
-        ),
-      );
+    // The requests feature already persisted the request document. Mirror the
+    // result on the feed instead of re-loading and recording a second view.
+    context.read<ProjectsCubit>().markRequestPending(project.id);
   }
 
   @override
@@ -103,9 +90,13 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
               previous.operationId != current.operationId),
       listener: (context, state) {
         if (state is ProjectOperationSuccess) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.message)));
+          final isDelete = state.message.toLowerCase().contains('deleted');
+          showDsToast(
+            context,
+            state.message,
+            tone: isDelete ? DsToastTone.error : DsToastTone.success,
+            icon: isDelete ? AppIcons.trash : null,
+          );
         }
       },
       child: BlocBuilder<ProjectsCubit, ProjectsState>(
@@ -129,7 +120,7 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
           }
 
           return Scaffold(
-            backgroundColor: Colors.transparent,
+            backgroundColor: context.ds.background,
             appBar: DsAppBar(
               title: 'Project details',
               eyebrow: 'WORKSPACE',
@@ -139,8 +130,7 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
             ),
             body: ProjectBackground(child: body),
             bottomNavigationBar: _DetailsActionBar(
-              requested: project.hasPendingRequest,
-              isOwner: project.isOwner,
+              project: project,
               isLoading: _requesting,
               onRequest: stats == null
                   ? null
@@ -199,13 +189,6 @@ class _ProjectDetailsViewState extends State<_ProjectDetailsView> {
                     _buildRepoMetrics(stats),
                     const SizedBox(height: 20),
                     _buildOwnerCard(stats),
-                    const SizedBox(height: 18),
-                    ProjectActionButton(
-                      label: 'Preview project workspace',
-                      trailingIcon: AppIcons.forward,
-                      variant: ProjectActionButtonVariant.secondary,
-                      onPressed: _previewWorkspace,
-                    ),
                   ],
                 ),
               ),
@@ -449,22 +432,27 @@ class _SectionHeading extends StatelessWidget {
 
 class _DetailsActionBar extends StatelessWidget {
   const _DetailsActionBar({
-    required this.requested,
-    required this.isOwner,
+    required this.project,
     required this.isLoading,
     required this.onRequest,
     required this.onClose,
   });
 
-  final bool requested;
-  final bool isOwner;
+  final Project project;
   final bool isLoading;
   final VoidCallback? onRequest;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    final disabled = requested || isOwner || isLoading;
+    final disabled = !project.canRequestJoin || isLoading;
+    final label = project.isOwner
+        ? 'You own this project'
+        : project.joined
+        ? 'Joined'
+        : project.hasPendingRequest
+        ? 'Request sent'
+        : 'Request to collaborate';
 
     return Material(
       color: context.ds.background,
@@ -488,14 +476,10 @@ class _DetailsActionBar extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ProjectActionButton(
-                      label: isOwner
-                          ? 'You own this project'
-                          : requested
-                          ? 'Request sent'
-                          : 'Request to collaborate',
-                      icon: requested
+                      label: label,
+                      icon: project.joined || project.hasPendingRequest
                           ? AppIcons.success
-                          : (isOwner ? AppIcons.projects : null),
+                          : (project.isOwner ? AppIcons.projects : null),
                       variant: disabled
                           ? ProjectActionButtonVariant.secondary
                           : ProjectActionButtonVariant.primary,

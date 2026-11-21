@@ -41,6 +41,16 @@ final class ForgotPasswordResetDone extends ForgotPasswordState {
   const ForgotPasswordResetDone();
 }
 
+/// Google-only account; show “use Google on sign in”.
+final class ForgotPasswordGoogleOnly extends ForgotPasswordState {
+  const ForgotPasswordGoogleOnly(this.email);
+
+  final String email;
+
+  @override
+  List<Object?> get props => [email];
+}
+
 final class ForgotPasswordFailure extends ForgotPasswordState {
   const ForgotPasswordFailure(this.message);
 

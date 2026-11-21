@@ -28,6 +28,19 @@ final class RegisterNeedsVerification extends RegisterState {
   List<Object?> get props => [email];
 }
 
+final class RegisterGitHubDeviceCode extends RegisterState {
+  const RegisterGitHubDeviceCode({
+    required this.userCode,
+    required this.verificationUri,
+  });
+
+  final String userCode;
+  final String verificationUri;
+
+  @override
+  List<Object?> get props => [userCode, verificationUri];
+}
+
 final class RegisterFailure extends RegisterState {
   const RegisterFailure(this.message);
 

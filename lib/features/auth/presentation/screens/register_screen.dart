@@ -13,11 +13,13 @@ import '../../../../core/widgets/ds_notification_tile.dart';
 import '../../../../core/widgets/ds_page_header.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
 import '../../../../core/widgets/ds_text_field.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../cubit/register_cubit.dart';
 import '../widgets/auth_divider.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/auth_social_buttons.dart';
+import '../widgets/github_device_code_dialog.dart';
 import '../widgets/password_strength_meter.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -33,6 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _password = TextEditingController();
   bool _obscure = true;
   bool _acceptedTerms = false;
+  bool _gitHubDialogOpen = false;
   String? _nameError;
   String? _emailError;
   String? _passwordError;
@@ -45,10 +48,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _toast(String message, {DsToastTone tone = DsToastTone.error}) {
+    showDsToast(context, message, tone: tone);
+  }
+
+  void _closeGitHubDialog() {
+    if (!_gitHubDialogOpen || !mounted) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (navigator.canPop()) navigator.pop();
+    _gitHubDialogOpen = false;
   }
 
   void _submit(RegisterCubit cubit) {
@@ -68,7 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
     if (!_acceptedTerms) {
-      _toast('Please accept the terms');
+      _toast('Please accept the terms', tone: DsToastTone.warning);
       return;
     }
 
@@ -80,24 +88,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return BlocProvider(
       create: (_) => getIt<RegisterCubit>(),
       child: BlocConsumer<RegisterCubit, RegisterState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           switch (state) {
             case RegisterSuccess():
-              navigateToOnboarding(context);
+              _closeGitHubDialog();
+              // Let people explore Matches / Projects immediately; GitHub &
+              // profile setup stay optional from Profile and empty states.
+              navigateToHome(context);
             case RegisterNeedsVerification(:final email):
+              _closeGitHubDialog();
               Navigator.of(context).pushNamedAndRemoveUntil(
                 AppRoutes.verifyEmail,
                 (route) => false,
                 arguments: {'email': email},
               );
+            case RegisterGitHubDeviceCode(
+              :final userCode,
+              :final verificationUri,
+            ):
+              if (_gitHubDialogOpen) return;
+              _gitHubDialogOpen = true;
+              final cubit = context.read<RegisterCubit>();
+              final cancelled = await showGitHubDeviceCodeDialog(
+                context,
+                userCode: userCode,
+                verificationUri: verificationUri,
+              );
+              _gitHubDialogOpen = false;
+              if (!context.mounted) return;
+              if (cancelled == false) {
+                cubit.cancelGitHubDeviceCode();
+              }
             case RegisterFailure(:final message):
+              _closeGitHubDialog();
               _toast(message);
+            case RegisterInitial():
+              _closeGitHubDialog();
             default:
               break;
           }
         },
         builder: (context, state) {
-          final loading = state is RegisterLoading;
+          final loading =
+              state is RegisterLoading || state is RegisterGitHubDeviceCode;
           final cubit = context.read<RegisterCubit>();
           return AuthScaffold(
             title: 'Create account',

@@ -1,10 +1,14 @@
-/// Shared Firestore collection names. Features must not invent spellings.
 abstract final class FirestoreCollections {
   static const users = 'users';
+  static const fcmTokens = 'fcmTokens';
+  /// Inbox under `users/{uid}/notifications/{id}` (Admin write, owner read).
+  static const notifications = 'notifications';
   static const projects = 'projects';
   static const views = 'views';
+  /// Liked / saved Heart actions. Doc id = `{uid}_{projectId}`.
   static const matches = 'matches';
-  static const feedback = 'feedback';
+  /// Like / skip analytics. Doc id = `{uid}_{projectId}`.
+  static const feedbacks = 'feedbacks';
   static const requests = 'requests';
   static const tasks = 'tasks';
 }

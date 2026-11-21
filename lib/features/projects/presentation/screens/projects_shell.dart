@@ -11,7 +11,9 @@ import '../../../../core/widgets/ds_empty_state.dart';
 import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_tab_switcher.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../domain/entities/project.dart';
+import '../../../shell/presentation/widgets/inbox_badge_builder.dart';
 import '../cubit/projects_cubit.dart';
 import '../widgets/devsync_bottom_nav.dart';
 import '../widgets/project_background.dart';
@@ -142,10 +144,14 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showToast(String message) {
+    final isDelete = message.toLowerCase().contains('deleted');
+    showDsToast(
+      context,
+      message,
+      tone: isDelete ? DsToastTone.error : DsToastTone.success,
+      icon: isDelete ? AppIcons.trash : null,
+    );
   }
 
   void _showMenu() {
@@ -253,33 +259,41 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.ds.background,
       extendBody: true,
+      resizeToAvoidBottomInset: widget.showBottomNav,
       body: ProjectBackground(
         child: Column(
           children: [
-            DsAppBar(
-              // Brand eyebrow stays global. Page titles for Discover /
-              // My projects live in the body (DsPageHeader.page).
-              title: _selectedIndex <= 1 ? '' : _title,
-              eyebrow: 'DEVSYNC',
-              showMenu: true,
-              onMenu: _showMenu,
-              actions: [
-                DsIconButton(
-                  icon: AppIcons.notifications,
-                  tooltip: 'Notifications',
-                  onPressed: () {
-                    Navigator.of(context).pushNamed(AppRoutes.notifications);
-                  },
-                ),
-                DsIconButton(
-                  icon: AppIcons.externalLink,
-                  tooltip: 'List a project',
-                  active: true,
-                  onPressed: _openEditor,
-                ),
-              ],
+            InboxBadgeBuilder(
+              builder: (context, hasUnreadNotifications, _) {
+                return DsAppBar(
+                  // Brand eyebrow stays global. Page titles for Discover /
+                  // My projects live in the body (DsPageHeader.page).
+                  title: _selectedIndex <= 1 ? '' : _title,
+                  eyebrow: 'DEVSYNC',
+                  showMenu: true,
+                  onMenu: _showMenu,
+                  actions: [
+                    DsIconButton(
+                      icon: AppIcons.notifications,
+                      tooltip: 'Notifications',
+                      showBadge: hasUnreadNotifications,
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).pushNamed(AppRoutes.notifications);
+                      },
+                    ),
+                    DsIconButton(
+                      icon: AppIcons.externalLink,
+                      tooltip: 'List a project',
+                      active: true,
+                      onPressed: _openEditor,
+                    ),
+                  ],
+                );
+              },
             ),
             Expanded(
               child: BlocListener<ProjectsCubit, ProjectsState>(
@@ -289,7 +303,7 @@ class _ProjectsShellViewState extends State<_ProjectsShellView> {
                         previous.operationId != current.operationId),
                 listener: (context, state) {
                   if (state is ProjectOperationSuccess) {
-                    _showSnackBar(state.message);
+                    _showToast(state.message);
                   }
                 },
                 child: BlocBuilder<ProjectsCubit, ProjectsState>(

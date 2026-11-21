@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/ds_app_bar.dart';
 import '../../core/widgets/ds_empty_state.dart';
+import 'presentation/widgets/inbox_badge_builder.dart';
 
-/// Temporary screen until the feature owner lands real UI.
+/// Fallback when a route has no screen yet. Hidden from nav for unfinished features.
 class StubScreen extends StatelessWidget {
   const StubScreen({
     super.key,
@@ -20,28 +22,31 @@ class StubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: DsAppBar(
-        title: title,
-        eyebrow: 'WORKSPACE',
-        onNotifications: () {
-          Navigator.of(context).pushNamed(AppRoutes.notifications);
-        },
-        notificationBadge: true,
-      ),
-      body: DsEmptyState(
-        icon: AppIcons.construction,
-        title: '$title (stub)',
-        message:
-            description ??
-            'Owned by $owner. Replace this stub with the real screen.',
-        actionLabel: 'Back',
-        onAction: () {
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
-        },
-      ),
+    return InboxBadgeBuilder(
+      builder: (context, hasUnreadNotifications, _) {
+        return Scaffold(
+          backgroundColor: context.ds.background,
+          appBar: DsAppBar(
+            title: title,
+            eyebrow: 'WORKSPACE',
+            onNotifications: () {
+              Navigator.of(context).pushNamed(AppRoutes.notifications);
+            },
+            notificationBadge: hasUnreadNotifications,
+          ),
+          body: DsEmptyState(
+            icon: AppIcons.projects,
+            title: title,
+            message: description ?? 'This screen is not available right now.',
+            actionLabel: 'Back',
+            onAction: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }

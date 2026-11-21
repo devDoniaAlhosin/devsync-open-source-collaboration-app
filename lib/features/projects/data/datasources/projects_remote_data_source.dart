@@ -1,40 +1,28 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../core/constants/firestore_collections.dart';
-import '../../domain/entities/collaboration_request_receipt.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
-import '../datasources/devsync_api_data_source.dart';
 import '../datasources/github_remote_data_source.dart';
 import '../exceptions/projects_exceptions.dart';
 import '../models/project_model.dart';
 
-/// Firestore-facing source for projects, views and collaboration requests.
-///
-/// Collection layout:
-/// * `projects/{projectId}` — project document. AI fields (`matchPercentage`,
-///   `matchSummary`, `alignments`, `matchedSkills`) and the cached `github` map
-///   are written by the DevSync API, never by the client.
-/// * `views/{projectId}_{uid}_{yyyy-MM-dd}` — one deterministic document per
-///   viewer per day, so refreshing details does not inflate view counts.
-/// * `requests/{requestId}` — collaboration requests shared with the requests
-///   feature inbox (`requesterId`, `ownerId`, `status`, `matchPercentage`).
+/// Firestore + GitHub reads for projects. Requests are owned by the requests feature.
 class ProjectsRemoteDataSource {
   ProjectsRemoteDataSource({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     GithubRemoteDataSource? github,
-    DevSyncApiDataSource? devsyncApi,
   }) : _firestore = firestore,
        _auth = auth,
-       _github = github ?? GithubRemoteDataSource(),
-       _devsyncApi = devsyncApi ?? DevSyncApiDataSource();
+       _github = github ?? GithubRemoteDataSource();
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final GithubRemoteDataSource _github;
-  final DevSyncApiDataSource _devsyncApi;
 
   String? get _currentUserId => _auth.currentUser?.uid;
 
@@ -50,24 +38,44 @@ class ProjectsRemoteDataSource {
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection(FirestoreCollections.users);
 
+  static const _projectsPageSize = 100;
+
   Future<List<Project>> fetchProjects() async {
-    final snapshot = await _projects.get();
+    final snapshot = await _projects.limit(_projectsPageSize).get();
     final uid = _currentUserId;
-    final pendingIds = uid == null
-        ? const <String>{}
-        : await _pendingProjectIds(uid);
+    final flags = uid == null
+        ? const _ViewerRequestFlags.empty()
+        : await _viewerRequestFlags(uid);
 
     final projects = snapshot.docs
         .map(
           (doc) => ProjectModel.fromFirestore(
             doc,
             currentUserId: uid,
-            pendingRequestProjectIds: pendingIds,
+            pendingRequestProjectIds: flags.pendingIds,
+            joinedProjectIds: flags.joinedIds,
           ),
         )
         .toList(growable: false);
 
     return List<Project>.of(projects)..sort(_newestFirst);
+  }
+
+  Future<Project> fetchProject(String projectId) async {
+    final snapshot = await _projects.doc(projectId).get();
+    if (!snapshot.exists) throw const ProjectNotFoundException();
+
+    final uid = _currentUserId;
+    final flags = uid == null
+        ? const _ViewerRequestFlags.empty()
+        : await _viewerRequestFlags(uid);
+
+    return ProjectModel.fromFirestore(
+      snapshot,
+      currentUserId: uid,
+      pendingRequestProjectIds: flags.pendingIds,
+      joinedProjectIds: flags.joinedIds,
+    );
   }
 
   Future<ProjectStats> fetchStats(String projectId) async {
@@ -94,24 +102,19 @@ class ProjectsRemoteDataSource {
     final uid = _currentUserId;
     if (uid == null) throw const AuthRequiredException();
 
-    final isNew = _isNewProject(project);
-    final ref = isNew ? _projects.doc() : _projects.doc(project.id);
-
-    if (!isNew) {
-      final snapshot = await ref.get();
-      if (!snapshot.exists) throw const ProjectNotFoundException();
-      final ownerId = _string(
-        snapshot.data()?['ownerId'] ?? snapshot.data()?['ownerUid'],
-      );
-      if (ownerId.isNotEmpty && ownerId != uid) {
-        throw const ProjectForbiddenException();
-      }
-    }
+    final isNew = project.id.trim().isEmpty;
+    final ref = isNew ? _projects.doc() : _projects.doc(project.id.trim());
 
     final ownerName = await _resolveOwnerName(
       preferred: project.ownerName,
       uid: uid,
     );
+    if (ownerName.trim().isEmpty) {
+      throw const ProjectValidationException(
+        'A project owner name is required before saving.',
+      );
+    }
+
     final model = ProjectModel(
       id: ref.id,
       title: project.title.trim(),
@@ -127,99 +130,88 @@ class ProjectsRemoteDataSource {
       ownerName: ownerName,
       createdAt: project.createdAt ?? (isNew ? DateTime.now() : null),
       hasPendingRequest: project.hasPendingRequest,
+      isJoined: project.joined,
     );
 
-    await ref.set(
-      model.toFirestore(ownerId: uid, isNew: isNew),
-      SetOptions(merge: true),
+    if (!isNew) {
+      Project saved = model;
+      await _firestore.runTransaction<void>((transaction) async {
+        final snapshot = await transaction.get(ref);
+        if (!snapshot.exists) throw const ProjectNotFoundException();
+
+        final data = snapshot.data() ?? const <String, dynamic>{};
+        final ownerId = _string(data['ownerId'] ?? data['ownerUid']);
+        if (ownerId.isEmpty) {
+          throw const ProjectValidationException(
+            'This project has no owner. Re-create it before editing.',
+          );
+        }
+        if (ownerId != uid) throw const ProjectForbiddenException();
+
+        final existing = ProjectModel.fromFirestore(
+          snapshot,
+          currentUserId: uid,
+        );
+        saved = model.copyWith(createdAt: existing.createdAt);
+
+        transaction.set(
+          ref,
+          model.toFirestore(ownerId: uid, ownerName: ownerName, isNew: false),
+          SetOptions(merge: true),
+        );
+      });
+      return saved;
+    }
+
+    final payload = Map<String, Object?>.from(
+      model.toFirestore(ownerId: uid, ownerName: ownerName, isNew: true),
     );
+    payload['createdAt'] = FieldValue.serverTimestamp();
+    payload['updatedAt'] = FieldValue.serverTimestamp();
+
+    await ref.set(payload).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => throw TimeoutException('Saving project timed out'),
+    );
+
+    final verified = await ref
+        .get(const GetOptions(source: Source.server))
+        .timeout(
+          const Duration(seconds: 10),
+          onTimeout: () =>
+              throw TimeoutException('Could not confirm Firestore write'),
+        );
+    if (!verified.exists) {
+      throw const ProjectValidationException(
+        'Project was not written to Firestore. Check rules and try again.',
+      );
+    }
+
     return model;
   }
 
-  Future<CollaborationRequestReceipt> requestToCollaborate({
-    required Project project,
-    String? message,
-  }) async {
+  Future<void> delete(String projectId) async {
     final uid = _currentUserId;
     if (uid == null) throw const AuthRequiredException();
 
-    final projectRef = _projects.doc(project.id);
-    final snapshot = await projectRef.get();
-    if (!snapshot.exists) throw const ProjectNotFoundException();
-
-    final data = snapshot.data() ?? const <String, dynamic>{};
-    final ownerId = _string(data['ownerId'] ?? data['ownerUid']);
-    if (ownerId.isEmpty) {
-      throw const ProjectValidationException('This project has no owner yet');
-    }
-    if (ownerId == uid) {
-      throw const ProjectValidationException('You already own this project');
+    final trimmed = projectId.trim();
+    if (trimmed.isEmpty) {
+      throw const ProjectValidationException('Project id is required');
     }
 
-    final existing = await _requests
-        .where('projectId', isEqualTo: project.id)
-        .where('requesterId', isEqualTo: uid)
-        .where('status', isEqualTo: 'pending')
-        .limit(1)
-        .get();
+    final ref = _projects.doc(trimmed);
+    await _firestore.runTransaction<void>((transaction) async {
+      final snapshot = await transaction.get(ref);
+      if (!snapshot.exists) throw const ProjectNotFoundException();
 
-    if (existing.docs.isNotEmpty) {
-      return CollaborationRequestReceipt(
-        requestId: existing.docs.first.id,
-        projectId: project.id,
-        created: false,
-      );
-    }
+      final data = snapshot.data() ?? const <String, dynamic>{};
+      final ownerId = _string(data['ownerId'] ?? data['ownerUid']);
+      if (ownerId.isEmpty || ownerId != uid) {
+        throw const ProjectForbiddenException();
+      }
 
-    final user = _auth.currentUser;
-    final requesterName = _string(user?.displayName).isEmpty
-        ? 'Contributor'
-        : _string(user?.displayName);
-    final projectTitle = _string(data['title']).isEmpty
-        ? project.title
-        : _string(data['title']);
-    final requestRef = _requests.doc();
-
-    final batch = _firestore.batch();
-    batch.set(requestRef, {
-      'projectId': project.id,
-      'projectTitle': projectTitle,
-      'ownerId': ownerId,
-      if (_string(data['ownerName']).isNotEmpty)
-        'ownerName': _string(data['ownerName']),
-      'requesterId': uid,
-      'requesterName': requesterName,
-      if (_string(user?.email).isNotEmpty) 'requesterEmail': user?.email,
-      'message': _truncate(message?.trim() ?? '', 1000),
-      'matchPercentage': project.matchPercentage,
-      'status': 'pending',
-      'type': 'sent',
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      transaction.delete(ref);
     });
-    batch.update(projectRef, {'requestsCount': FieldValue.increment(1)});
-    await batch.commit();
-
-    // Push is best-effort and server-owned; the request itself is committed.
-    try {
-      await _devsyncApi.notifyCollaborationRequest(
-        requestId: requestRef.id,
-        projectId: project.id,
-        projectTitle: projectTitle,
-        ownerId: ownerId,
-        requesterId: uid,
-        requesterName: requesterName,
-        message: message,
-      );
-    } catch (_) {
-      // The notification can be retried by the API's own queue/cron.
-    }
-
-    return CollaborationRequestReceipt(
-      requestId: requestRef.id,
-      projectId: project.id,
-      created: true,
-    );
   }
 
   Future<int> fetchJoinedContributions() async {
@@ -238,7 +230,8 @@ class ProjectsRemoteDataSource {
     final uid = _currentUserId;
     if (uid == null) return;
 
-    final now = DateTime.now();
+    // UTC yyyy-MM-dd — same as rules todayKeyUtc().
+    final now = DateTime.now().toUtc();
     final dayKey = '${now.year}-${_two(now.month)}-${_two(now.day)}';
     final viewRef = _views.doc('${projectId}_${uid}_$dayKey');
     final projectRef = _projects.doc(projectId);
@@ -265,20 +258,32 @@ class ProjectsRemoteDataSource {
     });
   }
 
-  Future<Set<String>> _pendingProjectIds(String uid) async {
+  Future<_ViewerRequestFlags> _viewerRequestFlags(String uid) async {
     try {
-      final snapshot = await _requests
-          .where('requesterId', isEqualTo: uid)
-          .where('status', isEqualTo: 'pending')
-          .get();
-      return {
-        for (final doc in snapshot.docs)
-          if (_string(doc.data()['projectId']).isNotEmpty)
-            _string(doc.data()['projectId']),
-      };
+      final snapshot = await _requests.where('senderId', isEqualTo: uid).get();
+      final pendingIds = <String>{};
+      final joinedIds = <String>{};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final projectId = _string(data['projectId']);
+        if (projectId.isEmpty) continue;
+        switch (data['status']) {
+          case 'accepted':
+            joinedIds.add(projectId);
+            pendingIds.remove(projectId);
+          case 'pending':
+          case 'isNew':
+            if (!joinedIds.contains(projectId)) {
+              pendingIds.add(projectId);
+            }
+        }
+      }
+      return _ViewerRequestFlags(
+        pendingIds: pendingIds,
+        joinedIds: joinedIds,
+      );
     } catch (_) {
-      // A missing index or offline cache should not block Discover.
-      return const <String>{};
+      return const _ViewerRequestFlags.empty();
     }
   }
 
@@ -395,12 +400,6 @@ class ProjectsRemoteDataSource {
     }
   }
 
-  static bool _isNewProject(Project project) {
-    return project.id.trim().isEmpty ||
-        project.id.startsWith('project-') ||
-        project.id.startsWith('draft-');
-  }
-
   static int _newestFirst(Project a, Project b) {
     final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -411,11 +410,20 @@ class ProjectsRemoteDataSource {
   static String _string(Object? value) => value is String ? value.trim() : '';
 
   static String _two(int value) => value.toString().padLeft(2, '0');
+}
 
-  static String _truncate(String value, int maxLength) {
-    if (value.length <= maxLength) return value;
-    return value.substring(0, maxLength);
-  }
+class _ViewerRequestFlags {
+  const _ViewerRequestFlags({
+    required this.pendingIds,
+    required this.joinedIds,
+  });
+
+  const _ViewerRequestFlags.empty()
+    : pendingIds = const {},
+      joinedIds = const {};
+
+  final Set<String> pendingIds;
+  final Set<String> joinedIds;
 }
 
 class _OwnerProfile {

@@ -159,7 +159,7 @@ class _TabPaneState extends State<_TabPane>
           ignoring: !active,
           child: FadeTransition(
             opacity: CurvedAnimation(parent: _fade, curve: widget.curve),
-            child: widget.child,
+            child: SizedBox.expand(child: widget.child),
           ),
         ),
       ),

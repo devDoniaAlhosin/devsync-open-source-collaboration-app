@@ -7,30 +7,28 @@ import '../../../../core/result/result.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
+import '../../domain/usecases/delete_project.dart';
 import '../../domain/usecases/get_joined_contributions.dart';
 import '../../domain/usecases/get_project_stats.dart';
 import '../../domain/usecases/get_projects.dart';
 import '../../domain/usecases/record_project_view.dart';
-import '../../domain/usecases/request_to_collaborate.dart';
 import '../../domain/usecases/upsert_project.dart';
 
 part 'projects_state.dart';
 
-/// Owns the project feed, the owner's dashboard metrics and all write
-/// operations. Screens either share an instance through `BlocProvider.value`
-/// (shell → editor) or create their own scope (project details).
+/// Project feed + writes. Requests go through `RequestsCubit`.
 class ProjectsCubit extends Cubit<ProjectsState> {
   ProjectsCubit({
     required GetProjects getProjects,
     required GetProjectStats getProjectStats,
     required UpsertProject upsertProject,
-    required RequestToCollaborate requestToCollaborate,
+    required DeleteProject deleteProject,
     required GetJoinedContributions getJoinedContributions,
     required RecordProjectView recordProjectView,
   }) : _getProjects = getProjects,
        _getProjectStats = getProjectStats,
        _upsertProject = upsertProject,
-       _requestToCollaborate = requestToCollaborate,
+       _deleteProject = deleteProject,
        _getJoinedContributions = getJoinedContributions,
        _recordProjectView = recordProjectView,
        super(const ProjectsInitial());
@@ -38,36 +36,30 @@ class ProjectsCubit extends Cubit<ProjectsState> {
   final GetProjects _getProjects;
   final GetProjectStats _getProjectStats;
   final UpsertProject _upsertProject;
-  final RequestToCollaborate _requestToCollaborate;
+  final DeleteProject _deleteProject;
   final GetJoinedContributions _getJoinedContributions;
   final RecordProjectView _recordProjectView;
 
-  /// Monotonic id stamped on every [ProjectOperationSuccess] so listeners fire
-  /// once per operation, not once per distinct message.
   int _operationId = 0;
 
-  /// Loads Discover + My projects. Set [silent] to refresh after returning from
-  /// a detail route without flashing the full-page spinner.
+  /// [silent] refreshes without the full-page spinner.
   Future<void> load({bool silent = false}) async {
     if (!silent) emit(const ProjectsLoading());
 
     final projectsResult = await _getProjects(const NoParams());
     switch (projectsResult) {
       case FailureResult(:final failure):
-        // A background refresh must not replace a working feed with an error.
         if (silent && state is ProjectsLoaded) return;
         emit(ProjectsFailure(failure.message));
         return;
       case Success(:final data):
-        final stats = <String, ProjectStats>{};
-        for (final project in data.where((project) => project.isOwner)) {
-          final statsResult = await _getProjectStats(
-            GetProjectStatsParams(project.id),
-          );
-          if (statsResult case Success(data: final projectStats)) {
-            stats[project.id] = projectStats;
-          }
-        }
+        final previous = state;
+        final cachedStats = previous is ProjectsLoaded
+            ? Map<String, ProjectStats>.of(previous.stats)
+            : <String, ProjectStats>{};
+        cachedStats.removeWhere(
+          (id, _) => !data.any((project) => project.id == id),
+        );
 
         final joinedResult = await _getJoinedContributions(const NoParams());
         final joined = switch (joinedResult) {
@@ -78,7 +70,7 @@ class ProjectsCubit extends Cubit<ProjectsState> {
         emit(
           ProjectsLoaded(
             projects: data,
-            stats: stats,
+            stats: cachedStats,
             joinedContributors: joined,
           ),
         );
@@ -87,10 +79,6 @@ class ProjectsCubit extends Cubit<ProjectsState> {
 
   Future<void> refresh() => load(silent: true);
 
-  /// Loads a single project and its stats for the details screen.
-  ///
-  /// Details keeps its own cubit scope so this never replaces the Discover
-  /// feed. A view is recorded after the stats resolve.
   Future<void> loadProject(
     Project project, {
     ProjectStats? initialStats,
@@ -113,7 +101,7 @@ class ProjectsCubit extends Cubit<ProjectsState> {
     unawaited(recordProjectView(project.id));
   }
 
-  /// Returns `null` on success, or a user-facing error message.
+  /// `null` on success, else error text.
   Future<String?> upsert(Project project, {bool isNew = false}) async {
     final result = await _upsertProject(project);
     switch (result) {
@@ -149,43 +137,28 @@ class ProjectsCubit extends Cubit<ProjectsState> {
     }
   }
 
-  /// Sends a collaboration request. Returns `null` on success.
-  Future<String?> requestToCollaborate(
-    Project project, {
-    String? message,
-  }) async {
-    final result = await _requestToCollaborate(
-      RequestToCollaborateParams(project: project, message: message),
-    );
-
+  /// `null` on success, else error text.
+  Future<String?> delete(String projectId) async {
+    final result = await _deleteProject(DeleteProjectParams(projectId));
     switch (result) {
       case FailureResult(:final failure):
         return failure.message;
-      case Success(:final data):
+      case Success():
         final current = state;
         final loaded = current is ProjectsLoaded ? current : null;
-        final projects = (loaded?.projects ?? <Project>[project])
-            .map((item) {
-              if (item.id != project.id) return item;
-              return item.copyWith(
-                hasPendingRequest: true,
-                requestsCount: data.created
-                    ? item.requestsCount + 1
-                    : item.requestsCount,
-              );
-            })
-            .toList(growable: false);
+        final projects = List<Project>.of(
+          loaded?.projects ?? const <Project>[],
+        )..removeWhere((item) => item.id == projectId);
+        final stats = Map<String, ProjectStats>.of(
+          loaded?.stats ?? const <String, ProjectStats>{},
+        )..remove(projectId);
 
         emit(
           ProjectOperationSuccess(
             projects: projects,
-            stats: Map<String, ProjectStats>.of(
-              loaded?.stats ?? const <String, ProjectStats>{},
-            ),
+            stats: stats,
             joinedContributors: loaded?.joinedContributors ?? 0,
-            message: data.created
-                ? 'Request sent to ${_maintainerName(project)}.'
-                : 'You already have a pending request for ${project.title}.',
+            message: 'Project deleted.',
             operationId: ++_operationId,
           ),
         );
@@ -193,7 +166,30 @@ class ProjectsCubit extends Cubit<ProjectsState> {
     }
   }
 
-  /// Fire-and-forget: a failed view log must never break the details screen.
+  void markRequestPending(String projectId) {
+    final current = state;
+    if (current is! ProjectsLoaded) return;
+
+    var changed = false;
+    final projects = <Project>[];
+    for (final project in current.projects) {
+      if (project.id == projectId && !project.hasPendingRequest) {
+        changed = true;
+        projects.add(
+          project.copyWith(
+            hasPendingRequest: true,
+            requestsCount: project.requestsCount + 1,
+          ),
+        );
+      } else {
+        projects.add(project);
+      }
+    }
+
+    if (!changed) return;
+    emit(current.copyWith(projects: projects));
+  }
+
   Future<void> recordProjectView(String projectId) async {
     await _recordProjectView(RecordProjectViewParams(projectId));
   }
@@ -213,10 +209,5 @@ class ProjectsCubit extends Cubit<ProjectsState> {
       Success(:final data) => data,
       FailureResult() => null,
     };
-  }
-
-  String _maintainerName(Project project) {
-    final name = project.ownerName.trim();
-    return name.isEmpty ? 'the maintainer' : name;
   }
 }

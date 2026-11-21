@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/dummy/dummy_notifications.dart';
+import '../../../../app/app_routes.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
@@ -8,44 +11,89 @@ import '../../../../core/widgets/ds_empty_state.dart';
 import '../../../../core/widgets/ds_item_enter.dart';
 import '../../../../core/widgets/ds_notification_tile.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
-import '../../../../core/icons/app_icons.dart';
+import '../../domain/entities/app_notification.dart';
+import '../cubit/notifications_cubit.dart';
 
-/// Temporary local notifications inbox (dummy seed, no Firestore/FCM).
-class NotificationsScreen extends StatefulWidget {
+/// Firestore inbox under `users/{uid}/notifications`.
+class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<NotificationsCubit>()..load(),
+      child: const _NotificationsView(),
+    );
+  }
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
-  late List<DummyNotification> _items;
-
-  @override
-  void initState() {
-    super.initState();
-    _items = seedDummyNotifications();
-  }
-
-  void _toggleUnread(String id) {
-    setState(() {
-      _items = [
-        for (final item in _items)
-          if (item.id == id) item.copyWith(unread: !item.unread) else item,
-      ];
-    });
-  }
+class _NotificationsView extends StatelessWidget {
+  const _NotificationsView();
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
+  void _openRequests(BuildContext context) {
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.home,
+      (route) => false,
+      arguments: 3,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final today = _items.where((n) => _isSameDay(n.createdAt, now)).toList();
-    final earlier = _items.where((n) => !_isSameDay(n.createdAt, now)).toList();
     final ds = context.ds;
     final textTheme = Theme.of(context).textTheme;
+
+    return Scaffold(
+      backgroundColor: ds.background,
+      appBar: DsAppBar(
+        title: 'Notifications',
+        eyebrow: 'INBOX',
+        showBack: true,
+        onBack: () => Navigator.of(context).maybePop(),
+      ),
+      body: DsPageFade(
+        child: BlocBuilder<NotificationsCubit, NotificationsState>(
+          builder: (context, state) {
+            return switch (state) {
+              NotificationsInitial() || NotificationsLoading() => const Center(
+                child: CircularProgressIndicator(color: AppColors.teal),
+              ),
+              NotificationsFailure(:final message) => DsEmptyState(
+                icon: AppIcons.error,
+                title: 'Could not load inbox',
+                message: message,
+                actionLabel: 'Retry',
+                onAction: () => context.read<NotificationsCubit>().load(),
+              ),
+              NotificationsLoaded(:final items) => items.isEmpty
+                  ? const Center(
+                      child: DsEmptyState(
+                        icon: AppIcons.inbox,
+                        title: 'All caught up',
+                        message:
+                            'New request and accept alerts will show up here.',
+                      ),
+                    )
+                  : _buildList(context, items, textTheme, ds),
+            };
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildList(
+    BuildContext context,
+    List<AppNotification> items,
+    TextTheme textTheme,
+    DevSyncPalette ds,
+  ) {
+    final now = DateTime.now();
+    final today = items.where((n) => _isSameDay(n.createdAt, now)).toList();
+    final earlier = items.where((n) => !_isSameDay(n.createdAt, now)).toList();
 
     final rows = <Widget>[];
     if (today.isNotEmpty) {
@@ -59,9 +107,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         rows.add(
           DsNotificationTile(
             title: item.title,
-            subtitle: item.subtitle,
-            unread: item.unread,
-            onTap: () => _toggleUnread(item.id),
+            subtitle: item.body,
+            unread: !item.read,
+            onTap: () {
+              context.read<NotificationsCubit>().markRead(item.id);
+              _openRequests(context);
+            },
           ),
         );
       }
@@ -78,51 +129,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         rows.add(
           DsNotificationTile(
             title: item.title,
-            subtitle: item.subtitle,
-            unread: item.unread,
-            onTap: () => _toggleUnread(item.id),
+            subtitle: item.body,
+            unread: !item.read,
+            onTap: () {
+              context.read<NotificationsCubit>().markRead(item.id);
+              _openRequests(context);
+            },
           ),
         );
       }
     }
 
-    return Scaffold(
-      appBar: DsAppBar(
-        title: 'Notifications',
-        eyebrow: 'INBOX',
-        showBack: true,
-        onBack: () => Navigator.of(context).maybePop(),
-      ),
-      body: DsPageFade(
-        child: _items.isEmpty
-            ? const Center(
-                child: DsEmptyState(
-                  icon: AppIcons.inbox,
-                  title: 'All caught up',
-                  message: 'New request and match alerts will show up here.',
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPadding,
-                  AppSpacing.sm,
-                  AppSpacing.screenPadding,
-                  AppSpacing.xxxl,
-                ),
-                itemCount: rows.length,
-                itemBuilder: (context, index) {
-                  final child = rows[index];
-                  final isLabel = child is _SectionLabel;
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: isLabel ? 0 : AppSpacing.md,
-                    ),
-                    child: isLabel
-                        ? child
-                        : DsItemEnter(index: index, child: child),
-                  );
-                },
-              ),
+    return RefreshIndicator(
+      onRefresh: () => context.read<NotificationsCubit>().load(),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenPadding,
+          AppSpacing.sm,
+          AppSpacing.screenPadding,
+          AppSpacing.xxxl,
+        ),
+        itemCount: rows.length,
+        itemBuilder: (context, index) {
+          final child = rows[index];
+          final isLabel = child is _SectionLabel;
+          return Padding(
+            padding: EdgeInsets.only(bottom: isLabel ? 0 : AppSpacing.md),
+            child: isLabel ? child : DsItemEnter(index: index, child: child),
+          );
+        },
       ),
     );
   }

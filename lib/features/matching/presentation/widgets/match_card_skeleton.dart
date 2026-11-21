@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
-/// Shared content lazy-loading card: avatar, title lines, circle, hero bar, text.
 class MatchCardSkeleton extends StatelessWidget {
   const MatchCardSkeleton({super.key});
 
@@ -48,7 +47,7 @@ class MatchCardSkeleton extends StatelessWidget {
                     const _Bone(width: 48, height: 48, radius: 24),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.xxxl),
                 const _Bone(height: 48, radius: 16),
                 const SizedBox(height: AppSpacing.md),
                 const _Bone(height: 10),
@@ -67,12 +66,28 @@ class MatchCardSkeleton extends StatelessWidget {
   }
 }
 
+class MatchActionBarSkeleton extends StatelessWidget {
+  const MatchActionBarSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _Bone(width: 54, height: 54, radius: 27),
+        SizedBox(width: AppSpacing.md),
+        _Bone(width: 54, height: 54, radius: 27),
+        SizedBox(width: AppSpacing.md),
+        _Bone(width: 64, height: 64, radius: 32),
+        SizedBox(width: AppSpacing.md),
+        _Bone(width: 54, height: 54, radius: 27),
+      ],
+    );
+  }
+}
+
 class _Bone extends StatelessWidget {
-  const _Bone({
-    this.width,
-    this.height = 12,
-    this.radius = 8,
-  });
+  const _Bone({this.width, this.height = 12, this.radius = 8});
 
   final double? width;
   final double height;
@@ -80,11 +95,11 @@ class _Bone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: context.ds.border.withValues(alpha: 0.75),
-          borderRadius: BorderRadius.circular(radius),
-        ),
-      );
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: context.ds.border.withValues(alpha: 0.75),
+      borderRadius: BorderRadius.circular(radius),
+    ),
+  );
 }

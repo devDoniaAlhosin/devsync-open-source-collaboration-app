@@ -1,5 +1,6 @@
 import 'package:devsync_open_source_collaboration_app/core/error/failures.dart';
 import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
+import 'package:devsync_open_source_collaboration_app/features/auth/domain/failures/auth_failures.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/domain/usecases/reset_password_with_otp.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/domain/usecases/send_password_reset_email.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/domain/usecases/verify_otp.dart';
@@ -39,6 +40,15 @@ void main() {
     await cubit.sendReset('nour@mail.com');
 
     expect(cubit.state, ForgotPasswordFailure(const NetworkFailure().message));
+    expect(repository.resetCalls, 1);
+  });
+
+  test('emits google-only when the account has no password', () async {
+    repository.resetResult = const FailureResult(GoogleOnlyAccountFailure());
+
+    await cubit.sendReset('google@mail.com');
+
+    expect(cubit.state, const ForgotPasswordGoogleOnly('google@mail.com'));
     expect(repository.resetCalls, 1);
   });
 }

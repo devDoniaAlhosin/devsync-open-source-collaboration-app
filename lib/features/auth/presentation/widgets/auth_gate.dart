@@ -47,15 +47,18 @@ class AuthGate extends StatelessWidget {
 }
 
 /// Shared helper for auth screens after a successful credential exchange.
-void navigateToHome(BuildContext context) {
-  Navigator.of(
-    context,
-  ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+void navigateToHome(BuildContext context, {int tabIndex = 0}) {
+  Navigator.of(context).pushNamedAndRemoveUntil(
+    AppRoutes.home,
+    (route) => false,
+    arguments: tabIndex,
+  );
 }
 
-/// First-time setup: Connect GitHub (5) → Edit profile (20) → Home / Matches.
+/// Optional setup hint only. Prefer [navigateToHome] after auth so users can
+/// explore, add projects, and connect GitHub when they choose.
 void navigateToOnboarding(BuildContext context) {
   Navigator.of(
     context,
-  ).pushNamedAndRemoveUntil(AppRoutes.connectGithub, (route) => false);
+  ).pushNamedAndRemoveUntil(AppRoutes.choosePath, (route) => false);
 }

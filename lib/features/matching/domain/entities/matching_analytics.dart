@@ -1,34 +1,53 @@
-/// Model transparency and AI recommendation performance metrics.
-class MatchingAnalytics {
+import 'package:equatable/equatable.dart';
+
+class MatchingAnalytics extends Equatable {
   const MatchingAnalytics({
-    required this.matchesRated,
-    required this.positiveSignalsPercentage,
-    required this.skillsMatchedCount,
-    required this.relevanceTrend,
-    required this.scoringBreakdown,
+    required this.ratedCount,
+    this.positivePercentage,
+    this.trendValues = const [],
+    this.skillsMatchedCount,
+    this.isDemo = false,
   });
 
-  /// Total number of matches the user has reviewed / swiped.
-  final int matchesRated;
+  final int ratedCount;
 
-  /// Percentage of positive collaboration actions (likes/requests).
-  final int positiveSignalsPercentage;
+  final int? positivePercentage;
 
-  /// Count of unique skills matched across recommendations.
-  final int skillsMatchedCount;
+  final List<double> trendValues;
 
-  /// Historical relevance trend scores (normalized bar heights).
-  final List<double> relevanceTrend;
+  final int? skillsMatchedCount;
 
-  /// Relative scoring weights (e.g. Skills: 90, Activity: 75, Interests: 85).
-  final Map<String, int> scoringBreakdown;
+  /// True when this object contains placeholder demo data (not real feedback).
+  final bool isDemo;
 
-  /// Default demo analytics for transparency views.
-  static const MatchingAnalytics demoAnalytics = MatchingAnalytics(
-    matchesRated: 18,
-    positiveSignalsPercentage: 83,
-    skillsMatchedCount: 4,
-    relevanceTrend: [43.0, 59.0, 68.0, 65.0, 87.0, 100.0, 111.0],
-    scoringBreakdown: {'Skills': 90, 'Activity': 75, 'Interests': 85},
+  bool get isEmpty => ratedCount == 0;
+  bool get hasEnoughTrendData => trendValues.length >= 2;
+
+  static const empty = MatchingAnalytics(
+    ratedCount: 0,
+    positivePercentage: null,
+    trendValues: [],
+    skillsMatchedCount: null,
   );
+
+  /// Placeholder analytics shown before the user has real feedback data.
+  ///
+  /// Used as "Data today" per the AI analytics spec — replace with real
+  /// Firestore aggregation once feedback collection is wired.
+  static const demoAnalytics = MatchingAnalytics(
+    ratedCount: 18,
+    positivePercentage: 83,
+    trendValues: [30, 42, 55, 60, 70, 80, 83],
+    skillsMatchedCount: 4,
+    isDemo: true,
+  );
+
+  @override
+  List<Object?> get props => [
+    ratedCount,
+    positivePercentage,
+    trendValues,
+    skillsMatchedCount,
+    isDemo,
+  ];
 }

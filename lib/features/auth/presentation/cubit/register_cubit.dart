@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,6 +26,8 @@ class RegisterCubit extends Cubit<RegisterState> {
   final SignInWithGoogle _signInWithGoogle;
   final SignInWithGitHub _signInWithGitHub;
 
+  Completer<bool>? _gitHubDeviceCompleter;
+
   Future<void> register({
     required String email,
     required String password,
@@ -44,25 +48,64 @@ class RegisterCubit extends Cubit<RegisterState> {
   Future<void> signInWithGoogle() =>
       _run(() => _signInWithGoogle(const NoParams()));
 
-  Future<void> signInWithGitHub() =>
-      _run(() => _signInWithGitHub(const NoParams()));
+  Future<void> signInWithGitHub() {
+    return _run(
+      () => _signInWithGitHub(
+        SignInWithGitHubParams(
+          onDeviceCode: (userCode, verificationUri) async {
+            final completer = Completer<bool>();
+            _gitHubDeviceCompleter = completer;
+            emit(
+              RegisterGitHubDeviceCode(
+                userCode: userCode,
+                verificationUri: verificationUri.toString(),
+              ),
+            );
+            return completer.future;
+          },
+        ),
+      ),
+    );
+  }
+
+  void cancelGitHubDeviceCode() {
+    final completer = _gitHubDeviceCompleter;
+    if (completer == null || completer.isCompleted) return;
+    completer.complete(false);
+  }
+
+  void _finishGitHubDevicePrompt({required bool proceed}) {
+    final completer = _gitHubDeviceCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(proceed);
+    }
+    _gitHubDeviceCompleter = null;
+  }
 
   Future<void> _run(
     Future<Result<void>> Function() action, {
     RegisterState afterSuccess = const RegisterSuccess(),
   }) async {
-    if (state is RegisterLoading) return;
+    if (state is RegisterLoading || state is RegisterGitHubDeviceCode) return;
     emit(const RegisterLoading());
     final result = await action();
     switch (result) {
       case Success():
+        _finishGitHubDevicePrompt(proceed: true);
         emit(afterSuccess);
       case FailureResult(:final failure):
+        _finishGitHubDevicePrompt(proceed: false);
         if (failure is CancelledFailure) {
           emit(const RegisterInitial());
           return;
         }
         emit(RegisterFailure(failure.message));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _finishGitHubDevicePrompt(proceed: false);
+    return super.close();
   }
 }

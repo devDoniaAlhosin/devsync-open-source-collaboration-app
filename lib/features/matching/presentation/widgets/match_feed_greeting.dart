@@ -4,11 +4,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_brand_icon.dart';
 
-/// Greeting widget displaying the day of week and personalized welcome.
 class MatchFeedGreeting extends StatelessWidget {
   const MatchFeedGreeting({super.key, this.userName = 'there', this.dayName});
 
-  final String userName;
+  final String? userName;
   final String? dayName;
 
   static const _weekdays = [
@@ -62,7 +61,9 @@ class MatchFeedGreeting extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$_timeGreeting, $userName',
+                  userName == null || userName!.trim().isEmpty
+                      ? _timeGreeting
+                      : '$_timeGreeting, $userName',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: ds.textPrimary,

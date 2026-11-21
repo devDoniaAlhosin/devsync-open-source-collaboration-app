@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
 import '../../../../core/error/failures.dart';
 import '../../../../core/result/result.dart';
-import '../../domain/entities/collaboration_request_receipt.dart';
+import '../../../notifications/data/datasources/notify_remote_data_source.dart';
 import '../../domain/entities/project.dart';
 import '../../domain/entities/project_stats.dart';
 import '../../domain/repositories/projects_repository.dart';
@@ -8,14 +12,33 @@ import '../datasources/projects_remote_data_source.dart';
 import '../mappers/projects_failure_mapper.dart';
 
 class ProjectsRepositoryImpl implements ProjectsRepository {
-  ProjectsRepositoryImpl({required ProjectsRemoteDataSource remote})
-    : _remote = remote;
+  ProjectsRepositoryImpl({
+    required ProjectsRemoteDataSource remote,
+    NotifyRemoteDataSource? notifyRemoteDataSource,
+    @visibleForTesting Future<Project> Function(Project project)? upsertOverride,
+  }) : _remote = remote,
+       _notify = notifyRemoteDataSource,
+       _upsertOverride = upsertOverride;
 
   final ProjectsRemoteDataSource _remote;
+  final NotifyRemoteDataSource? _notify;
+  final Future<Project> Function(Project project)? _upsertOverride;
 
   @override
   Future<Result<List<Project>>> getProjects() {
     return _guard(_remote.fetchProjects);
+  }
+
+  @override
+  Future<Result<Project>> getProject(String projectId) {
+    if (projectId.trim().isEmpty) {
+      return Future.value(
+        const FailureResult<Project>(
+          ValidationFailure('Project id is required'),
+        ),
+      );
+    }
+    return _guard(() => _remote.fetchProject(projectId));
   }
 
   @override
@@ -31,7 +54,7 @@ class ProjectsRepositoryImpl implements ProjectsRepository {
   }
 
   @override
-  Future<Result<Project>> upsert(Project project) {
+  Future<Result<Project>> upsert(Project project) async {
     final title = project.title.trim();
     if (title.isEmpty) {
       return Future.value(
@@ -82,24 +105,53 @@ class ProjectsRepositoryImpl implements ProjectsRepository {
       );
     }
 
-    return _guard(() => _remote.upsert(project));
-  }
-
-  @override
-  Future<Result<CollaborationRequestReceipt>> requestToCollaborate({
-    required Project project,
-    String? message,
-  }) {
-    if (project.id.trim().isEmpty) {
+    // Editing an existing document is owner-guarded in the data source. A
+    // stored project with no owner can never be edited back into a valid
+    // state, so reject it here before touching Firestore.
+    if (project.id.trim().isNotEmpty && project.ownerId.trim().isEmpty) {
       return Future.value(
-        const FailureResult<CollaborationRequestReceipt>(
-          ValidationFailure('Pick a project before requesting to collaborate'),
+        const FailureResult<Project>(
+          ValidationFailure(
+            'This project has no owner. Re-create it before editing.',
+            field: 'ownerId',
+          ),
         ),
       );
     }
-    return _guard(
-      () => _remote.requestToCollaborate(project: project, message: message),
+
+    final isNew = project.id.trim().isEmpty;
+    final upsert = _upsertOverride ?? _remote.upsert;
+    final result = await _guard(() => upsert(project));
+    if (!isNew) {
+      switch (result) {
+        case Success(:final data):
+          _notifyProjectUpdated(data.id);
+        case FailureResult():
+          break;
+      }
+    }
+    return result;
+  }
+
+  void _notifyProjectUpdated(String projectId) {
+    final notify = _notify;
+    final id = projectId.trim();
+    if (notify == null || id.isEmpty) return;
+    unawaited(
+      notify.notifyProjectUpdated(projectId: id).onError((_, _) {}),
     );
+  }
+
+  @override
+  Future<Result<void>> delete(String projectId) {
+    if (projectId.trim().isEmpty) {
+      return Future.value(
+        const FailureResult<void>(
+          ValidationFailure('Project id is required'),
+        ),
+      );
+    }
+    return _guard(() => _remote.delete(projectId));
   }
 
   @override

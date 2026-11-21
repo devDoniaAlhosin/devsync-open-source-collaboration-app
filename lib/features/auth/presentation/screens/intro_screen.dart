@@ -50,6 +50,7 @@ class _IntroScreenState extends State<IntroScreen>
     final ds = context.ds;
 
     return Scaffold(
+      backgroundColor: ds.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(

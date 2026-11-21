@@ -8,18 +8,15 @@ import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
-import '../../../../core/widgets/ds_google_icon.dart';
 import '../../../../core/widgets/ds_icon.dart';
 import '../../../../core/widgets/ds_otp_field.dart';
 import '../../../../core/widgets/ds_text_field.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../cubit/forgot_password_cubit.dart';
-import '../cubit/login_cubit.dart';
-import '../widgets/auth_divider.dart';
-import '../widgets/auth_gate.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/password_strength_meter.dart';
 
-enum _RecoverStep { form, inbox, newPassword, success }
+enum _RecoverStep { form, googleOnly, inbox, newPassword, success }
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -76,183 +73,139 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     cubit.sendReset(email);
   }
 
+  void _backToLogin() {
+    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => getIt<ForgotPasswordCubit>()),
-        BlocProvider(create: (_) => getIt<LoginCubit>()),
-      ],
-      child: MultiBlocListener(
-        listeners: [
-          BlocListener<ForgotPasswordCubit, ForgotPasswordState>(
-            listener: (context, state) {
-              switch (state) {
-                case ForgotPasswordSent(:final email):
-                  setState(() {
-                    _pendingEmail = email;
-                    _otp = '';
-                    _step = _RecoverStep.inbox;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Reset code sent')),
-                  );
-                case ForgotPasswordCodeVerified(:final email, :final code):
-                  setState(() {
-                    _pendingEmail = email;
-                    _verifiedCode = code;
-                    _step = _RecoverStep.newPassword;
-                  });
-                case ForgotPasswordResetDone():
-                  setState(() => _step = _RecoverStep.success);
-                case ForgotPasswordFailure(:final message):
-                  setState(() {
-                    if (_step == _RecoverStep.form) {
-                      _error = message;
-                    } else if (_step == _RecoverStep.inbox) {
-                      _methodError = message;
-                    } else if (_step == _RecoverStep.newPassword) {
-                      _passwordError = message;
-                    }
-                  });
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(message)));
-                default:
-                  break;
-              }
-            },
-          ),
-          BlocListener<LoginCubit, LoginState>(
-            listener: (context, state) {
-              switch (state) {
-                case LoginSuccess():
-                  navigateToHome(context);
-                case LoginNeedsVerification(:final email):
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    AppRoutes.verifyEmail,
-                    (route) => false,
-                    arguments: {'email': email},
-                  );
-                case LoginFailure(:final message):
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(message)));
-                default:
-                  break;
-              }
-            },
-          ),
-        ],
-        child: BlocBuilder<ForgotPasswordCubit, ForgotPasswordState>(
-          builder: (context, resetState) {
-            return BlocBuilder<LoginCubit, LoginState>(
-              builder: (context, loginState) {
-                final resetLoading = resetState is ForgotPasswordLoading;
-                final googleLoading = loginState is LoginLoading;
-                final busy = resetLoading || googleLoading;
-                final resetCubit = context.read<ForgotPasswordCubit>();
-                final loginCubit = context.read<LoginCubit>();
-                final email = _pendingEmail ?? _email.text.trim();
+    return BlocProvider(
+      create: (_) => getIt<ForgotPasswordCubit>(),
+      child: BlocConsumer<ForgotPasswordCubit, ForgotPasswordState>(
+        listener: (context, state) {
+          switch (state) {
+            case ForgotPasswordSent(:final email):
+              setState(() {
+                _pendingEmail = email;
+                _otp = '';
+                _step = _RecoverStep.inbox;
+              });
+              showDsToast(
+                context,
+                'Reset code sent',
+                tone: DsToastTone.success,
+              );
+            case ForgotPasswordGoogleOnly(:final email):
+              setState(() {
+                _pendingEmail = email;
+                _step = _RecoverStep.googleOnly;
+              });
+            case ForgotPasswordCodeVerified(:final email, :final code):
+              setState(() {
+                _pendingEmail = email;
+                _verifiedCode = code;
+                _step = _RecoverStep.newPassword;
+              });
+            case ForgotPasswordResetDone():
+              setState(() => _step = _RecoverStep.success);
+            case ForgotPasswordFailure(:final message):
+              setState(() {
+                if (_step == _RecoverStep.form) {
+                  _error = message;
+                } else if (_step == _RecoverStep.inbox) {
+                  _methodError = message;
+                } else if (_step == _RecoverStep.newPassword) {
+                  _passwordError = message;
+                }
+              });
+              showDsToast(context, message, tone: DsToastTone.error);
+            default:
+              break;
+          }
+        },
+        builder: (context, resetState) {
+          final resetLoading = resetState is ForgotPasswordLoading;
+          final resetCubit = context.read<ForgotPasswordCubit>();
+          final email = _pendingEmail ?? _email.text.trim();
 
-                return AuthScaffold(
-                  title: switch (_step) {
-                    _RecoverStep.inbox => 'Enter reset code',
-                    _RecoverStep.newPassword => 'New password',
-                    _RecoverStep.success => 'Password updated',
-                    _ => 'Recover account',
-                  },
-                  onThemeToggle: DevSyncApp.toggleTheme,
-                  body: switch (_step) {
-                    _RecoverStep.form => _FormBody(
-                      email: _email,
-                      error: _error,
-                      busy: busy,
-                      googleLoading: googleLoading,
-                      resetLoading: resetLoading,
-                      onGoogle: loginCubit.signInWithGoogle,
-                      onChanged: () {
-                        if (_error != null) setState(() => _error = null);
+          return AuthScaffold(
+            title: switch (_step) {
+              _RecoverStep.inbox => 'Enter reset code',
+              _RecoverStep.newPassword => 'New password',
+              _RecoverStep.success => 'Password updated',
+              _RecoverStep.googleOnly => 'Use Google to sign in',
+              _ => 'Recover account',
+            },
+            onThemeToggle: DevSyncApp.toggleTheme,
+            body: switch (_step) {
+              _RecoverStep.form => _FormBody(
+                email: _email,
+                error: _error,
+                busy: resetLoading,
+                resetLoading: resetLoading,
+                onChanged: () {
+                  if (_error != null) setState(() => _error = null);
+                },
+                onContinue: () => _sendCode(resetCubit),
+                onBackToLogin: _backToLogin,
+              ),
+              _RecoverStep.googleOnly => _GoogleOnlyBody(
+                email: email,
+                onDifferentEmail: _useDifferentEmail,
+                onBackToLogin: _backToLogin,
+              ),
+              _RecoverStep.inbox => _InboxBody(
+                email: email,
+                loading: resetLoading,
+                errorText: _methodError,
+                onOtpChanged: (value) => setState(() {
+                  _otp = value;
+                  _methodError = null;
+                }),
+                onVerify: resetLoading
+                    ? null
+                    : () => resetCubit.verifyCode(email: email, code: _otp),
+                onResend: resetLoading ? null : () => _resend(resetCubit),
+                onDifferentEmail: resetLoading ? null : _useDifferentEmail,
+                onBackToLogin: resetLoading ? null : _backToLogin,
+              ),
+              _RecoverStep.newPassword => _NewPasswordBody(
+                password: _password,
+                confirm: _confirm,
+                loading: resetLoading,
+                busy: resetLoading,
+                errorText: _passwordError,
+                onChanged: () => setState(() => _passwordError = null),
+                onSubmit: resetLoading || _verifiedCode == null
+                    ? null
+                    : () {
+                        final pass = _password.text;
+                        final confirm = _confirm.text;
+                        if (pass.length < 8) {
+                          setState(
+                            () =>
+                                _passwordError = 'Use at least 8 characters',
+                          );
+                          return;
+                        }
+                        if (pass != confirm) {
+                          setState(
+                            () => _passwordError = 'Passwords do not match',
+                          );
+                          return;
+                        }
+                        resetCubit.resetPassword(
+                          email: email,
+                          code: _verifiedCode!,
+                          newPassword: pass,
+                        );
                       },
-                      onContinue: () => _sendCode(resetCubit),
-                      onBackToLogin: () => Navigator.of(
-                        context,
-                      ).pushReplacementNamed(AppRoutes.login),
-                    ),
-                    _RecoverStep.inbox => _InboxBody(
-                      email: email,
-                      loading: resetLoading,
-                      googleLoading: googleLoading,
-                      busy: busy,
-                      errorText: _methodError,
-                      onOtpChanged: (value) => setState(() {
-                        _otp = value;
-                        _methodError = null;
-                      }),
-                      onVerify: busy
-                          ? null
-                          : () => resetCubit.verifyCode(
-                              email: email,
-                              code: _otp,
-                            ),
-                      onGoogle: loginCubit.signInWithGoogle,
-                      onResend: busy ? null : () => _resend(resetCubit),
-                      onDifferentEmail: busy ? null : _useDifferentEmail,
-                      onBackToLogin: busy
-                          ? null
-                          : () => Navigator.of(
-                              context,
-                            ).pushReplacementNamed(AppRoutes.login),
-                    ),
-                    _RecoverStep.newPassword => _NewPasswordBody(
-                      password: _password,
-                      confirm: _confirm,
-                      loading: resetLoading,
-                      busy: busy,
-                      errorText: _passwordError,
-                      onChanged: () => setState(() => _passwordError = null),
-                      onSubmit: busy || _verifiedCode == null
-                          ? null
-                          : () {
-                              final pass = _password.text;
-                              final confirm = _confirm.text;
-                              if (pass.length < 8) {
-                                setState(
-                                  () => _passwordError =
-                                      'Use at least 8 characters',
-                                );
-                                return;
-                              }
-                              if (pass != confirm) {
-                                setState(
-                                  () => _passwordError =
-                                      'Passwords do not match',
-                                );
-                                return;
-                              }
-                              resetCubit.resetPassword(
-                                email: email,
-                                code: _verifiedCode!,
-                                newPassword: pass,
-                              );
-                            },
-                      onBackToLogin: busy
-                          ? null
-                          : () => Navigator.of(
-                              context,
-                            ).pushReplacementNamed(AppRoutes.login),
-                    ),
-                    _RecoverStep.success => _SuccessBody(
-                      onBackToLogin: () => Navigator.of(
-                        context,
-                      ).pushReplacementNamed(AppRoutes.login),
-                    ),
-                  },
-                );
-              },
-            );
-          },
-        ),
+                onBackToLogin: resetLoading ? null : _backToLogin,
+              ),
+              _RecoverStep.success => _SuccessBody(onBackToLogin: _backToLogin),
+            },
+          );
+        },
       ),
     );
   }
@@ -263,9 +216,7 @@ class _FormBody extends StatelessWidget {
     required this.email,
     required this.error,
     required this.busy,
-    required this.googleLoading,
     required this.resetLoading,
-    required this.onGoogle,
     required this.onChanged,
     required this.onContinue,
     required this.onBackToLogin,
@@ -274,9 +225,7 @@ class _FormBody extends StatelessWidget {
   final TextEditingController email;
   final String? error;
   final bool busy;
-  final bool googleLoading;
   final bool resetLoading;
-  final VoidCallback onGoogle;
   final VoidCallback onChanged;
   final VoidCallback onContinue;
   final VoidCallback onBackToLogin;
@@ -294,21 +243,6 @@ class _FormBody extends StatelessWidget {
               "Enter your email and we'll send a 6-digit code to reset your password.",
         ),
         const SizedBox(height: AppSpacing.xl),
-        const AuthNote(
-          title: 'Signed in with Google?',
-          message: 'This account has no password. Use Google to get back in.',
-        ),
-        const SizedBox(height: AppSpacing.md),
-        DsButton(
-          label: 'Continue with Google',
-          leading: const DsGoogleIcon(size: 18),
-          variant: DsButtonVariant.quiet,
-          isLoading: googleLoading,
-          onPressed: busy ? null : onGoogle,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        const AuthDivider(label: 'or reset with email'),
-        const SizedBox(height: AppSpacing.lg),
         DsTextField(
           label: 'Email address',
           controller: email,
@@ -341,15 +275,58 @@ class _FormBody extends StatelessWidget {
   }
 }
 
+class _GoogleOnlyBody extends StatelessWidget {
+  const _GoogleOnlyBody({
+    required this.email,
+    required this.onDifferentEmail,
+    required this.onBackToLogin,
+  });
+
+  final String email;
+  final VoidCallback onDifferentEmail;
+  final VoidCallback onBackToLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AuthInlineHeading(
+          orbIcon: AppIcons.shield,
+          eyebrow: 'No password on this account',
+          title: 'This email signs in with Google.',
+          body:
+              '$email has no password to reset. Go back to sign in and continue with Google.',
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        const AuthNote(
+          title: 'Why am I seeing this?',
+          message:
+              'You created this account with Google. Password reset only works for email/password accounts.',
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        DsButton(
+          label: 'Back to sign in',
+          icon: AppIcons.forward,
+          onPressed: onBackToLogin,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        DsButton(
+          label: 'Use a different email',
+          variant: DsButtonVariant.quiet,
+          onPressed: onDifferentEmail,
+        ),
+      ],
+    );
+  }
+}
+
 class _InboxBody extends StatelessWidget {
   const _InboxBody({
     required this.email,
     required this.loading,
-    required this.googleLoading,
-    required this.busy,
     required this.onOtpChanged,
     required this.onVerify,
-    required this.onGoogle,
     required this.onResend,
     required this.onDifferentEmail,
     required this.onBackToLogin,
@@ -358,12 +335,9 @@ class _InboxBody extends StatelessWidget {
 
   final String email;
   final bool loading;
-  final bool googleLoading;
-  final bool busy;
   final String? errorText;
   final ValueChanged<String> onOtpChanged;
   final VoidCallback? onVerify;
-  final VoidCallback onGoogle;
   final VoidCallback? onResend;
   final VoidCallback? onDifferentEmail;
   final VoidCallback? onBackToLogin;
@@ -408,14 +382,6 @@ class _InboxBody extends StatelessWidget {
           label: 'Resend code',
           variant: DsButtonVariant.secondary,
           onPressed: onResend,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        DsButton(
-          label: 'Continue with Google',
-          leading: const DsGoogleIcon(size: 18),
-          variant: DsButtonVariant.quiet,
-          isLoading: googleLoading,
-          onPressed: busy ? null : onGoogle,
         ),
         const SizedBox(height: AppSpacing.sm),
         DsButton(
@@ -577,4 +543,3 @@ class _SuccessBody extends StatelessWidget {
     );
   }
 }
-

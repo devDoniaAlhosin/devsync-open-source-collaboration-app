@@ -1,19 +1,17 @@
-/// Priority options for tuning matching recommendations.
 enum MatchingPriority {
   skills(
     label: 'Skills',
-    promptTemplate:
-        'Prioritize projects matching my Flutter, Firebase, UI, animation, and testing skills. Prefer beginner-friendly issues and active maintainers.',
+    promptTemplate: 'Prioritize projects matching my declared skills.',
   ),
   beginnerFriendly(
-    label: 'Beginner-friendly',
+    label: 'Interests',
     promptTemplate:
-        'Prioritize beginner-friendly, well-documented Flutter or Firebase issues with clear steps and responsive maintainers.',
+        'Prioritize projects related to my interests and prefer beginner-friendly, well-documented contribution opportunities.',
   ),
   recentActivity(
-    label: 'Recent activity',
+    label: 'Activity',
     promptTemplate:
-        'Prioritize Flutter and Firebase repositories with recent commits, active maintainers, and open issues that match my skills.',
+        'Prioritize projects with recent GitHub activity where that information is available.',
   );
 
   const MatchingPriority({required this.label, required this.promptTemplate});

@@ -17,6 +17,7 @@ abstract final class ProfileModel {
       languages: _languages(map['languages']),
       skills: _strings(map['skills']),
       suggestedSkills: _strings(map['suggestedSkills']),
+      topRepositories: _strings(map['topRepositories']),
     );
   }
 
@@ -35,6 +36,7 @@ abstract final class ProfileModel {
       'activity': [for (final week in p.activity) ...week],
       'skills': p.skills,
       'suggestedSkills': p.suggestedSkills,
+      'topRepositories': p.topRepositories,
     };
   }
 
@@ -64,8 +66,14 @@ abstract final class ProfileModel {
     final flat = v is List
         ? [for (final e in v) e is num ? e.toInt() : 0]
         : <int>[];
+    final weeks = flat.isEmpty
+        ? Profile.weeks
+        : (flat.length / Profile.days)
+            .ceil()
+            .clamp(1, Profile.maxWeeks)
+            .toInt();
     return List.generate(
-      Profile.weeks,
+      weeks,
       (w) => List.generate(Profile.days, (d) {
         final i = w * Profile.days + d;
         return i < flat.length ? flat[i].clamp(0, 4).toInt() : 0;

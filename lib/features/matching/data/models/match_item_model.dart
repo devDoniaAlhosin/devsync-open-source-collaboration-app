@@ -1,10 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../domain/entities/match_item.dart';
 
-/// Serializable model for a match item — adds JSON conversion on top of the
-/// domain entity.
-///
-/// Used by data sources to parse Cloud Function responses and Firestore
-/// documents into the domain [MatchItem].
 class MatchItemModel extends MatchItem {
   const MatchItemModel({
     required super.projectId,
@@ -16,39 +13,12 @@ class MatchItemModel extends MatchItem {
     required super.reason,
     super.maintainerId,
     super.isFallback,
+    super.source,
+    this.likedAt,
   });
 
-  /// Parse from the Cloud Function JSON response or Firestore document.
-  factory MatchItemModel.fromJson(Map<String, dynamic> json) {
-    return MatchItemModel(
-      projectId: json['projectId'] as String,
-      projectName: json['projectName'] as String,
-      description: json['description'] as String? ?? '',
-      githubUrl: json['githubUrl'] as String? ?? '',
-      neededSkills: List<String>.from(json['neededSkills'] as List? ?? []),
-      score: (json['score'] as num).toDouble(),
-      reason: json['reason'] as String? ?? '',
-      maintainerId: json['maintainerId'] as String?,
-      isFallback: json['isFallback'] as bool? ?? false,
-    );
-  }
+  final DateTime? likedAt;
 
-  /// Serialize for Firestore cache storage.
-  Map<String, dynamic> toJson() {
-    return {
-      'projectId': projectId,
-      'projectName': projectName,
-      'description': description,
-      'githubUrl': githubUrl,
-      'neededSkills': neededSkills,
-      'score': score,
-      'reason': reason,
-      if (maintainerId != null) 'maintainerId': maintainerId,
-      'isFallback': isFallback,
-    };
-  }
-
-  /// Convert a domain entity to this model (useful for caching).
   factory MatchItemModel.fromEntity(MatchItem entity) {
     return MatchItemModel(
       projectId: entity.projectId,
@@ -60,6 +30,113 @@ class MatchItemModel extends MatchItem {
       reason: entity.reason,
       maintainerId: entity.maintainerId,
       isFallback: entity.isFallback,
+      source: entity.source,
+      likedAt: DateTime.now(),
+    );
+  }
+
+  factory MatchItemModel.fromJson(Map<String, dynamic> json) {
+    final score = json['score'];
+    final skills = json['neededSkills'];
+    final maintainerId = json['maintainerId'];
+    final isFallback = json['isFallback'];
+    if (score is! num ||
+        !score.isFinite ||
+        score < 0 ||
+        score > 100 ||
+        skills is! List ||
+        skills.any((skill) => skill is! String) ||
+        (maintainerId != null && maintainerId is! String) ||
+        (isFallback != null && isFallback is! bool)) {
+      throw const FormatException('Invalid project match');
+    }
+    return MatchItemModel(
+      projectId: _readString(json, 'projectId', nonEmpty: true),
+      projectName: _readString(json, 'projectName', nonEmpty: true),
+      description: _readString(json, 'description'),
+      githubUrl: _readString(json, 'githubUrl'),
+      neededSkills: List<String>.unmodifiable(skills.cast<String>()),
+      score: score.toDouble(),
+      reason: _readString(json, 'reason'),
+      maintainerId: maintainerId as String?,
+      isFallback: isFallback as bool? ?? false,
+    );
+  }
+
+  factory MatchItemModel.fromFirestore(Map<String, dynamic> data) {
+    final match = MatchItemModel.fromJson(data);
+    final timestamp = data['likedAt'];
+    if (timestamp != null && timestamp is! Timestamp) {
+      throw const FormatException('Invalid saved match timestamp');
+    }
+    return MatchItemModel(
+      projectId: match.projectId,
+      projectName: match.projectName,
+      description: match.description,
+      githubUrl: match.githubUrl,
+      neededSkills: match.neededSkills,
+      score: match.score,
+      reason: match.reason,
+      maintainerId: match.maintainerId,
+      isFallback: match.isFallback,
+      likedAt: (timestamp as Timestamp?)?.toDate(),
+    );
+  }
+
+  static String _readString(
+    Map<String, dynamic> json,
+    String key, {
+    bool nonEmpty = false,
+  }) {
+    final value = json[key];
+    if (value is! String || (nonEmpty && value.trim().isEmpty)) {
+      throw FormatException('Invalid match $key');
+    }
+    return value;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'projectId': projectId,
+      'projectName': projectName,
+      'description': description,
+      'githubUrl': githubUrl,
+      'neededSkills': neededSkills,
+      'score': score,
+      'reason': reason,
+      'maintainerId': maintainerId,
+      'isFallback': isFallback,
+    };
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'projectId': projectId,
+      'projectName': projectName,
+      'description': description,
+      'githubUrl': githubUrl,
+      'neededSkills': neededSkills,
+      'score': score,
+      'reason': reason,
+      'maintainerId': maintainerId,
+      'isFallback': isFallback,
+      'likedAt': likedAt != null
+          ? Timestamp.fromDate(likedAt!)
+          : FieldValue.serverTimestamp(),
+    };
+  }
+
+  MatchItem toEntity() {
+    return MatchItem(
+      projectId: projectId,
+      projectName: projectName,
+      description: description,
+      githubUrl: githubUrl,
+      neededSkills: neededSkills,
+      score: score,
+      reason: reason,
+      maintainerId: maintainerId,
+      isFallback: isFallback,
     );
   }
 }

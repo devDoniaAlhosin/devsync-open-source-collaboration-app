@@ -34,6 +34,7 @@ abstract final class AppIcons {
   static const IconData notifications = LucideIcons.bell;
   static const IconData bookmark = LucideIcons.bookmark;
   static const IconData externalLink = LucideIcons.arrowUpRight;
+  static const IconData copy = LucideIcons.copy;
   static const IconData settings = LucideIcons.settings;
   static const IconData users = LucideIcons.users;
   static const IconData zap = LucideIcons.zap;
@@ -43,6 +44,11 @@ abstract final class AppIcons {
   static const IconData sparkle = LucideIcons.sparkles;
   static const IconData code = LucideIcons.code;
   static const IconData undo = LucideIcons.undo2;
+  static const IconData user = LucideIcons.user;
+  static const IconData logIn = LucideIcons.logIn;
+  static const IconData wifiOff = LucideIcons.wifiOff;
+  static const IconData alertTriangle = LucideIcons.alertTriangle;
+  static const IconData alertCircle = LucideIcons.alertCircle;
 
   // Feedback / status
   static const IconData info = LucideIcons.info;

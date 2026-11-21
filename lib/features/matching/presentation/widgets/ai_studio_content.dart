@@ -10,14 +10,13 @@ import 'ai_studio_preferences_card.dart';
 import 'ai_studio_scoring_card.dart';
 import 'ai_studio_suggested_matches_card.dart';
 
-/// Shared Studio layout accepting values and callbacks from any state manager.
 class AiStudioContent extends StatefulWidget {
   const AiStudioContent({
     super.key,
     required this.onPromptChanged,
     required this.preferences,
     required this.matches,
-    required this.scoringBreakdown,
+    required this.availableTags,
     required this.isGenerating,
     required this.onTagToggled,
     required this.onGenerateMatches,
@@ -27,7 +26,7 @@ class AiStudioContent extends StatefulWidget {
   final ValueChanged<String> onPromptChanged;
   final MatchingPreferences preferences;
   final List<MatchItem> matches;
-  final Map<String, int> scoringBreakdown;
+  final List<String> availableTags;
   final bool isGenerating;
   final ValueChanged<String> onTagToggled;
   final VoidCallback onGenerateMatches;
@@ -86,6 +85,7 @@ class _AiStudioContentState extends State<AiStudioContent> {
         children: [
           const _IntelligenceBanner(),
           AiStudioPreferencesCard(
+            availableTags: widget.availableTags,
             promptController: _promptController,
             selectedTags: widget.preferences.selectedTags,
             onTagToggled: widget.onTagToggled,
@@ -97,7 +97,9 @@ class _AiStudioContentState extends State<AiStudioContent> {
             onViewProjectDetails: widget.onViewProjectDetails,
           ),
           AiStudioScoringCard(
-            breakdown: widget.scoringBreakdown,
+            source: widget.matches.isNotEmpty
+                ? widget.matches.first.source
+                : null,
             onExploreAnalytics: widget.onExploreAnalytics,
           ),
         ],

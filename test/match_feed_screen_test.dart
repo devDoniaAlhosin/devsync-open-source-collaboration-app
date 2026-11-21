@@ -1,7 +1,9 @@
+import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/liked_matches_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
-import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/repositories/matching_repository_impl.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_item.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/user_profile.dart';
+import 'package:devsync_open_source_collaboration_app/features/matching/domain/usecases/get_ranked_matches_usecase.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/cubit/matching_cubit.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/screens/match_feed_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/presentation/widgets/draggable_match_card.dart';
@@ -9,15 +11,29 @@ import 'package:devsync_open_source_collaboration_app/features/matching/presenta
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'features/matching/mocks/mock_matching_remote_data_source.dart';
+
+const _testProfile = UserProfile(
+  uid: 'test-uid-001',
+  declaredSkills: ['Flutter', 'Dart'],
+  githubLanguages: {'Dart': 80, 'Python': 20},
+  publicRepoCount: 14,
+  totalContributions: 200,
+);
+
 void main() {
   late MatchingCubit cubit;
 
   setUp(() async {
+    final repository = MatchingRepositoryImpl(
+      remoteDataSource: MockMatchingRemoteDataSource(),
+      localDataSource: InMemoryMatchingLocalDataSource(),
+    );
     cubit = MatchingCubit(
-      repository: MatchingRepositoryImpl(
-        remoteDataSource: MockMatchingRemoteDataSource(),
-        localDataSource: InMemoryMatchingLocalDataSource(),
-      ),
+      repository: repository,
+      likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
+      getRankedMatchesUseCase: GetRankedMatchesUseCase(repository),
+      profile: _testProfile,
     );
     await cubit.loadInitialData();
     cubit.setViewMode(MatchingViewMode.deck);
@@ -66,9 +82,7 @@ void main() {
   testWidgets('swiping the feed card advances to the next ranked project', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(home: MatchFeedScreen(cubit: cubit)),
-    );
+    await tester.pumpWidget(MaterialApp(home: MatchFeedScreen(cubit: cubit)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -99,9 +113,7 @@ void main() {
   testWidgets('the feed stacks upcoming matches behind the draggable card', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(home: MatchFeedScreen(cubit: cubit)),
-    );
+    await tester.pumpWidget(MaterialApp(home: MatchFeedScreen(cubit: cubit)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 

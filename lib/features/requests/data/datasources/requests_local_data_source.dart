@@ -66,8 +66,15 @@ class RequestsLocalDataSource {
       throw ArgumentError('Invalid response status.');
     }
 
+    final subtitle = switch (status) {
+      RequestStatus.accepted => 'Accepted',
+      RequestStatus.declined => 'Declined',
+      RequestStatus.pending || RequestStatus.isNew => 'Pending',
+    };
+
     final updated = existing.copyWith(
       status: status,
+      subtitle: subtitle,
       respondedAt: DateTime.now(),
     );
     _items[index] = updated;

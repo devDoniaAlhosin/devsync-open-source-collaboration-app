@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/result/result.dart';
+import '../../domain/failures/auth_failures.dart';
 import '../../domain/usecases/reset_password_with_otp.dart';
 import '../../domain/usecases/send_password_reset_email.dart';
 import '../../domain/usecases/verify_otp.dart';
@@ -30,6 +31,10 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
       case Success():
         emit(ForgotPasswordSent(email));
       case FailureResult(:final failure):
+        if (failure is GoogleOnlyAccountFailure) {
+          emit(ForgotPasswordGoogleOnly(email));
+          return;
+        }
         emit(ForgotPasswordFailure(failure.message));
     }
   }

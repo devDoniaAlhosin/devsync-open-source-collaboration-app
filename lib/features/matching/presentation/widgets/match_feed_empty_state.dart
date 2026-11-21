@@ -6,26 +6,36 @@ import '../../../../core/widgets/ds_brand_icon.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_github_icon.dart';
 
-/// Profile setup prompts for a feed with no recommendations.
 class MatchFeedEmptyState extends StatelessWidget {
   final VoidCallback onAddSkills;
-
   final VoidCallback onConnectGitHub;
+  final bool hasSkills;
+  final bool hasReviewedAll;
+
   const MatchFeedEmptyState({
     super.key,
     required this.onAddSkills,
     required this.onConnectGitHub,
+    this.hasSkills = false,
+    this.hasReviewedAll = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final ds = context.ds;
+
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.md,
+                AppSpacing.xl,
+                AppSpacing.xl,
+              ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 360),
                 child: Column(
@@ -34,32 +44,46 @@ class MatchFeedEmptyState extends StatelessWidget {
                   children: [
                     Center(
                       child: Container(
-                        width: 128,
-                        height: 128,
-                        padding: const EdgeInsets.all(32),
+                        width: 120,
+                        height: 120,
+                        padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
-                          color: context.ds.surface,
-                          borderRadius: BorderRadius.circular(40),
+                          color: ds.surface,
+                          borderRadius: BorderRadius.circular(36),
+                          border: Border.all(color: ds.border),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.glow,
+                              blurRadius: 28,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                         ),
-                        child: const DsBrandIcon(size: 64),
+                        child: const DsBrandIcon(size: 56),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
-                      'No matches yet',
+                      hasReviewedAll
+                          ? 'You have reviewed every match'
+                          : 'No matches yet',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
-                            color: context.ds.textPrimary,
+                            color: ds.textPrimary,
                             fontWeight: FontWeight.w800,
                           ),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      "Add a few skills or connect GitHub and we'll find projects worth your time.",
+                      hasReviewedAll
+                          ? 'Your saved projects are in Liked matches. Use sync above to check for new recommendations.'
+                          : hasSkills
+                          ? 'No eligible projects were returned. Try sync above, or update your matching preferences.'
+                          : 'Add your skills to your saved profile to find relevant projects.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: context.ds.textMuted,
+                        color: ds.textMuted,
                         height: 1.6,
                       ),
                     ),
@@ -67,10 +91,10 @@ class MatchFeedEmptyState extends StatelessWidget {
                     DsButton(label: 'Add skills', onPressed: onAddSkills),
                     const SizedBox(height: AppSpacing.md),
                     DsButton(
-                      label: 'Connect GitHub',
+                      label: 'GitHub profile',
                       leading: DsGithubIcon(
                         size: 18,
-                        color: context.ds.textPrimary,
+                        color: ds.textPrimary,
                       ),
                       variant: DsButtonVariant.quiet,
                       onPressed: onConnectGitHub,

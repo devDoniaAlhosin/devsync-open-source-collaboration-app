@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:devsync_open_source_collaboration_app/app/app_routes.dart';
 import 'package:devsync_open_source_collaboration_app/app/devsync_app.dart';
 import 'package:devsync_open_source_collaboration_app/core/icons/app_icons.dart';
@@ -23,7 +24,6 @@ class ConnectGithubScreen extends StatefulWidget {
   });
 
   final String initialUsername;
-
   final ValueChanged<GithubScanResult>? onContinue;
 
   @override
@@ -101,9 +101,25 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
           title: 'Connect GitHub',
           stepLabel: '02 / 03',
           onThemeToggle: DevSyncApp.toggleTheme,
-          bottom: DsButton(
-            label: 'Continue',
-            onPressed: result == null ? null : () => _continue(result),
+          bottom: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DsButton(
+                label: 'Continue',
+                onPressed: result == null ? null : () => _continue(result),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              DsButton(
+                label: 'Skip for now',
+                variant: DsButtonVariant.quiet,
+                onPressed: scanning
+                    ? null
+                    : () => Navigator.of(context).pushNamedAndRemoveUntil(
+                          AppRoutes.home,
+                          (route) => false,
+                        ),
+              ),
+            ],
           ),
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -48,10 +48,13 @@ class AuthCubit extends Cubit<AuthState> {
     emit(const AuthSignedOut());
   }
 
-  Future<Result<void>> deleteAccount() async {
-    final result = await _deleteAccount(const NoParams());
-    await _signOut(const NoParams());
-    emit(const AuthSignedOut());
+  Future<Result<void>> deleteAccount({String? password}) async {
+    final result = await _deleteAccount(
+      DeleteAccountParams(password: password),
+    );
+    if (result is Success<void>) {
+      emit(const AuthSignedOut());
+    }
     return result;
   }
 

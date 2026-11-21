@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_card.dart';
 
-/// Stat card KPI displaying a metric value and title.
 class AiAnalyticsStatCard extends StatelessWidget {
   const AiAnalyticsStatCard({
     super.key,
