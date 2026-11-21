@@ -95,7 +95,9 @@ class ProfileIdentity extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                githubUrl,
+                githubUrl.trim().isEmpty
+                    ? 'GitHub not connected'
+                    : githubUrl,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.bodySmall?.copyWith(color: ds.textMuted),

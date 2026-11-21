@@ -17,5 +17,7 @@ abstract class ProfileRepository {
     required int repos,
     required int commits,
     required List<LanguageShare> languages,
+    String? bioSuggestion,
+    List<List<int>> activity = const [],
   });
 }

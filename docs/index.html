@@ -873,6 +873,14 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 #webFlowPanel .stretch-item:nth-child(even) .stretch-dot{display:none}
 #webFlowPanel .stretch-item .roadmap-icon{margin-bottom:10px}
 #webFlowPanel .stretch-item p{min-height:0}
+#webFlowPanel .sm-intel{padding:16px 18px 18px;border-top:1px solid var(--line,#d9e3dd);background:#f7fcfa}
+#webFlowPanel .sm-intel-track{padding-left:30px;margin:0;grid-template-columns:1fr}
+#webFlowPanel .sm-intel .label{font-size:11px;font-weight:800;letter-spacing:.14em;color:#087d6f}
+#webFlowPanel .sm-intel-track .stretch-item:nth-child(even) .stretch-dot{display:grid}
+#webFlowPanel .dev-points{margin:10px 0 0;padding:0 0 0 16px;display:grid;gap:6px}
+#webFlowPanel .dev-points li{font-size:11px;line-height:1.55;color:var(--muted,#667b77)}
+#webFlowPanel .dev-points li strong{color:#0d5f56;font-weight:750}
+#webFlowPanel .dev-points code{font-size:10px;background:#e7f3ee;padding:1px 4px;border-radius:4px}
 #webFlowPanel .milestone-rail{position:relative;padding-left:21px}
 #webFlowPanel .milestone-rail:before{content:"";position:absolute;left:5px;top:11px;bottom:13px;width:2px;background:#90d9ca}
 #webFlowPanel .milestone-item{position:relative;display:grid;grid-template-columns:61px 1fr;gap:8px;padding:11px 0;border:0;font-size:12px;line-height:1.5}
@@ -881,6 +889,91 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 @media(max-width:1100px){#webFlowPanel .journey-map{grid-template-columns:repeat(2,minmax(0,1fr))}#webFlowPanel .journey-node:nth-child(3):after{display:block}#webFlowPanel .journey-node:nth-child(even):after{display:none}}
 @media(max-width:620px){#webFlowPanel .journey-map{grid-template-columns:1fr;gap:22px;padding-left:25px}#webFlowPanel .journey-map:before{left:17px;right:auto;top:12px;bottom:18px;width:2px;height:auto;background:repeating-linear-gradient(180deg,#20bba7 0 8px,transparent 8px 15px)}#webFlowPanel .journey-node{min-height:0;padding:16px}#webFlowPanel .journey-node:after{display:none!important}#webFlowPanel .journey-marker{position:absolute;left:-27px;top:17px;width:29px;height:29px;box-shadow:0 0 0 4px #e0f6ee;margin:0}#webFlowPanel .journey-copy{padding-left:10px;padding-right:12px}#webFlowPanel .stretch-track{grid-template-columns:1fr}#webFlowPanel .stretch-item:nth-child(even) .stretch-dot{display:grid}#webFlowPanel .phase-gate{padding:13px}}
 @media(prefers-reduced-motion:reduce){#webFlowPanel .journey-node{transition:none}#webFlowPanel .journey-node:hover{transform:none}}
+/* v35: compact spine + per-feature user-story maps */
+#webFlowPanel .journey-spine{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 28px;padding:14px;border:1px solid var(--line,#d9e3dd);border-radius:16px;background:linear-gradient(120deg,#f3fbf7,#fffefa 55%,#eef8f3)}
+#webFlowPanel .spine-step{appearance:none;border:1px solid var(--line,#d9e3dd);background:var(--surface,#fffefa);color:inherit;border-radius:999px;padding:9px 14px;font:700 12px var(--body);cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:border-color .2s,transform .2s,background .2s}
+#webFlowPanel .spine-step:hover{border-color:#20bba8;transform:translateY(-1px)}
+#webFlowPanel .spine-step:focus-visible{outline:3px solid #1bbba5;outline-offset:2px}
+#webFlowPanel .spine-step b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#117f74;color:#fff;font-size:10px}
+#webFlowPanel .spine-step.spine-final{background:linear-gradient(135deg,#e2f8ef,#f9fdf9);border-color:#7cd4c3}
+#webFlowPanel .spine-sep{color:#20bba8;opacity:.55;font-size:14px;user-select:none}
+#webFlowPanel .story-maps{display:grid;gap:28px;margin-bottom:12px}
+#webFlowPanel .story-map{border:1px solid var(--line,#d9e3dd);border-radius:18px;background:var(--surface,#fffefa);overflow:hidden;box-shadow:0 10px 28px rgba(14,38,36,.04)}
+#webFlowPanel .story-map-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;padding:20px 22px 16px;background:linear-gradient(105deg,#e8f7f1 0%,#fffefa 48%,#f4fbf8 100%);border-bottom:1px solid var(--line,#d9e3dd)}
+#webFlowPanel .story-map-head .sm-kicker{font-size:10px;letter-spacing:.1em;font-weight:850;color:#078a7c}
+#webFlowPanel .story-map-head h3{font-size:20px;letter-spacing:-.03em;margin:6px 0 6px}
+#webFlowPanel .story-map-head p{font-size:13px;line-height:1.55;color:var(--muted,#667b77);max-width:52ch;margin:0}
+#webFlowPanel .sm-meta{display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start}
+#webFlowPanel .sm-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;border:1px solid #bfe6db;background:#eef9f4;color:#0a6f64;font-size:11px;font-weight:750}
+#webFlowPanel .sm-proto{display:flex;flex-wrap:wrap;gap:7px}
+#webFlowPanel .sm-proto button{appearance:none;border:1px solid var(--line,#d9e3dd);background:#fff;color:#0a6f64;border-radius:10px;padding:8px 11px;font:700 11px var(--body);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+#webFlowPanel .sm-proto button:hover{border-color:#20bba8;background:#f3fbf8}
+#webFlowPanel .sm-proto button:focus-visible{outline:3px solid #1bbba5;outline-offset:2px}
+#webFlowPanel .story-columns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:0}
+#webFlowPanel .story-col{min-width:0;padding:16px;border-right:1px solid var(--line,#d9e3dd);background:var(--surface,#fffefa)}
+#webFlowPanel .story-col:last-child{border-right:0}
+#webFlowPanel .story-col-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #cfe6de}
+#webFlowPanel .story-col-head span{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#ddf5ed;color:#087f73;flex:none}
+#webFlowPanel .story-col-head span svg{width:15px;height:15px}
+#webFlowPanel .story-col-head b{font-size:12px;line-height:1.35;letter-spacing:-.01em}
+#webFlowPanel .story-list{display:grid;gap:9px}
+#webFlowPanel .story-card{padding:11px 12px;border-radius:12px;border:1px solid #e3ece7;background:#fbfefc}
+#webFlowPanel .story-card strong{display:block;font-size:11px;font-weight:800;color:#0d5f56;margin-bottom:5px;letter-spacing:.01em}
+#webFlowPanel .story-card p{margin:0;font-size:11px;line-height:1.55;color:var(--muted,#667b77)}
+#webFlowPanel .story-done{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px 18px;border-top:1px solid var(--line,#d9e3dd);background:#f7fcfa}
+#webFlowPanel .story-done span{font-size:11px;font-weight:700;color:#0a6f64;background:#e5f6ef;border:1px solid #c5e8dc;border-radius:999px;padding:6px 11px}
+#webFlowPanel .story-map[data-feature="projects"] .story-columns,#webFlowPanel .story-map[data-feature="requests"] .story-columns{grid-template-columns:repeat(4,minmax(0,1fr))}
+#webFlowPanel .story-map[data-feature="auth"] .story-columns,#webFlowPanel .story-map[data-feature="profile"] .story-columns{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1100px){#webFlowPanel .story-columns{grid-template-columns:repeat(2,minmax(0,1fr))}#webFlowPanel .story-col:nth-child(2n){border-right:0}#webFlowPanel .story-col:nth-child(-n+2){border-bottom:1px solid var(--line,#d9e3dd)}}
+@media(max-width:700px){#webFlowPanel .journey-spine{gap:6px;padding:12px}#webFlowPanel .spine-sep{display:none}#webFlowPanel .spine-step{width:100%;justify-content:flex-start;border-radius:12px}#webFlowPanel .story-columns{grid-template-columns:1fr}#webFlowPanel .story-col{border-right:0;border-bottom:1px solid var(--line,#d9e3dd)}#webFlowPanel .story-col:last-child{border-bottom:0}#webFlowPanel .story-map-head{padding:16px}#webFlowPanel .story-map-head h3{font-size:17px}}
+@media(prefers-reduced-motion:reduce){#webFlowPanel .spine-step{transition:none}#webFlowPanel .spine-step:hover{transform:none}}
+#webFlowPanel .tech-pipeline{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 28px;padding:14px;border:1px solid var(--line,#d9e3dd);border-radius:16px;background:linear-gradient(135deg,#0e2624 0%,#143833 55%,#0f2f2b 100%);color:#e8fff8}
+#webFlowPanel .tech-pipe{min-width:0;padding:12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(46,224,200,.22)}
+#webFlowPanel .tech-pipe b{display:block;font-size:11px;letter-spacing:.04em;color:#2ee0c8;margin-bottom:6px}
+#webFlowPanel .tech-pipe small{display:block;font-size:11px;line-height:1.45;color:#b7d9d0}
+#webFlowPanel .tech-pipe code{font-size:10px;color:#9ee8d8}
+#webFlowPanel .sm-tech{display:grid;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line,#d9e3dd);background:#f4faf7}
+#webFlowPanel .sm-tech-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#webFlowPanel .sm-tech-label{font-size:10px;font-weight:850;letter-spacing:.08em;color:#078a7c;min-width:72px}
+#webFlowPanel .col-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:8px;font-size:11px;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+#webFlowPanel .col-pill.write{background:#d9f6e8;color:#066655;border:1px solid #a9e0cc}
+#webFlowPanel .col-pill.read{background:#e8f1ff;color:#1d4f8c;border:1px solid #b9d0f3}
+#webFlowPanel .col-pill.api{background:#fff3d8;color:#8a5a00;border:1px solid #f0d48a}
+#webFlowPanel .col-pill.ram{background:#f1e9ff;color:#5b3d99;border:1px solid #d3c2f2}
+#webFlowPanel .col-pill.todo{background:#ffe8e4;color:#9a2f1f;border:1px solid #f0b8ae}
+#webFlowPanel .col-pill.stretch{background:#fff6e0;color:#8a6200;border:1px solid #efd89a}
+#webFlowPanel .sm-ar{direction:rtl;text-align:right}
+#webFlowPanel .sm-ar .sm-proto{justify-content:flex-start}
+#webFlowPanel .sm-ar .sm-meta{align-items:flex-start}
+#webFlowPanel .sm-when{margin:0;padding:12px 18px 4px 18px;list-style:none;display:grid;gap:8px;border-bottom:1px solid var(--line,#d9e3dd);background:#f4faf7}
+#webFlowPanel .sm-when li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font-size:13px;line-height:1.45;color:#243f3a}
+#webFlowPanel .sm-when b{display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:#0f766e;color:#fff;font-size:11px;font-weight:800}
+#webFlowPanel .sm-when code{font-size:11px;background:#e7f3ee;padding:1px 5px;border-radius:4px}
+#webFlowPanel .sm-ar .story-columns{direction:rtl}
+#webFlowPanel .sm-ar .story-col{border-right:0;border-left:1px solid var(--line,#d9e3dd)}
+#webFlowPanel .sm-ar .story-col:last-child{border-left:0}
+#webFlowPanel .sm-ar .story-done{direction:rtl}
+#webFlowPanel .sm-flow{font-size:12px;line-height:1.6;color:#345650;margin:0;padding:0 2px}
+#webFlowPanel .sm-flow code{font-size:11px;background:#e7f3ee;padding:1px 5px;border-radius:4px}
+@media(max-width:1100px){#webFlowPanel .tech-pipeline{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){#webFlowPanel .tech-pipeline{grid-template-columns:1fr}}
+:root[data-theme="dark"] #webFlowPanel .sm-tech{background:#152c28;border-color:#2a4540}
+:root[data-theme="dark"] #webFlowPanel .sm-when{background:#152c28;border-color:#2a4540}
+:root[data-theme="dark"] #webFlowPanel .sm-when li{color:#c5ddd7}
+:root[data-theme="dark"] #webFlowPanel .sm-when code{background:#1c3832;color:#9ee0d2}
+:root[data-theme="dark"] #webFlowPanel .sm-flow{color:#9fc4bd}
+:root[data-theme="dark"] #webFlowPanel .sm-flow code{background:#1c3832;color:#9ee0d2}
+#webFlowPanel .dev-diagrams{display:grid;gap:16px;margin:0 0 32px}
+#webFlowPanel .dev-diagram{border:1px solid var(--line,#d9e3dd);border-radius:16px;background:var(--surface,#fffefa);overflow:hidden}
+#webFlowPanel .dev-diagram-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line,#d9e3dd);background:linear-gradient(105deg,#e8f7f1,#fffefa)}
+#webFlowPanel .dev-diagram-head h3{font-size:15px;margin:0 0 4px;letter-spacing:-.02em}
+#webFlowPanel .dev-diagram-head p{margin:0;font-size:12px;line-height:1.5;color:var(--muted,#667b77);max-width:62ch}
+#webFlowPanel .dev-diagram-head .sm-chip{margin-top:2px}
+#webFlowPanel .dev-diagram-mount{padding:12px 10px 16px;overflow:auto;min-height:140px}
+#webFlowPanel .dev-diagram-mount svg{max-width:100%;height:auto;display:block;margin:0 auto}
+:root[data-theme="dark"] #webFlowPanel .dev-diagram{background:#142824;border-color:#2a4540}
+:root[data-theme="dark"] #webFlowPanel .dev-diagram-head{background:linear-gradient(105deg,#1a3832,#142824);border-color:#2a4540}
+:root[data-theme="dark"] #webFlowPanel .dev-diagram-head p{color:#9fc4bd}
 </style><style id="future-roadmap-v34">
 #webFlowPanel .future-roadmap{margin-top:48px;padding-top:34px;border-top:1px solid var(--line,#dce3dc)}
 #webFlowPanel .future-head{max-width:760px;margin-bottom:24px}
@@ -1081,22 +1174,23 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 </div>
 </article>
 <article class="handoff-card">
-<h3>Emad · Match feed</h3>
-<div class="handoff-pair"><span>Emad · ranking + card</span><span>Yousef · like/skip only</span></div>
-<p>Every Match Feed state, AI Studio, Match insights, and the optional Prompt dashboard. Emad owns score, reason, list, and card layout. Yousef does not change ranking.</p>
+<h3>Emad · Match feed + intelligence UI</h3>
+<div class="handoff-pair"><span>Emad · ranking + card + intelligence</span><span>Yousef · like/skip only</span></div>
+<p>Match Feed (score, reason, layout) plus Emad’s intelligence UI: AI analytics, AI Studio, Prompt quality. Yousef does not change ranking.</p>
 <ul>
 <li>Freeze item JSON: <strong>projectId, name, score, reason, skills[]</strong></li>
 <li>Emad merges the feed card first</li>
 <li>Yousef then wires like/skip on that same Match Feed screen</li>
+<li><strong>Intelligence UI:</strong> AI analytics = contributor transparency. AI Studio = preference playground. <strong>Prompt quality = if have time</strong> — developer KPI board (v1/v2/v3), not for Nour.</li>
 </ul>
 <div class="handoff-screens">
 <button class="ownership-link" data-go="feed" type="button">6. Match feed (drag cards) — card and ranking <i data-i="arrow"></i></button>
 <button class="ownership-link" data-go="feedLoad" type="button">7. Feed: AI is matching <i data-i="arrow"></i></button>
 <button class="ownership-link" data-go="feedFallback" type="button">8. Feed: fallback and offline <i data-i="arrow"></i></button>
 <button class="ownership-link" data-go="feedEmpty" type="button">9. Feed: empty <i data-i="arrow"></i></button>
-<button class="ownership-link" data-go="dash" type="button">25. Prompt quality (if time) <i data-i="arrow"></i></button>
-<button class="ownership-link" data-go="aiStudio" type="button">36. AI matching studio <i data-i="arrow"></i></button>
 <button class="ownership-link" data-go="aiInsights" type="button">37. AI quality analytics <i data-i="arrow"></i></button>
+<button class="ownership-link" data-go="aiStudio" type="button">36. AI matching studio <i data-i="arrow"></i></button>
+<button class="ownership-link" data-go="dash" type="button">25. Prompt quality (if have time) <i data-i="arrow"></i></button>
 </div>
 </article>
 <article class="handoff-card">
@@ -1121,7 +1215,7 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <li><strong>Donia:</strong> 0. DevSync launch experience, 1. Welcome (swipe carousel), 2. Sign in / methods, 3. Register / create account (step 1 of 3), then Settings user document</li>
 <li><strong>Saga:</strong> 5. Connect GitHub (step 2 of 3), 19. Profile, 20. Edit profile and skills (step 3 of 3), 29. Contribution insights</li>
 <li><strong>Bishay:</strong> 26. Discover projects, 17. My projects, 18. Add or edit project (live preview), 10. Project detail (seed data)</li>
-<li><strong>Emad:</strong> 6. Match feed (drag cards) card merged, plus 7–9 loading / fallback / empty</li>
+<li><strong>Emad:</strong> 6. Match feed card merged + 7–9 states; 37 AI analytics · 36 AI Studio; 25 Prompt quality (if have time)</li>
 <li><strong>Yousef:</strong> like/skip on 6. Match feed after Emad; 6b. Liked matches; 11. Send request (sheet) and 13. Requests shape agreed</li>
 </ol>
 </article>
@@ -1182,8 +1276,16 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <div class="n">4</div>
 <div>
 <h3>The feed compares Nour to Karim’s project</h3>
-<p>Not random. Her skills + public GitHub vs his needed skills. She sees a card: <b>flutter-oss/charts · 92% · “You shipped Dart and Firebase.”</b> Frozen fields only: projectId, name, score, reason, skills[]. v1 can count overlap. Gemini is planned. If AI is slow she still gets a skills list (screen 8). If she skipped skills, the feed is empty (screen 9).</p>
+<p>Not random. Her skills + public GitHub vs his needed skills. She sees a card: <b>flutter-oss/charts · 92% · “You shipped Dart and Firebase.”</b> Frozen fields: projectId, name, score, reason, skills[]. If AI is slow she still gets a skills list (screen 8). If she skipped skills, the feed is empty (screen 9).</p>
 <div class="meta"><span>Emad builds the card</span><span>7 Loading · 6 Feed · 8 Fallback · 9 Empty</span><button class="ownership-link" data-go="feed" type="button">Open match feed <i data-i="arrow"></i></button></div>
+</div>
+</article>
+<article class="scene">
+<div class="n">4b</div>
+<div>
+<h3>She opens AI analytics (contributor transparency)</h3>
+<p><strong>For the contributor:</strong> Match intelligence shows how matching is going for her — matches rated, % positive, relevance trend, tune chips. Does <em>not</em> generate ranks or change the feed.<br/><strong>Data:</strong> today demo (<code>MatchingAnalytics.demoAnalytics</code>); later aggregate her own Firestore <code>feedback</code> (like/skip). AI Studio = preference playground. <strong>Prompt quality = if have time</strong> — for Matching developer only (Settings), not for Nour.</p>
+<div class="meta"><span>Matching · intelligence UI</span><span>37 AI analytics · 36 AI Studio · 25 Prompt quality</span><button class="ownership-link" data-go="aiInsights" type="button">Open AI analytics <i data-i="arrow"></i></button></div>
 </div>
 </article>
 <article class="scene">
@@ -1236,10 +1338,10 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 </div>
 
 <div class="now-hero block">
-<div class="big"><i data-lucide="key-round"></i></div>
+<div class="big"><i data-lucide="flag"></i></div>
 <div>
-<b>This week: step 1 only.</b>
-<span>Login is ready on Donia’s computer. Share it into the team copy. Do not start Profile, Projects, Feed, or Requests yet.</span>
+<b>Now: polish → merge → demo (30 Nov).</b>
+<span>Core path polish → merge → demo (30 Nov). Emad also delivers intelligence UI (AI analytics, AI Studio, Prompt quality).</span>
 </div>
 </div>
 
@@ -1248,18 +1350,23 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <div class="go-wait">
 <article class="side go">
 <h2><i data-lucide="unlock"></i> Go now</h2>
-<div class="face-row"><span class="face"><i>DA</i> Donia</span></div>
-<p class="job">Put login into the team copy.</p>
-</article>
-<article class="side wait">
-<h2><i data-lucide="lock"></i> Wait</h2>
 <div class="face-row">
+<span class="face"><i>DA</i> Donia</span>
 <span class="face"><i>SM</i> Saga</span>
 <span class="face"><i>BT</i> Bishay</span>
 <span class="face"><i>EH</i> Emad</span>
 <span class="face"><i>YM</i> Yousef</span>
 </div>
-<p class="job">Copy the team folder after Donia. Then start your screen.</p>
+<p class="job">Polish your feature · merge on Wed · no new core screens.</p>
+</article>
+<article class="side go">
+<h2><i data-lucide="sparkles"></i> Emad · intelligence UI</h2>
+<div class="face-row">
+<span class="face"><i>EH</i> AI analytics</span>
+<span class="face"><i>EH</i> AI Studio</span>
+<span class="face"><i>EH</i> Prompt quality · if time</span>
+</div>
+<p class="job">AI analytics + AI Studio for users. Prompt quality = if have time, for Matching developer only.</p>
 </article>
 </div>
 </div>
@@ -1267,9 +1374,9 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <div class="block">
 <p class="label">HOW THE TEAM BUILDS THAT FLOW</p>
 <div class="steps">
-<article class="step"><div class="n">1</div><b>Donia shares login</b><small>Step 1 of the user path</small></article>
-<article class="step"><div class="n">2</div><b>Everyone copies it</b><small>Saga, Bishay, Emad, Yousef</small></article>
-<article class="step"><div class="n">3</div><b>Then build your step</b><small>Only the screens you own</small></article>
+<article class="step"><div class="n">1</div><b>Core path works</b><small>Auth → Profile → Projects → Match → Request</small></article>
+<article class="step"><div class="n">2</div><b>Owner polish + merge</b><small>Wednesday merge window</small></article>
+<article class="step"><div class="n">3</div><b>Demo day</b><small>30 Nov · Emad intelligence UI included</small></article>
 </div>
 </div>
 
@@ -1278,24 +1385,25 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <div class="phones">
 <div class="ph"><i data-lucide="key-round"></i> Login<small>Donia</small></div>
 <span class="arrow"><i data-lucide="arrow-right"></i></span>
-<div class="ph lock"><i data-lucide="user-round"></i> Skills<small>Saga</small></div>
+<div class="ph"><i data-lucide="user-round"></i> Skills<small>Saga</small></div>
 <span class="arrow"><i data-lucide="arrow-right"></i></span>
-<div class="ph lock"><i data-lucide="folder-kanban"></i> Project<small>Bishay</small></div>
+<div class="ph"><i data-lucide="folder-kanban"></i> Project<small>Bishay</small></div>
 <span class="arrow"><i data-lucide="arrow-right"></i></span>
-<div class="ph lock"><i data-lucide="sparkles"></i> Cards<small>Emad</small></div>
+<div class="ph"><i data-lucide="sparkles"></i> Cards<small>Emad</small></div>
 <span class="arrow"><i data-lucide="arrow-right"></i></span>
-<div class="ph lock"><i data-lucide="mail"></i> Request<small>Yousef</small></div>
+<div class="ph"><i data-lucide="mail"></i> Request<small>Yousef</small></div>
 </div>
+<p class="job" style="margin-top:12px"><strong>Emad intelligence UI after Cards:</strong> AI analytics (rated / positive % / trend), AI Studio, Prompt quality. Join path still works without opening them.</p>
 </div>
 
 <div class="block">
 <p class="label">MERGE ORDER</p>
 <div class="chain">
-<div class="chain-box is-now"><b>Donia</b><small>Login · 23–24 Oct</small></div>
+<div class="chain-box"><b>Donia</b><small>Auth · done</small></div>
 <span class="arrow"><i data-lucide="arrow-right"></i></span>
-<div class="chain-box"><b>Saga + Bishay + Emad</b><small>Together · by 29 Oct</small></div>
+<div class="chain-box"><b>Saga + Bishay + Emad</b><small>Profile · Projects · Match</small></div>
 <span class="arrow"><i data-lucide="arrow-right"></i></span>
-<div class="chain-box"><b>Yousef</b><small>After Emad’s card · 5 Nov</small></div>
+<div class="chain-box is-now"><b>Yousef + polish</b><small>Requests · merge · demo</small></div>
 </div>
 <p class="label">WHO NEEDS WHO</p>
 <table class="dep">
@@ -1307,6 +1415,9 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <tr><td>Match card</td><td>Emad</td><td>Donia’s login. Bishay’s seed if ready, else local seed.</td><td>29 Oct</td></tr>
 <tr><td>Like / skip</td><td>Yousef</td><td>Donia’s login + Emad’s merged card. Do not change ranking.</td><td>29 Oct</td></tr>
 <tr><td>Requests</td><td>Yousef</td><td>Donia’s login + Bishay’s projects</td><td>5 Nov</td></tr>
+<tr><td>AI analytics</td><td>Emad</td><td>User transparency (rated / positive % / trend). Demo until live <code>feedback</code>. Not generate.</td><td>Emad · intelligence</td></tr>
+<tr><td>AI Studio</td><td>Emad</td><td>Contributor preference playground. Must not replace default feed.</td><td>Matching</td></tr>
+<tr><td>Prompt quality (if have time)</td><td>Emad</td><td>For Matching developer only — Settings KPI board (v1/v2/v3). Not for contributor join path. Demo metrics today.</td><td>If have time</td></tr>
 <tr><td>Motion on screens</td><td>Bishay</td><td>Each screen owner merges first, then reviews Bishay’s PR</td><td>5 Nov</td></tr>
 <tr><td>Security rules</td><td>Donia</td><td>Projects, matches, feedback, requests already in the team copy</td><td>12 Nov</td></tr>
 </tbody>
@@ -1370,21 +1481,22 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 </div>
 </div>
 </article>
-<article class="you-card">
-<div class="you-top"><div class="avatar">EH</div><div><h3>Emad</h3><p class="role">feature/matching · Match card</p></div><span class="tag wait">Wait for Donia</span></div>
+<article class="you-card is-go">
+<div class="you-top"><div class="avatar">EH</div><div><h3>Emad</h3><p class="role">feature/matching · Match + intelligence UI</p></div><span class="tag go">Your feature</span></div>
 <div class="plan">
 <div>
 <h4>Your tasks</h4>
 <ol>
-<li><span class="when">After login</span><span>Copy the team folder into <code>feature/matching</code>.</span></li>
-<li><span class="when">29 Oct</span><span>Build 6. Match feed (drag cards) with <code>projectId, name, score, reason, skills[]</code>. Also 7–9. No like/skip. Merge this before Yousef.</span></li>
-<li><span class="when">5–12 Nov</span><span>Tune ranking. Loading, empty, and fallback states. Cloud Function is planned, not built — seed/fallback is enough for v1.</span></li>
-<li><span class="when">If-time</span><span>Prompt-quality dashboard only after 12 Nov is green.</span></li>
+<li><span class="when">Feed</span><span>Generate + card (<code>score</code>, <code>reason</code>). Screens 6–9. No like/skip. Merge before Yousef.</span></li>
+<li><span class="when">States</span><span>Loading / empty / fallback. Read Yousef’s <code>feedback</code> for prompt eval.</span></li>
+<li><span class="when">Intelligence</span><span><strong>AI analytics (37):</strong> contributor transparency. <strong>AI Studio (36):</strong> preference playground.</span></li>
+<li><span class="when">If have time</span><span><strong>Prompt quality (25):</strong> for Matching developer only (Settings). Scoreboard of prompt v1/v2/v3 — not for Nour. Demo metrics.</span></li>
+<li><span class="when">Future</span><span>Live analytics from <code>feedback</code> · automated prompt eval / A/B · Remote Config prompt switch.</span></li>
 </ol>
 </div>
 <div>
-<div class="need-box"><h4>You need</h4><p>Donia’s login. Bishay’s seed if it is ready. If not, use your own local seed. Saga’s skills help later, not this week.</p><div class="face-row"><span class="face"><i>DA</i> Donia · login</span><span class="face"><i>BT</i> Bishay · seed</span></div></div>
-<div class="give-box"><h4>You give</h4><p>A frozen feed card. Yousef only adds like/skip on top. He does not change score or layout.</p><span class="face"><i>YM</i> Yousef · card</span></div>
+<div class="need-box"><h4>You need</h4><p>Donia’s login. Bishay’s projects corpus. Yousef’s <code>feedback</code> for live analytics later.</p><div class="face-row"><span class="face"><i>DA</i> Donia</span><span class="face"><i>BT</i> Bishay</span><span class="face"><i>YM</i> Yousef · feedback</span></div></div>
+<div class="give-box"><h4>You give</h4><p>Frozen feed card + intelligence UI (analytics, studio, prompt quality).</p><span class="face"><i>YM</i> Yousef · card</span></div>
 </div>
 </div>
 </article>
@@ -1414,65 +1526,282 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <p class="label">DATES</p>
 <div class="cal">
 <div class="cal-item is-done"><span class="dot"></span><b>22 Oct</b><small>Empty app</small></div>
-<div class="cal-item is-now"><span class="dot"></span><b>23–24 Oct</b><small>Share login</small></div>
-<div class="cal-item"><span class="dot"></span><b>29 Oct</b><small>Four people build</small></div>
-<div class="cal-item"><span class="dot"></span><b>5 Nov</b><small>Connect the path</small></div>
-<div class="cal-item"><span class="dot"></span><b>12 Nov</b><small>Freeze. No new screens.</small></div>
+<div class="cal-item is-done"><span class="dot"></span><b>23–24 Oct</b><small>Share login</small></div>
+<div class="cal-item is-done"><span class="dot"></span><b>29 Oct</b><small>Four people build</small></div>
+<div class="cal-item is-done"><span class="dot"></span><b>5 Nov</b><small>Connect the path</small></div>
+<div class="cal-item is-done"><span class="dot"></span><b>12 Nov</b><small>Freeze. No new screens.</small></div>
+<div class="cal-item is-now"><span class="dot"></span><b>Wed</b><small>Polish · merge</small></div>
 <div class="cal-item"><span class="dot"></span><b>30 Nov</b><small>Demo day</small></div>
+</div>
+</div>
+
+<div class="block" id="future-phases">
+<p class="label">FUTURE WORK · AFTER DEMO</p>
+<div class="go-wait">
+<article class="side go">
+<h2><i data-lucide="sparkles"></i> Emad</h2>
+<p class="job">Live AI analytics from <code>feedback</code> · automated prompt eval / A/B · Remote Config prompt switch · App Check / AI rate limits.</p>
+</article>
+<article class="side wait">
+<h2><i data-lucide="layers"></i> Platform</h2>
+<p class="job">Pilot with real developers · full task board · web / iOS · issue-level matching.</p>
+</article>
 </div>
 </div>
 </section>
 <section class="web-panel" hidden="" id="webResourcesPanel"><div class="web-intro"><span class="web-kicker">PROJECT WORKSPACE</span><h1>Everything in one place.</h1><p>Quick access to planning, documentation, and source code.</p></div><div id="webResourcesContent"><div class="ownership-section" id="webTeamResources"><div class="ownership-title-row"><div><span class="eyebrow">TEAM LINKS</span><h2 class="t3">Project resources</h2></div><i data-i="external"></i></div><p class="muted small">Open the official project tools in a new tab. Permissions may be required.</p><div class="ownership-table-wrap"><table class="ownership-table"><thead><tr><th>Resource</th><th>Link</th></tr></thead><tbody><tr><td><strong>Jira board / backlog</strong><small>Sprint planning, tasks and ownership</small></td><td><a class="resource-open" href="https://doniaelhussien.atlassian.net/jira/software/projects/SCRUM/boards/1/backlog?epics=visible&amp;jql=parent+%3D+SCRUM-6&amp;atlOrigin=eyJpIjoiZGU2YjliZDEwZjI1NGRhMWFlNDgyZDlkNTI0OTc4MmIiLCJwIjoiaiJ9" rel="noopener noreferrer" target="_blank">Open <i data-i="arrow"></i></a></td></tr><tr><td><strong>Google Drive documents</strong><small>Project guides, reports and assets</small></td><td><a class="resource-open" href="https://drive.google.com/drive/folders/1_pY8w81fN1ruQjdxVaZcDBzGwDfQIAcb?usp=sharing" rel="noopener noreferrer" target="_blank">Open <i data-i="arrow"></i></a></td></tr><tr><td><strong>GitHub repository</strong><small>Flutter source code, branches and pull requests</small></td><td><a class="resource-open" href="https://github.com/devDoniaAlhosin/devsync-open-source-collaboration-app.git" rel="noopener noreferrer" target="_blank">Open <i data-i="arrow"></i></a></td></tr></tbody></table></div><div class="ownership-tip"><i data-i="info"></i><span>Assignments are taken from the team feature summary. Optional features remain conditional on core delivery.</span></div></div></div></section><section class="web-panel" hidden="" id="webFlowPanel">
 <div class="flow-intro">
-<span class="web-kicker">PRODUCT EXPERIENCE · GROUP 4</span>
-<h1>From first sign-in to first contribution.</h1>
-<p>Explore the core DevSync journey, open its prototype screens, and see which enhancements are planned <strong>only after the main features are complete.</strong></p>
-<div class="flow-summary"><span><i data-lucide="route"></i> Core journey</span><span><i data-lucide="users"></i> 5 feature owners</span><span><i data-lucide="flag"></i> Core freeze · 12 Nov</span></div>
+<span class="web-kicker">FEATURES · A → Z</span>
+<h1>What each feature does</h1>
+<p>Five owners · each card is the full story A→Z · tap preview to open screens.</p>
+<div class="flow-summary"><span><i data-lucide="layers"></i> 5 features</span><span><i data-lucide="git-merge"></i> Merge · Wed</span><span><i data-lucide="flag"></i> Demo · 30 Nov</span></div>
 </div>
 <div class="flow-layout">
 <div class="flow-main">
-<div class="flow-section-heading"><span class="eyebrow">USER JOURNEY</span><h2>The developer journey</h2><p>Choose a step to open its interactive app screen.</p></div>
-<div class="journey-map">
-<button class="journey-node" data-go="welcome" type="button"><span class="journey-marker">01</span><span class="journey-copy"><b>Discover DevSync</b><small>Welcome, product introduction, and get started</small><em>Donia · Authentication</em></span><i data-lucide="arrow-up-right"></i></button>
-<button class="journey-node" data-go="register" type="button"><span class="journey-marker">02</span><span class="journey-copy"><b>Create an account / sign in</b><small>Email or Google authentication, reset and session handling</small><em>Donia · Authentication</em></span><i data-lucide="arrow-up-right"></i></button>
-<button class="journey-node" data-go="profile" type="button"><span class="journey-marker">03</span><span class="journey-copy"><b>Complete developer profile</b><small>Bio, skills, and public GitHub data</small><em>Saga · Profile &amp; GitHub</em></span><i data-lucide="arrow-up-right"></i></button>
-<button class="journey-node" data-go="discover" type="button"><span class="journey-marker">04</span><span class="journey-copy"><b>Explore open-source projects</b><small>Browse details and required skills</small><em>Bishay · Projects</em></span><i data-lucide="arrow-up-right"></i></button>
-<button class="journey-node" data-go="feed" type="button"><span class="journey-marker">05</span><span class="journey-copy"><b>Receive AI project matches</b><small>Ranked feed, match reasons, like or skip</small><em>Emad owns ranking · Yousef owns like/skip</em></span><i data-lucide="arrow-up-right"></i></button>
-<button class="journey-node" data-go="requests" type="button"><span class="journey-marker">06</span><span class="journey-copy"><b>Request to collaborate</b><small>Send a message; maintainer accepts or declines; FCM updates</small><em>Yousef · Requests &amp; notifications</em></span><i data-lucide="arrow-up-right"></i></button>
-<button class="journey-node journey-final" data-go="connected" type="button"><span class="journey-marker">07</span><span class="journey-copy"><b>Get connected</b><small>Confirmation and transition to working together</small><em>Shared interaction · Prototype demonstration</em></span><i data-lucide="arrow-up-right"></i></button>
+<div class="flow-section-heading"><span class="eyebrow">USER FLOW</span><h2>Core path</h2><p>Sign in → profile → discover/match → request → connected. After Match, Emad’s intelligence UI (AI analytics) is available.</p></div>
+<nav aria-label="Core product journey" class="journey-spine">
+<button class="spine-step" data-go="register" type="button"><b>01</b> Sign in</button><span aria-hidden="true" class="spine-sep">→</span>
+<button class="spine-step" data-go="profile" type="button"><b>02</b> Profile</button><span aria-hidden="true" class="spine-sep">→</span>
+<button class="spine-step" data-go="discover" type="button"><b>03</b> Discover</button><span aria-hidden="true" class="spine-sep">→</span>
+<button class="spine-step" data-go="feed" type="button"><b>04</b> Match</button><span aria-hidden="true" class="spine-sep">→</span>
+<button class="spine-step" data-go="aiInsights" type="button"><b>04b</b> AI analytics</button><span aria-hidden="true" class="spine-sep">→</span>
+<button class="spine-step" data-go="requests" type="button"><b>05</b> Request</button><span aria-hidden="true" class="spine-sep">→</span>
+<button class="spine-step spine-final" data-go="connected" type="button"><b>06</b> Connected</button>
+</nav>
+<p class="sm-flow" style="margin:0 0 22px;padding:0 4px"><strong>04b · AI analytics (contributor):</strong> Match intelligence transparency — rated count, positive %, trend. Data today = demo analytics; later = aggregate that user’s Firestore <code>feedback</code> (like/skip). Does <em>not</em> generate ranks. Part of Matching with AI Studio + Prompt quality.</p>
+
+<div class="flow-section-heading"><span class="eyebrow">FEATURES</span><h2>A → Z by owner</h2><p>Each card is the full feature story.</p></div>
+<div class="story-maps" id="featureDevDiagrams">
+
+<article class="story-map" data-feature="auth" id="story-auth">
+<div class="story-map-head">
+<div>
+<span class="sm-kicker">01 · AUTH · DONIA</span>
+<h3>What Auth does</h3>
+<p>Create the Firebase session + <code>users/{uid}</code> so every later feature can authorize.</p>
 </div>
-<div class="flow-section-heading flow-roadmap-head" id="roadmap"><span class="eyebrow">AFTER THE CORE FREEZE</span><h2>Beyond the core release</h2><p>These are <strong>conditional stretch goals</strong>, not committed core deliverables. Start only after core work, testing, and reviews are stable.</p></div>
-<div class="phase-gate"><div class="phase-gate-symbol"><i data-lucide="shield-check"></i></div><div><span>QUALITY GATE · 12 NOV</span><strong>Core complete, reviewed &amp; tested</strong><small>Optional work begins only if the core freeze is stable.</small></div><i data-lucide="arrow-down"></i></div><div class="stretch-track">
-<article class="stretch-item"><span class="stretch-dot">01</span><span class="roadmap-icon"><i data-lucide="kanban-square"></i></span><span class="roadmap-state">IF TIME · 26 NOV</span><h3>Task board</h3><p>Task model, board view, task details, creation and tests.</p><div class="roadmap-foot"><span>Donia · 5 pts</span><button data-go="tasks">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
-<article class="stretch-item"><span class="stretch-dot">02</span><span class="roadmap-icon"><i data-lucide="bell-ring"></i></span><span class="roadmap-state">IF TIME · 26 NOV</span><h3>Task notifications</h3><p>FCM alerts for task assignments and status changes.</p><div class="roadmap-foot"><span>Yousef · 3 pts</span><button data-go="alerts">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
-<article class="stretch-item"><span class="stretch-dot">03</span><span class="roadmap-icon"><i data-lucide="chart-no-axes-combined"></i></span><span class="roadmap-state">IF TIME · 26 NOV</span><h3>Prompt-quality dashboard</h3><p>Compare prompt versions using relevance and real feedback.</p><div class="roadmap-foot"><span>Emad · 3 pts</span><button data-go="dash">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
-<article class="stretch-item"><span class="stretch-dot">04</span><span class="roadmap-icon"><i data-lucide="wand-sparkles"></i></span><span class="roadmap-state">IF TIME · 26 NOV</span><h3>Extra motion &amp; usability</h3><p>Additional animations and a sign-in-to-match walkthrough under two minutes.</p><div class="roadmap-foot"><span>Bishay · 1 pt</span><button data-go="feed">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
-<article class="stretch-item"><span class="stretch-dot">05</span><span class="roadmap-icon"><i data-lucide="shield-check"></i></span><span class="roadmap-state">IF TIME · 26 NOV</span><h3>Regression &amp; Pro extras</h3><p>Broader regression coverage and optional Pro-only enhancements.</p><div class="roadmap-foot"><span>Saga · 3 pts</span><button data-go="profile">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
+<div class="sm-meta">
+<span class="sm-chip">feature/auth</span>
+<span class="sm-chip"><i data-lucide="user"></i> Donia</span>
+<div class="sm-proto">
+<button data-go="register" type="button">Register <i data-lucide="arrow-up-right"></i></button>
+<button data-go="login" type="button">Sign in <i data-lucide="arrow-up-right"></i></button>
+<button data-go="verifyCode" type="button">OTP <i data-lucide="arrow-up-right"></i></button>
 </div>
-<section aria-label="Post-release roadmap" class="future-roadmap" id="future-work">
-<div class="future-head"><span class="eyebrow">AFTER 30 NOVEMBER 2026</span><h2>Future product evolution</h2><p>These are <strong>outside the graduation-project delivery scope</strong>. They are proposals for development after the final release, not scheduled sprint commitments.</p></div>
+</div>
+</div>
+<ol class="sm-when">
+<li><b>1</b><span><strong>Register / login</strong> — email/password creates or restores a Firebase uid.</span></li>
+<li><b>2</b><span><strong>OTP</strong> — Vercel send/verify proves the inbox before home.</span></li>
+<li><b>3</b><span><strong>Session</strong> — AuthCubit holds the user; gate opens Profile / Discover / Match.</span></li>
+<li><b>4</b><span><strong>Write</strong> — base <code>users/{uid}</code> doc exists for ownership rules.</span></li>
+<li><b>5</b><span><strong>Logout</strong> — sign-out only via AuthCubit so tokens clear cleanly.</span></li>
+</ol>
+<div class="dev-diagram-mount" id="devFlowAuth">Loading diagram…</div>
+<div class="sm-tech">
+<div class="sm-tech-row"><span class="sm-tech-label">WRITES</span><span class="col-pill write">users/{uid}</span></div>
+<div class="sm-tech-row"><span class="sm-tech-label">CALLS</span><span class="col-pill api">Vercel OTP / email / session</span><span class="col-pill api">Firebase Auth</span></div>
+</div>
+<div class="story-done"><span>Done · OTP works</span><span>Done · Session survives restart</span><span>Done · Logout via Cubit</span></div>
+</article>
+
+<article class="story-map" data-feature="profile" id="story-profile">
+<div class="story-map-head">
+<div>
+<span class="sm-kicker">02 · PROFILE · SAGA</span>
+<h3>What Profile does</h3>
+<p>Save skills / bio / GitHub on <code>users.profile</code> — Emad’s matching input.</p>
+</div>
+<div class="sm-meta">
+<span class="sm-chip">feature/profile-ui</span>
+<span class="sm-chip"><i data-lucide="user"></i> Saga</span>
+<div class="sm-proto">
+<button data-go="connect" type="button">Connect GitHub <i data-lucide="arrow-up-right"></i></button>
+<button data-go="profileEdit" type="button">Edit skills <i data-lucide="arrow-up-right"></i></button>
+<button data-go="profile" type="button">Profile <i data-lucide="arrow-up-right"></i></button>
+</div>
+</div>
+</div>
+<ol class="sm-when">
+<li><b>1</b><span><strong>Connect</strong> — enter GitHub username (or skip and return later).</span></li>
+<li><b>2</b><span><strong>Scan</strong> — live <code>api.github.com</code> pull of languages / repos.</span></li>
+<li><b>3</b><span><strong>Save</strong> — merge into <code>users/{uid}.profile</code>.</span></li>
+<li><b>4</b><span><strong>Edit</strong> — user tweaks bio/skills; Matching reads this map later.</span></li>
+<li><b>5</b><span><strong>Rules</strong> — only <code>auth.uid == userId</code> may write.</span></li>
+</ol>
+<div class="dev-diagram-mount" id="devFlowProfile">Loading diagram…</div>
+<div class="sm-tech">
+<div class="sm-tech-row"><span class="sm-tech-label">WRITES</span><span class="col-pill write">users/{uid}.profile</span></div>
+<div class="sm-tech-row"><span class="sm-tech-label">CALLS</span><span class="col-pill api">api.github.com</span></div>
+</div>
+<div class="story-done"><span>Done · Live scan saves</span><span>Done · Skills on home path</span><span>Done · Other uid blocked</span></div>
+</article>
+
+<article class="story-map" data-feature="projects" id="story-projects">
+<div class="story-map-head">
+<div>
+<span class="sm-kicker">03 · PROJECTS · BISHAY</span>
+<h3>What Projects does</h3>
+<p>Own the listing corpus Emad ranks, plus <code>ownerId</code> Yousef needs for join.</p>
+</div>
+<div class="sm-meta">
+<span class="sm-chip">feature/projects</span>
+<span class="sm-chip"><i data-lucide="user"></i> Bishay</span>
+<div class="sm-proto">
+<button data-go="discover" type="button">Discover <i data-lucide="arrow-up-right"></i></button>
+<button data-go="projects" type="button">My projects <i data-lucide="arrow-up-right"></i></button>
+</div>
+</div>
+</div>
+<ol class="sm-when">
+<li><b>1</b><span><strong>Create / edit</strong> — title, stack, description with non-empty <code>ownerId</code>.</span></li>
+<li><b>2</b><span><strong>Discover</strong> — list/search Firestore <code>projects</code>.</span></li>
+<li><b>3</b><span><strong>Views</strong> — write <code>views/…</code> + bump <code>viewsCount</code> on open.</span></li>
+<li><b>4</b><span><strong>Handoff</strong> — “Request to join” calls RequestsCubit only (no second schema).</span></li>
+<li><b>5</b><span><strong>Corpus</strong> — same docs feed Emad’s generate call.</span></li>
+</ol>
+<div class="dev-diagram-mount" id="devFlowProjects">Loading diagram…</div>
+<div class="sm-tech">
+<div class="sm-tech-row"><span class="sm-tech-label">WRITES</span><span class="col-pill write">projects/{id}</span><span class="col-pill write">views/…</span></div>
+<div class="sm-tech-row"><span class="sm-tech-label">DOES NOT</span><span class="col-pill todo">create requests</span></div>
+</div>
+<div class="story-done"><span>Done · ownerId never empty</span><span>Done · Views query works</span><span>Done · One join path</span></div>
+</article>
+
+<article class="story-map" data-feature="matching" id="story-matching">
+<div class="story-map-head">
+<div>
+<span class="sm-kicker">04 · MATCHING · EMAD</span>
+<h3>What Matching does</h3>
+<p>Rank projects for the feed (score + reason). Intelligence UI is part of Matching. Like/skip is Yousef.</p>
+</div>
+<div class="sm-meta">
+<span class="sm-chip">feature/matching</span>
+<span class="sm-chip"><i data-lucide="user"></i> Emad</span>
+<div class="sm-proto">
+<button data-go="feed" type="button">Feed <i data-lucide="arrow-up-right"></i></button>
+<button data-go="aiInsights" type="button">AI analytics <i data-lucide="arrow-up-right"></i></button>
+<button data-go="dash" type="button">Prompt quality · if time <i data-lucide="arrow-up-right"></i></button>
+</div>
+</div>
+</div>
+<ol class="sm-when">
+<li><b>1</b><span><strong>Generate</strong> — read <code>profile</code> + <code>projects</code> → <code>POST /matches/generate</code> → ranked deck in Cubit.</span></li>
+<li><b>2</b><span><strong>Card</strong> — feed shows score + reason.</span></li>
+<li><b>3</b><span><strong>Handoff</strong> — freeze layout; Yousef adds like/skip → writes <code>feedback</code>.</span></li>
+<li><b>4</b><span><strong>Prompt eval</strong> — Matching reads <code>feedback</code> to judge prompts.</span></li>
+<li><b>5</b><span><strong>Intelligence UI</strong> — AI analytics + AI Studio; Prompt quality = if have time (cards below).</span></li>
+</ol>
+<div class="dev-diagram-mount" id="devFlowMatching">Loading diagram…</div>
+<div class="sm-tech">
+<div class="sm-tech-row"><span class="sm-tech-label">CALLS</span><span class="col-pill api">POST /matches/generate</span></div>
+<div class="sm-tech-row"><span class="sm-tech-label">HOLDS</span><span class="col-pill ram">Cubit ranked deck</span></div>
+<div class="sm-tech-row"><span class="sm-tech-label">UI</span><span class="col-pill stretch">#aiInsights</span><span class="col-pill stretch">#dash</span><span class="col-pill stretch">#aiStudio</span></div>
+</div>
+<div class="sm-intel">
+<p class="label" style="margin:0 0 12px">MATCHING · INTELLIGENCE UI · DEVELOPER NOTES</p>
+<p class="sm-flow" style="margin:0 0 14px">Each screen below — what it does, UI, data, and what not to break.</p>
+<div class="stretch-track sm-intel-track">
+
+<article class="stretch-item"><span class="stretch-dot">01</span><span class="roadmap-icon"><i data-lucide="chart-no-axes-combined"></i></span><span class="roadmap-state">MATCHING · CONTRIBUTOR</span><h3>AI analytics · <code>#aiInsights</code></h3>
+<ul class="dev-points">
+<li><strong>Audience:</strong> signed-in contributor (Match intelligence / transparency).</li>
+<li><strong>Job:</strong> explain how matching is going for <em>this</em> user — not to rank projects.</li>
+<li><strong>UI shows:</strong> matches rated · positive signals % · skills matched count · relevance trend chart · scoring breakdown / tune chips (Skills, Activity, Interests).</li>
+<li><strong>Entry:</strong> AI Studio chart icon, app menu, or proto preview.</li>
+<li><strong>State:</strong> <code>MatchingCubit</code> → <code>GetMatchingAnalyticsUseCase</code> → <code>MatchingAnalytics</code> on state.</li>
+<li><strong>Data today:</strong> <code>MatchingAnalytics.demoAnalytics</code> (mock DS). HTTP <code>getAnalytics()</code> throws <code>UnimplementedError</code> — do not wire feed generate into this screen.</li>
+<li><strong>Data later:</strong> aggregate this user’s Firestore <code>feedback</code> docs (<code>userId</code>, <code>projectId</code>, <code>action</code> like|skip) → rated count, positive %, trend.</li>
+<li><strong>Must not:</strong> call <code>POST /matches/generate</code> · change feed order/scores · write <code>feedback</code> (Yousef owns like/skip writes).</li>
+</ul>
+<div class="roadmap-foot"><span>feature/matching</span><button data-go="aiInsights" type="button">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
+
+<article class="stretch-item"><span class="stretch-dot">02</span><span class="roadmap-icon"><i data-lucide="gauge"></i></span><span class="roadmap-state">IF HAVE TIME</span><h3>Prompt quality · <code>#dash</code></h3>
+<p class="sm-flow" style="margin:8px 0 0"><strong>If have time only</strong> — not required for Sign in → Match → Request → Connected.<br/><strong>In plain words:</strong> Matching uses a text “prompt” (instructions) when calling Gemini to rank projects. When you change that prompt, you want to know: <em>did matches get better?</em> This screen is a <strong>scoreboard for prompt versions</strong> — not a screen Nour uses to find a project.</p>
+<ul class="dev-points">
+<li><strong>Priority:</strong> <strong>if have time</strong> — ship feed generate first; this KPI board is optional.</li>
+<li><strong>Who it’s for:</strong> Matching developer (Emad / <code>feature/matching</code>) — <em>not</em> the contributor user.</li>
+<li><strong>Who it’s not for:</strong> Nour / normal join path — she never needs this to find or join a project.</li>
+<li><strong>Where:</strong> Settings → Prompt quality (<code>PromptQualityScreen</code> / <code>#dash</code>).</li>
+<li><strong>What “prompt” means:</strong> instruction text sent with <code>POST /matches/generate</code> (e.g. how to weight skills vs activity).</li>
+<li><strong>What the page answers:</strong> “v1 was 48% relevant, v2 57%, v3 64% — so the new prompt is better.”</li>
+<li><strong>UI:</strong> big relevance % · chart of v1 / v2 / v3 · target line · avg match time.</li>
+<li><strong>Data today:</strong> <code>PromptQualityMetrics.demo</code> (fake: v1 48% · v2 57% · v3 64%).</li>
+<li><strong>Data later:</strong> compute relevance from real like/skip <code>feedback</code> per prompt version.</li>
+</ul>
+<div class="roadmap-foot"><span>feature/matching · if have time</span><button data-go="dash" type="button">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
+
+<article class="stretch-item"><span class="stretch-dot">03</span><span class="roadmap-icon"><i data-lucide="wand-sparkles"></i></span><span class="roadmap-state">MATCHING · FOR THE USER</span><h3>AI Studio · <code>#aiStudio</code></h3>
+<p class="sm-flow" style="margin:8px 0 0"><strong>In plain words:</strong> a <strong>try-it room</strong> where the contributor types what they want (e.g. “Flutter UI + tests”) and taps Generate to see matches. The normal Match feed still loads on its own — Studio is an extra playground, not the only way to get cards.</p>
+<ul class="dev-points">
+<li><strong>Who uses it:</strong> contributor — from feed / menu → AI Studio.</li>
+<li><strong>What they do:</strong> edit a natural-language preference box · pick suggestion chips · tap Generate.</li>
+<li><strong>What happens:</strong> Cubit saves <code>MatchingPreferences</code> (prompt text + tags) and can call generate with that text.</li>
+<li><strong>Also on the page:</strong> simple “how scoring works” bars + button to open AI analytics.</li>
+<li><strong>vs Match feed:</strong> Feed = default ranked cards when you open Matches. Studio = optional “let me describe what I want first.”</li>
+<li><strong>Must not:</strong> delete or replace the default feed load. Feed must still work if the user never opens Studio.</li>
+</ul>
+<div class="roadmap-foot"><span>feature/matching</span><button data-go="aiStudio" type="button">Preview <i data-lucide="arrow-up-right"></i></button></div></article>
+
+</div>
+</div>
+<div class="story-done"><span>Done · Feed generate works</span><span>Done · Intelligence UI shipped</span><span>Done · Can read feedback</span></div>
+</article>
+
+<article class="story-map" data-feature="requests" id="story-requests">
+<div class="story-map-head">
+<div>
+<span class="sm-kicker">05 · REQUESTS · YOUSEF</span>
+<h3>What Requests does</h3>
+<p>Like/skip → <code>feedback</code>. Join → <code>requests</code> + FCM → Connected. Does not change Emad’s ranking.</p>
+</div>
+<div class="sm-meta">
+<span class="sm-chip">feature/requests</span>
+<span class="sm-chip"><i data-lucide="user"></i> Yousef</span>
+<div class="sm-proto">
+<button data-go="requests" type="button">Inbox <i data-lucide="arrow-up-right"></i></button>
+<button data-go="alerts" type="button">Alerts <i data-lucide="arrow-up-right"></i></button>
+<button data-go="connected" type="button">Connected <i data-lucide="arrow-up-right"></i></button>
+</div>
+</div>
+</div>
+<ol class="sm-when">
+<li><b>1</b><span><strong>Like / skip</strong> — on Emad’s card; write <code>feedback/{id}</code> (userId, projectId, action).</span></li>
+<li><b>2</b><span><strong>Send request</strong> — one <code>requests</code> doc (senderId, ownerId, projectId, pending).</span></li>
+<li><b>3</b><span><strong>Owner</strong> — accept / decline under deployed rules.</span></li>
+<li><b>4</b><span><strong>FCM</strong> — store token in <code>fcmTokens</code>; notify opens Requests.</span></li>
+<li><b>5</b><span><strong>Connected</strong> — status=accepted completes the path.</span></li>
+</ol>
+<div class="dev-diagram-mount" id="devFlowRequests">Loading diagram…</div>
+<div class="sm-tech">
+<div class="sm-tech-row"><span class="sm-tech-label">WRITES</span><span class="col-pill write">feedback</span><span class="col-pill write">requests</span><span class="col-pill write">fcmTokens</span></div>
+<div class="sm-tech-row"><span class="sm-tech-label">READS</span><span class="col-pill read">projects.ownerId</span><span class="col-pill read">Emad feed card</span></div>
+</div>
+<div class="story-done"><span>Done · feedback in Firestore</span><span>Done · Accept/decline E2E</span><span>Done · Connected on accept</span></div>
+</article>
+
+</div>
+
+<section aria-label="Future work" class="future-roadmap" id="future-work">
+<div class="future-head"><span class="eyebrow">FUTURE WORK</span><h2>After demo day</h2><p>Next product steps — not this sprint’s merge blockers.</p></div>
 <div class="future-timeline">
-<div class="future-phase"><div class="future-phase-label"><span class="future-phase-index">01</span><div><strong>Next · December 2026</strong><small>Validate &amp; protect</small></div></div><div class="future-features">
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="users-round"></i></span><div><h3>Pilot with 20+ developers</h3><p>Collect real like/skip feedback to measure match quality and adoption.</p></div></article>
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="git-compare-arrows"></i></span><div><h3>Automated prompt evaluation &amp; A/B tests</h3><p>Run evaluations in CI and switch prompt versions with Remote Config.</p></div></article>
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="shield-check"></i></span><div><h3>Firebase App Check &amp; rate limiting</h3><p>Protect the backend, abuse limits and AI usage budget.</p></div></article>
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="list-todo"></i></span><div><h3>Full task management</h3><p>Expand the optional task board into a complete delivery workflow.</p></div></article>
+<div class="future-phase"><div class="future-phase-label"><span class="future-phase-index">01</span><div><strong>Matching · intelligence</strong><small>After 30 Nov</small></div></div><div class="future-features">
+<article class="future-feature"><span class="future-feature-icon"><i data-lucide="chart-no-axes-combined"></i></span><div><h3>Live AI analytics from feedback</h3><p>Replace demo metrics with aggregates of Yousef’s <code>feedback</code> docs.</p></div></article>
+<article class="future-feature"><span class="future-feature-icon"><i data-lucide="git-compare-arrows"></i></span><div><h3>Automated prompt eval &amp; A/B</h3><p>Score prompt versions in CI; switch with Remote Config.</p></div></article>
+<article class="future-feature"><span class="future-feature-icon"><i data-lucide="shield-check"></i></span><div><h3>App Check &amp; AI rate limits</h3><p>Protect generate endpoint and Gemini budget.</p></div></article>
 </div></div>
-<div class="future-phase"><div class="future-phase-label"><span class="future-phase-index">02</span><div><strong>Later · Expansion</strong><small>Grow the platform</small></div></div><div class="future-features">
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="monitor-smartphone"></i></span><div><h3>Web platform &amp; iOS app</h3><p>Bring DevSync to more devices and contributors.</p></div></article>
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="credit-card"></i></span><div><h3>Real Pro plan &amp; payments</h3><p>Introduce a monetization model after the course release.</p></div></article>
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="target"></i></span><div><h3>Issue-level matching &amp; skill gaps</h3><p>Match developers to individual tasks and suggest skills to improve.</p></div></article>
-<article class="future-feature"><span class="future-feature-icon"><i data-lucide="messages-square"></i></span><div><h3>Maintainer search, chat &amp; endorsements</h3><p>Build richer discovery and collaboration between developers and maintainers.</p></div></article>
+<div class="future-phase"><div class="future-phase-label"><span class="future-phase-index">02</span><div><strong>Platform</strong><small>Later</small></div></div><div class="future-features">
+<article class="future-feature"><span class="future-feature-icon"><i data-lucide="users-round"></i></span><div><h3>Pilot with real developers</h3><p>Collect like/skip at scale to measure match quality.</p></div></article>
+<article class="future-feature"><span class="future-feature-icon"><i data-lucide="list-todo"></i></span><div><h3>Full task board</h3><p>Expand optional tasks into a delivery workflow.</p></div></article>
+<article class="future-feature"><span class="future-feature-icon"><i data-lucide="monitor-smartphone"></i></span><div><h3>Web &amp; iOS</h3><p>Bring DevSync beyond Android.</p></div></article>
 </div></div>
 </div>
-<div class="future-end"><i data-lucide="flag-triangle-right"></i><span>Roadmap proposals · Priorities and dates to be decided after pilot feedback</span></div>
+<div class="future-end"><i data-lucide="flag-triangle-right"></i><span>Future work · prioritize after demo feedback</span></div>
 </section>
 
 </div>
 <aside class="flow-side">
-<div class="flow-aside-card"><span class="eyebrow">DELIVERY CHECKPOINTS</span><h3>Build the essentials first.</h3><div class="milestone-rail"><div class="milestone-item"><b>22 Oct</b><span>Foundation, app shell, theme and CI</span></div><div class="milestone-item"><b>29 Oct</b><span>Auth, profile, projects, AI feed and like/skip</span></div><div class="milestone-item"><b>05 Nov</b><span>Requests, notifications and core animations</span></div><div class="milestone-item"><b>12 Nov</b><span>Core feature freeze and security review</span></div><div class="milestone-item"><b>26 Nov</b><span>Feature freeze; optional work only if feasible</span></div><div class="milestone-item"><b>30 Nov</b><span>Final build, documentation and presentation</span></div></div>
-</div>
-<div class="flow-aside-card"><span class="eyebrow">DEFINITION OF DONE</span><h3>Ready means tested.</h3><p>Use shared design widgets, working state and Firestore rules, passing tests, reviewed pull requests, animation on key screens, and documentation.</p><a class="flow-resource-link" href="https://github.com/devDoniaAlhosin/devsync-open-source-collaboration-app" rel="noopener noreferrer" target="_blank">Open repository <i data-lucide="external-link"></i></a></div>
+<div class="flow-aside-card"><span class="eyebrow">DEFINITION OF DONE</span><h3>Ready means tested.</h3><p>Shared widgets, working Cubit state, Firestore rules, passing tests, reviewed PR, docs.</p><a class="flow-resource-link" href="https://github.com/devDoniaAlhosin/devsync-open-source-collaboration-app" rel="noopener noreferrer" target="_blank">Open repository <i data-lucide="external-link"></i></a></div>
 </aside>
 </div>
 </section>
@@ -1480,11 +1809,11 @@ body:not(.web-mode) .bar{top:72px;gap:14px;padding:12px clamp(18px,5vw,90px);bac
 <div class="web-intro">
 <span class="web-kicker">DATA MODEL · FIRESTORE</span>
 <h1>Schema and entity relationships.</h1>
-<p>One Firebase user can be a contributor and a maintainer. USER identity fields are implemented. Everything else is planned; TASK is if-time.</p>
+<p>Six written top-level collections + <code>fcmTokens</code>. Core path: users → projects/views → AI match feed → feedback + requests. Match scores come from Vercel <code>POST /matches/generate</code>; <code>matches</code> and <code>tasks</code> are not written yet.</p>
 </div>
 <div class="erd-legend">
-<span>Implemented · users/{uid}</span>
-<span>Planned · projects, matches, feedback, requests</span>
+<span>Written · users, projects, views, requests, feedback, fcmTokens</span>
+<span>Unused · matches (API)</span>
 <span>If-time · tasks</span>
 </div>
 <div class="erd-canvas" id="erdCanvas"><div id="erd">Loading diagram…</div></div>
@@ -2184,53 +2513,93 @@ search.addEventListener('input',apply);
 filters.forEach(b=>b.addEventListener('click',()=>{filters.forEach(x=>x.classList.toggle('on',x===b));filter=b.dataset.ownerFilter;if(filter==='resources'){switchView('resources');return;}if(filter==='screens'){cards.forEach(c=>c.hidden=!c.querySelector('.ownership-link'));}else apply();}));
 let erdReady=false,erdTheme='';
 const erdSource=`erDiagram
-  USER ||--o{ PROJECT : maintains
-  USER ||--o{ MATCH : receives
-  USER ||--o{ FEEDBACK : writes
-  USER ||--o{ REQUEST : sends
-  USER ||--o{ REQUEST : "receives as maintainer"
-  PROJECT ||--o{ MATCH : "ranked in"
-  PROJECT ||--o{ FEEDBACK : "rated in"
-  PROJECT ||--o{ REQUEST : "targeted by"
-  USER ||--o{ TASK : assigned
-  PROJECT ||--o{ TASK : "tracked in"
-  PROMPT_VERSION ||--o{ MATCH : "produced by"
+  USER ||--o{ PROJECT : "owns ownerId"
+  USER ||--o{ FCM_TOKEN : "stores tokens"
+  USER ||--o{ VIEW : "viewerId"
+  USER ||--o{ REQUEST : "senderId"
+  USER ||--o{ REQUEST : "ownerId inbox"
+  USER ||--o{ FEEDBACK : "like_or_skip"
+  USER ||--o{ MATCH : "optional unused"
+  PROJECT ||--o{ VIEW : "recorded on open"
+  PROJECT ||--o{ REQUEST : "projectId"
+  PROJECT ||--o{ FEEDBACK : "rated project"
+  PROJECT ||--o{ MATCH : "optional unused"
+  USER ||--o{ TASK : "if_time"
+  PROJECT ||--o{ TASK : "if_time"
   USER {
     string uid PK
     string email
     string displayName
     string photoUrl
     list authProviders
+    string githubLogin
+    map profile
     timestamp createdAt
+    timestamp updatedAt
+  }
+  FCM_TOKEN {
+    string token PK
+    string platform
     timestamp updatedAt
   }
   PROJECT {
     string projectId PK
     string ownerId FK
+    string ownerName
     string title
     string description
     string githubUrl
-    list neededSkills
+    string githubRepo
+    list techStack
+    number requiredContributors
+    number viewsCount
+    number requestsCount
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  VIEW {
+    string viewId PK
+    string projectId FK
+    string viewerId FK
+    timestamp createdAt
   }
   MATCH {
-    string projectId PK
+    string matchId PK
     string userId FK
-    string name
+    string projectId FK
     number score
     string reason
-    list skills
+    string promptVersion
+    timestamp createdAt
   }
   FEEDBACK {
-    string userId PK
-    string projectId PK
+    string feedbackId PK
+    string userId FK
+    string projectId FK
     string action
+    timestamp updatedAt
   }
   REQUEST {
-    string fromUserId PK
-    string projectId PK
-    string toUserId FK
-    string message
+    string requestId PK
+    string projectId FK
+    string senderId FK
+    string ownerId FK
+    string initials
+    string title
+    string subtitle
     string status
+    string type
+    string message
+    string displayName
+    string targetName
+    number matchPercent
+    string matchSummary
+    number repositoryCount
+    number commitCount
+    number languageCount
+    list skills
+    timestamp createdAt
+    timestamp respondedAt
   }
   TASK {
     string taskId PK
@@ -2238,11 +2607,6 @@ const erdSource=`erDiagram
     string assigneeId FK
     string title
     string column
-    string priority
-  }
-  PROMPT_VERSION {
-    string version PK
-    string text
   }`;
 const nourFlow=`flowchart TD
   A["0. Launch"] --> B["1. Welcome"]
@@ -2300,6 +2664,30 @@ const meetFlow=`flowchart LR
   K3 --> C["15. Connected"]
   C --> GH["Work on GitHub"]`;
 let flowReady=false,flowTheme='';
+let featureDevReady=false,featureDevTheme='';
+const authDevFlow=`flowchart LR
+  UI["Register Login OTP"] --> Cubit["AuthCubit"]
+  Cubit --> API["Firebase Auth + Vercel OTP"]
+  Cubit --> Users["users uid"]`;
+const profileDevFlow=`flowchart LR
+  UI["Connect GitHub"] --> Cubit["ProfileCubit"]
+  Cubit --> GH["api.github.com"]
+  Cubit --> FS["users.profile"]`;
+const projectsDevFlow=`flowchart LR
+  UI["Discover Details"] --> Cubit["ProjectsCubit"]
+  Cubit --> P["projects"]
+  Cubit --> V["views"]
+  UI -.-> Req["RequestsCubit"]`;
+const matchingDevFlow=`flowchart LR
+  P["profile + projects"] --> API["POST /matches/generate"]
+  API --> Feed["ranked feed Cubit"]
+  Feed -.-> FB["feedback Yousef"]
+  Intel["Matching intelligence UI"] --> S["aiInsights / dash / aiStudio"]`;
+const requestsDevFlow=`flowchart LR
+  Like["like skip"] --> FB["feedback"]
+  Join["send request"] --> R["requests + FCM"]
+  R --> Connected["Connected"]
+  FB --> Emad["Emad prompt eval"]`;
 async function mermaidEngine(){
   const theme=document.documentElement.dataset.theme||'dark';
   const dark=theme==='dark';
@@ -2346,6 +2734,36 @@ async function renderPhaseFlows(){
     nour.textContent=karim.textContent=meet.textContent='Chart failed to load. Use the step-by-step story above.';
   }
 }
+async function renderFeatureDevFlows(){
+  const theme=document.documentElement.dataset.theme||'dark';
+  if(featureDevReady&&featureDevTheme===theme)return;
+  const mounts=[
+    ['devFlowAuth',authDevFlow,'feature-auth-svg'],
+    ['devFlowProfile',profileDevFlow,'feature-profile-svg'],
+    ['devFlowProjects',projectsDevFlow,'feature-projects-svg'],
+    ['devFlowMatching',matchingDevFlow,'feature-matching-svg'],
+    ['devFlowRequests',requestsDevFlow,'feature-requests-svg']
+  ];
+  if(!document.getElementById('devFlowAuth'))return;
+  mounts.forEach(([id])=>{const el=document.getElementById(id);if(el)el.textContent='Loading diagram…';});
+  try{
+    const {mermaid,theme:t}=await mermaidEngine();
+    for(const [id,src,svgId] of mounts){
+      const el=document.getElementById(id);
+      if(!el)continue;
+      try{
+        const {svg}=await mermaid.render(svgId,src);
+        el.innerHTML=svg;
+      }catch(e){
+        el.textContent='Diagram failed to load.';
+      }
+    }
+    featureDevReady=true;
+    featureDevTheme=t;
+  }catch(err){
+    mounts.forEach(([id])=>{const el=document.getElementById(id);if(el)el.textContent='Diagram failed to load.';});
+  }
+}
 async function renderErd(){
   const theme=document.documentElement.dataset.theme||'dark';
   if(erdReady&&erdTheme===theme)return;
@@ -2377,12 +2795,12 @@ async function renderErd(){
   erdReady=true;
   erdTheme=theme;
 }
-function switchView(v){if(v==='prototype'){document.body.classList.remove('web-mode');portal.hidden=true;document.getElementById('vProto').click();document.getElementById('galleryToggle').setAttribute('aria-pressed','false');document.getElementById('galleryToggleText').textContent='View all screens';if(typeof syncPreviewMode==='function')syncPreviewMode();document.querySelectorAll('#sharedHeader [data-web-view]').forEach(b=>b.classList.toggle('selected',b.dataset.webView==='prototype'));history.replaceState(null,'','#prototype');window.scrollTo(0,0);return;}document.body.classList.add('web-mode');portal.hidden=false;document.getElementById('webTeamPanel').hidden=v!=='team';document.getElementById('webPhasesPanel').hidden=v!=='phases';document.getElementById('webResourcesPanel').hidden=v!=='resources';document.getElementById('webFlowPanel').hidden=v!=='flow';document.getElementById('webErdPanel').hidden=v!=='erd';document.querySelectorAll('#sharedHeader [data-web-view]').forEach(b=>b.classList.toggle('selected',b.dataset.webView===v));history.replaceState(null,'','#'+v);window.scrollTo(0,0);if(v==='erd')renderErd();if(v==='phases')renderPhaseFlows();if(window.lucide)lucide.createIcons();}
+function switchView(v){if(v==='prototype'){document.body.classList.remove('web-mode');portal.hidden=true;document.getElementById('vProto').click();document.getElementById('galleryToggle').setAttribute('aria-pressed','false');document.getElementById('galleryToggleText').textContent='View all screens';if(typeof syncPreviewMode==='function')syncPreviewMode();document.querySelectorAll('#sharedHeader [data-web-view]').forEach(b=>b.classList.toggle('selected',b.dataset.webView==='prototype'));history.replaceState(null,'','#prototype');window.scrollTo(0,0);return;}document.body.classList.add('web-mode');portal.hidden=false;document.getElementById('webTeamPanel').hidden=v!=='team';document.getElementById('webPhasesPanel').hidden=v!=='phases';document.getElementById('webResourcesPanel').hidden=v!=='resources';document.getElementById('webFlowPanel').hidden=v!=='flow';document.getElementById('webErdPanel').hidden=v!=='erd';document.querySelectorAll('#sharedHeader [data-web-view]').forEach(b=>b.classList.toggle('selected',b.dataset.webView===v));history.replaceState(null,'','#'+v);window.scrollTo(0,0);if(v==='erd')renderErd();if(v==='phases')renderPhaseFlows();if(v==='flow')renderFeatureDevFlows();if(window.lucide)lucide.createIcons();}
 document.querySelectorAll('#sharedHeader [data-web-view]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();switchView(b.dataset.webView)}));
 
 portal.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();let id=b.dataset.go;switchView('prototype');let target=document.getElementById('jump');if(target){target.value=id;target.dispatchEvent(new Event('change',{bubbles:true}));}}));
 portal.querySelectorAll('[data-phase-jump]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();const t=document.getElementById(b.dataset.phaseJump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'});}));
-document.getElementById('webTheme').addEventListener('click',()=>{let dark=document.documentElement.dataset.theme==='dark';document.getElementById(dark?'tLight':'tDark').click();erdReady=false;flowReady=false;if(location.hash==='#erd')renderErd();if(location.hash==='#phases')renderPhaseFlows();});
+document.getElementById('webTheme').addEventListener('click',()=>{let dark=document.documentElement.dataset.theme==='dark';document.getElementById(dark?'tLight':'tDark').click();erdReady=false;flowReady=false;featureDevReady=false;if(location.hash==='#erd')renderErd();if(location.hash==='#phases')renderPhaseFlows();if(location.hash==='#flow')renderFeatureDevFlows();});
 if(['#team','#phases','#resources','#flow','#erd','#prototype'].includes(location.hash))switchView(location.hash.slice(1));else switchView('prototype');
 })();</script></body>
 </html>

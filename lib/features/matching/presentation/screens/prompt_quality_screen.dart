@@ -1,22 +1,76 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/icons/app_icons.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
-import '../models/prompt_quality_metrics.dart';
+import '../../domain/entities/prompt_quality_metrics.dart';
+import '../../domain/usecases/get_prompt_quality_metrics.dart';
 import '../widgets/prompt_quality_trend.dart';
 
-class PromptQualityScreen extends StatelessWidget {
+class PromptQualityScreen extends StatefulWidget {
   final PromptQualityMetrics? metrics;
 
   const PromptQualityScreen({super.key, this.metrics});
 
   @override
+  State<PromptQualityScreen> createState() => _PromptQualityScreenState();
+}
+
+class _PromptQualityScreenState extends State<PromptQualityScreen> {
+  PromptQualityMetrics? _metrics;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _metrics = widget.metrics;
+    if (_metrics == null) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    if (!getIt.isRegistered<GetPromptQualityMetrics>()) {
+      setState(() {
+        _metrics = null;
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final result = await getIt<GetPromptQualityMetrics>()();
+    if (!mounted) return;
+
+    switch (result) {
+      case Success(:final data):
+        setState(() {
+          _metrics = data;
+          _loading = false;
+        });
+      case FailureResult(:final failure):
+        setState(() {
+          _metrics = null;
+          _loading = false;
+          _error = failure.message;
+        });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (metrics == null || metrics!.versions.isEmpty) {
+    if (_loading) {
       return Scaffold(
         backgroundColor: context.ds.background,
         appBar: DsAppBar(
@@ -25,20 +79,38 @@ class PromptQualityScreen extends StatelessWidget {
           showBack: true,
           onBack: () => Navigator.of(context).maybePop(),
         ),
-        body: const SafeArea(
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final metrics = _metrics;
+    if (metrics == null || metrics.versions.isEmpty) {
+      return Scaffold(
+        backgroundColor: context.ds.background,
+        appBar: DsAppBar(
+          title: 'Prompt quality',
+          eyebrow: 'DEVSYNC',
+          showBack: true,
+          onBack: () => Navigator.of(context).maybePop(),
+        ),
+        body: SafeArea(
           child: Center(
             child: DsEmptyState(
               icon: AppIcons.info,
               title: 'No data yet',
               message:
-                  'Prompt quality metrics are not available yet. Real per-version evaluation requires promptVersion tracking across feedback.',
+                  _error ??
+                  'Like or skip matches after generating a feed to build relevance by prompt version.',
             ),
           ),
         ),
       );
     }
 
-    final data = metrics!;
+    final showTiming =
+        metrics.averageMatchTime != null ||
+        metrics.timelyAlertsPercentage != null;
+
     return Scaffold(
       backgroundColor: context.ds.background,
       appBar: DsAppBar(
@@ -68,25 +140,32 @@ class PromptQualityScreen extends StatelessWidget {
                     context,
                   ).textTheme.bodySmall?.copyWith(color: context.ds.textMuted),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MetricCard(
-                        label: 'Avg match time',
-                        value: '${data.averageMatchTime.inSeconds}s',
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: _MetricCard(
-                        label: 'Timely alerts',
-                        value:
-                            '${data.timelyAlertsPercentage.toStringAsFixed(0)}%',
-                      ),
-                    ),
-                  ],
-                ),
+                if (showTiming) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      if (metrics.averageMatchTime != null)
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Avg match time',
+                            value:
+                                '${metrics.averageMatchTime!.inSeconds}s',
+                          ),
+                        ),
+                      if (metrics.averageMatchTime != null &&
+                          metrics.timelyAlertsPercentage != null)
+                        const SizedBox(width: AppSpacing.md),
+                      if (metrics.timelyAlertsPercentage != null)
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Timely alerts',
+                            value:
+                                '${metrics.timelyAlertsPercentage!.toStringAsFixed(0)}%',
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.lg),
                 DsCard(
                   child: Column(
@@ -100,7 +179,7 @@ class PromptQualityScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      PromptQualityTrend(metrics: data),
+                      PromptQualityTrend(metrics: metrics),
                     ],
                   ),
                 ),
@@ -129,7 +208,7 @@ class _MetricCard extends StatelessWidget {
             label,
             style: Theme.of(
               context,
-            ).textTheme.labelSmall?.copyWith(color: context.ds.textMuted),
+            ).textTheme.labelMedium?.copyWith(color: context.ds.textMuted),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(

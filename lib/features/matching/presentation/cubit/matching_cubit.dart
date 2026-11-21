@@ -3,9 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/usecase/usecase.dart';
 import '../../../projects/domain/usecases/get_projects.dart';
+import '../../../requests/domain/usecases/get_unavailable_project_ids.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
 import '../../data/models/match_request_model.dart';
+import '../../../../core/result/result.dart';
 import '../../domain/entities/feedback_record.dart';
+import '../../domain/entities/match_feedback_action.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/entities/matching_analytics.dart';
 import '../../domain/entities/matching_preferences.dart';
@@ -17,6 +20,7 @@ import '../../domain/repositories/matching_repository.dart';
 import '../../domain/usecases/get_matching_analytics_usecase.dart';
 import '../../domain/usecases/get_ranked_matches_usecase.dart';
 import '../../domain/usecases/get_user_feedback_usecase.dart';
+import '../../domain/usecases/save_match_feedback.dart';
 import '../../domain/utils/matching_analytics_aggregator.dart';
 import '../widgets/draggable_match_card.dart';
 
@@ -29,16 +33,20 @@ class MatchingCubit extends Cubit<MatchingState> {
     required GetRankedMatchesUseCase getRankedMatchesUseCase,
     MatchingProfileRepository? profileRepository,
     GetProjects? getProjects,
+    GetUnavailableProjectIds? getUnavailableProjectIds,
     GetUserFeedbackUseCase? getUserFeedbackUseCase,
     GetMatchingAnalyticsUseCase? getMatchingAnalyticsUseCase,
+    SaveMatchFeedback? saveMatchFeedback,
     UserProfile? profile,
   }) : _repository = repository,
        _getRankedMatchesUseCase = getRankedMatchesUseCase,
        _likedMatchesDataSource = likedMatchesDataSource,
        _profileRepository = profileRepository,
        _getProjects = getProjects,
+       _getUnavailableProjectIds = getUnavailableProjectIds,
        _getUserFeedbackUseCase = getUserFeedbackUseCase,
        _getMatchingAnalyticsUseCase = getMatchingAnalyticsUseCase,
+       _saveMatchFeedback = saveMatchFeedback,
        super(MatchingState(profile: profile ?? UserProfile.empty));
 
   final MatchingRepository _repository;
@@ -46,10 +54,13 @@ class MatchingCubit extends Cubit<MatchingState> {
   final LikedMatchesLocalDataSource _likedMatchesDataSource;
   final MatchingProfileRepository? _profileRepository;
   final GetProjects? _getProjects;
+  final GetUnavailableProjectIds? _getUnavailableProjectIds;
   final GetUserFeedbackUseCase? _getUserFeedbackUseCase;
   final GetMatchingAnalyticsUseCase? _getMatchingAnalyticsUseCase;
+  final SaveMatchFeedback? _saveMatchFeedback;
 
   bool _lastRequestWasGenerating = false;
+  bool _loadInFlight = false;
 
   MatchingAnalytics get analytics {
     final projectSkills = <String, List<String>>{};
@@ -158,7 +169,12 @@ class MatchingCubit extends Cubit<MatchingState> {
   }
 
   Future<void> _loadMatches({required bool isGenerating}) async {
-    if (state.isLoading || state.isGenerating || state.isSaving) return;
+    // Use an in-flight flag so the initial isLoading:true default still fetches.
+    if (_loadInFlight || state.isSaving) return;
+    if (isGenerating && state.isGenerating) return;
+    if (!isGenerating && state.isGenerating) return;
+
+    _loadInFlight = true;
     _lastRequestWasGenerating = isGenerating;
     emit(
       state.copyWith(
@@ -170,156 +186,190 @@ class MatchingCubit extends Cubit<MatchingState> {
       ),
     );
 
-    final profile = await _resolveProfile();
-    if (profile == null) {
-      emit(
-        state.copyWith(
-          status: MatchingStatus.failure,
-          isLoading: false,
-          isGenerating: false,
-          failure: const ProfileIncompleteFailure(),
-          errorMessage:
-              state.actionErrorMessage ??
-              'Could not load your matching profile. Please try again.',
-          clearActionError: true,
-        ),
-      );
-      return;
-    }
-
-    if (profile.declaredSkills.isEmpty) {
-      emit(
-        state.copyWith(
-          status: MatchingStatus.empty,
-          profile: profile,
-          matches: const [],
-          currentDeckIndex: 0,
-          isLoading: false,
-          isGenerating: false,
-          failure: const NoMatchesFailure(),
-          clearActionError: true,
-        ),
-      );
-      return;
-    }
-
-    final prompt = isGenerating ? state.preferences.prompt.trim() : '';
-    if (isGenerating && prompt.length > 1000) {
-      emit(
-        state.copyWith(
-          status: MatchingStatus.failure,
-          profile: profile,
-          isLoading: false,
-          isGenerating: false,
-          failure: const ValidationFailure(
-            'Keep your preference under 1,000 characters.',
-          ),
-          errorMessage: 'Keep your preference under 1,000 characters.',
-        ),
-      );
-      return;
-    }
-
     try {
-      List<CandidateProject>? candidateProjects;
-      final getProjects = _getProjects;
-      if (getProjects != null) {
-        final projectsResult = await getProjects(const NoParams());
-        projectsResult.fold((_) {}, (projects) {
-          candidateProjects = projects
-              .map(
-                (p) => CandidateProject(
-                  projectId: p.id,
-                  projectName: p.title,
-                  description: p.description,
-                  githubUrl: p.githubUrl,
-                  neededSkills: p.techStack,
-                  maintainerId: p.ownerId.isNotEmpty ? p.ownerId : null,
-                ),
-              )
-              .toList();
-        });
+      final profile = await _resolveProfile();
+      if (profile == null) {
+        emit(
+          state.copyWith(
+            status: MatchingStatus.failure,
+            isLoading: false,
+            isGenerating: false,
+            failure: const ProfileIncompleteFailure(),
+            errorMessage:
+                state.actionErrorMessage ??
+                'Could not load your matching profile. Please try again.',
+            clearActionError: true,
+          ),
+        );
+        return;
       }
 
-      final effectivePrompt = isGenerating && prompt.isNotEmpty ? prompt : null;
-      final effectiveTags =
-          isGenerating && state.preferences.selectedTags.isNotEmpty
-          ? state.preferences.selectedTags
-          : null;
-
-      final results = await _getRankedMatchesUseCase(
-        profile,
-        prompt: effectivePrompt,
-        tags: effectiveTags,
-        candidateProjects: candidateProjects,
-      );
-
-      List<FeedbackRecord> feedback = state.feedback;
-      final getUserFeedback = _getUserFeedbackUseCase;
-      if (getUserFeedback != null) {
-        final feedbackResult = await getUserFeedback();
-        feedbackResult.fold((_) {}, (records) {
-          feedback = records;
-        });
-      }
-
-      if (results.isEmpty) {
+      if (profile.declaredSkills.isEmpty) {
         emit(
           state.copyWith(
             status: MatchingStatus.empty,
             profile: profile,
             matches: const [],
-            feedback: feedback,
-            failure: const NoMatchesFailure(),
-            promptVersion: _repository.promptVersion,
             currentDeckIndex: 0,
-            actionHistory: const [],
             isLoading: false,
             isGenerating: false,
-            clearError: true,
+            failure: const NoMatchesFailure(),
             clearActionError: true,
           ),
         );
-      } else {
+        return;
+      }
+
+      final prompt = isGenerating ? state.preferences.prompt.trim() : '';
+      if (isGenerating && prompt.length > 1000) {
         emit(
           state.copyWith(
-            status: MatchingStatus.success,
+            status: MatchingStatus.failure,
             profile: profile,
-            matches: results,
-            feedback: feedback,
-            promptVersion: _repository.promptVersion,
-            currentDeckIndex: 0,
-            actionHistory: const [],
             isLoading: false,
             isGenerating: false,
-            clearError: true,
-            clearFailure: true,
-            clearActionError: true,
+            failure: const ValidationFailure(
+              'Keep your preference under 1,000 characters.',
+            ),
+            errorMessage: 'Keep your preference under 1,000 characters.',
+          ),
+        );
+        return;
+      }
+
+      try {
+        List<FeedbackRecord> feedback = state.feedback;
+        final getUserFeedback = _getUserFeedbackUseCase;
+        if (getUserFeedback != null) {
+          final feedbackResult = await getUserFeedback();
+          feedbackResult.fold((_) {}, (records) {
+            feedback = records;
+          });
+        }
+
+        final excludedIds = <String>{
+          for (final record in feedback)
+            if (record.projectId.isNotEmpty) record.projectId,
+        };
+
+        final getUnavailable = _getUnavailableProjectIds;
+        if (getUnavailable != null) {
+          final unavailableResult = await getUnavailable(const NoParams());
+          unavailableResult.fold((_) {}, excludedIds.addAll);
+        }
+
+        List<CandidateProject>? candidateProjects;
+        final getProjects = _getProjects;
+        if (getProjects != null) {
+          final projectsResult = await getProjects(const NoParams());
+          projectsResult.fold((_) {}, (projects) {
+            candidateProjects = projects
+                .where(
+                  (p) =>
+                      p.id.isNotEmpty &&
+                      !excludedIds.contains(p.id) &&
+                      p.ownerId != profile.uid,
+                )
+                .map(
+                  (p) => CandidateProject(
+                    projectId: p.id,
+                    projectName: p.title,
+                    description: p.description,
+                    githubUrl: p.githubUrl,
+                    neededSkills: p.techStack,
+                    maintainerId: p.ownerId.isNotEmpty ? p.ownerId : null,
+                  ),
+                )
+                .toList();
+          });
+        }
+
+        final effectivePrompt = isGenerating && prompt.isNotEmpty
+            ? prompt
+            : null;
+        final effectiveTags =
+            isGenerating && state.preferences.selectedTags.isNotEmpty
+            ? state.preferences.selectedTags
+            : null;
+
+        var results = await _getRankedMatchesUseCase(
+          profile,
+          prompt: effectivePrompt,
+          tags: effectiveTags,
+          candidateProjects: candidateProjects,
+        );
+
+        // Drop anything the API still returned for owned / requested / reviewed IDs.
+        if (excludedIds.isNotEmpty || profile.uid.isNotEmpty) {
+          results = results
+              .where(
+                (match) =>
+                    !excludedIds.contains(match.projectId) &&
+                    match.maintainerId != profile.uid,
+              )
+              .toList();
+        }
+
+        if (results.isEmpty) {
+          emit(
+            state.copyWith(
+              status: MatchingStatus.empty,
+              profile: profile,
+              matches: const [],
+              feedback: feedback,
+              failure: const NoMatchesFailure(),
+              promptVersion: _repository.promptVersion,
+              currentDeckIndex: 0,
+              actionHistory: const [],
+              isLoading: false,
+              isGenerating: false,
+              clearError: true,
+              clearActionError: true,
+            ),
+          );
+        } else {
+          emit(
+            state.copyWith(
+              status: MatchingStatus.success,
+              profile: profile,
+              matches: results,
+              feedback: feedback,
+              promptVersion: _repository.promptVersion,
+              currentDeckIndex: 0,
+              actionHistory: const [],
+              isLoading: false,
+              isGenerating: false,
+              clearError: true,
+              clearFailure: true,
+              clearActionError: true,
+            ),
+          );
+        }
+      } on MatchingFailure catch (failure) {
+        emit(
+          state.copyWith(
+            status: failure is NoMatchesFailure
+                ? MatchingStatus.empty
+                : MatchingStatus.failure,
+            profile: profile,
+            isLoading: false,
+            isGenerating: false,
+            failure: failure,
+          ),
+        );
+      } catch (error) {
+        emit(
+          state.copyWith(
+            status: MatchingStatus.failure,
+            profile: profile,
+            isLoading: false,
+            isGenerating: false,
+            failure: UnknownFailure(error.toString()),
           ),
         );
       }
-    } on MatchingFailure catch (failure) {
-      emit(
-        state.copyWith(
-          status: failure is NoMatchesFailure
-              ? MatchingStatus.empty
-              : MatchingStatus.failure,
-          profile: profile,
-          isLoading: false,
-          isGenerating: false,
-          failure: failure,
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          status: MatchingStatus.failure,
-          profile: profile,
-          isLoading: false,
-          isGenerating: false,
-          failure: UnknownFailure(error.toString()),
-        ),
-      );
+    } finally {
+      _loadInFlight = false;
     }
   }
 
@@ -386,9 +436,11 @@ class MatchingCubit extends Cubit<MatchingState> {
       return false;
     }
 
+    emit(state.copyWith(isSaving: true, clearActionError: true));
+
+    // Persist the like first — feedback is analytics and must not block saves.
     var removeSavedMatchOnUndo = false;
     if (action == MatchSwipeAction.request) {
-      emit(state.copyWith(isSaving: true, clearActionError: true));
       try {
         final saved = await _likedMatchesDataSource.getLikedMatches();
         final alreadySaved = saved.any(
@@ -399,7 +451,6 @@ class MatchingCubit extends Cubit<MatchingState> {
             match,
             promptVersion: state.promptVersion ?? _repository.promptVersion,
           );
-          // Undo must not remove a match that was saved before this action.
           removeSavedMatchOnUndo = true;
         }
       } on LikedMatchesException catch (error) {
@@ -418,6 +469,25 @@ class MatchingCubit extends Cubit<MatchingState> {
       }
     }
 
+    MatchFeedbackAction? previousFeedback;
+    final saveMatchFeedback = _saveMatchFeedback;
+    if (saveMatchFeedback != null) {
+      final feedbackResult = await saveMatchFeedback(
+        projectId: match.projectId,
+        action: action == MatchSwipeAction.request
+            ? MatchFeedbackAction.like
+            : MatchFeedbackAction.skip,
+        promptVersion: state.promptVersion ?? _repository.promptVersion,
+      );
+      switch (feedbackResult) {
+        case Success(:final data):
+          previousFeedback = data;
+        case FailureResult():
+          // Keep the deck moving; prompt-quality write is best-effort.
+          break;
+      }
+    }
+
     final history = List<MatchActionRecord>.from(state.actionHistory)
       ..add(
         MatchActionRecord(
@@ -425,6 +495,7 @@ class MatchingCubit extends Cubit<MatchingState> {
           action: action,
           match: match,
           removesSavedMatchOnUndo: removeSavedMatchOnUndo,
+          previousFeedback: previousFeedback,
         ),
       );
     final feedbackRecords = List<FeedbackRecord>.from(state.feedback)
@@ -452,8 +523,38 @@ class MatchingCubit extends Cubit<MatchingState> {
   Future<void> undoLastDeckAction() async {
     if (state.isSaving || state.actionHistory.isEmpty) return;
     final last = state.actionHistory.last;
+    emit(state.copyWith(isSaving: true, clearActionError: true));
+
+    final saveMatchFeedback = _saveMatchFeedback;
+    if (saveMatchFeedback != null) {
+      final previousFeedback = last.previousFeedback;
+      final Result<void> undoFeedbackResult;
+      if (previousFeedback == null) {
+        undoFeedbackResult = await saveMatchFeedback.clear(
+          projectId: last.match.projectId,
+        );
+      } else {
+        final restoreResult = await saveMatchFeedback(
+          projectId: last.match.projectId,
+          action: previousFeedback,
+        );
+        undoFeedbackResult = switch (restoreResult) {
+          Success() => const Success(null),
+          FailureResult(:final failure) => FailureResult(failure),
+        };
+      }
+      if (undoFeedbackResult case FailureResult(:final failure)) {
+        emit(
+          state.copyWith(
+            isSaving: false,
+            actionErrorMessage: failure.message,
+          ),
+        );
+        return;
+      }
+    }
+
     if (last.removesSavedMatchOnUndo) {
-      emit(state.copyWith(isSaving: true, clearActionError: true));
       try {
         await _likedMatchesDataSource.removeLikedMatch(last.match.projectId);
       } on LikedMatchesException catch (error) {

@@ -28,6 +28,19 @@ final class LoginNeedsVerification extends LoginState {
   List<Object?> get props => [email];
 }
 
+final class LoginGitHubDeviceCode extends LoginState {
+  const LoginGitHubDeviceCode({
+    required this.userCode,
+    required this.verificationUri,
+  });
+
+  final String userCode;
+  final String verificationUri;
+
+  @override
+  List<Object?> get props => [userCode, verificationUri];
+}
+
 final class LoginFailure extends LoginState {
   const LoginFailure(this.message);
 

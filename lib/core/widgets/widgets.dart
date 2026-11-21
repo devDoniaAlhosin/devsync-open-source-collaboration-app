@@ -30,5 +30,6 @@ export 'ds_splash.dart';
 export 'ds_staggered_entrance.dart';
 export 'ds_tab_switcher.dart';
 export 'ds_text_field.dart';
+export 'ds_toast.dart';
 export 'ds_toggle.dart';
 export 'ds_wordmark.dart';

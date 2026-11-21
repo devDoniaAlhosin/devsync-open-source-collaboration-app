@@ -29,6 +29,9 @@ class ProjectDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = arguments;
+    final hasWorkspace =
+        details != null && details.match.githubUrl.trim().isNotEmpty;
+
     return Scaffold(
       extendBody: details != null,
       appBar: DsAppBar(
@@ -48,30 +51,46 @@ class ProjectDetailsScreen extends StatelessWidget {
           : ProjectDetailsContent(
               match: details.match,
               currentUserSkills: details.currentUserSkills,
-              onPreviewWorkspace: () => ProjectWorkspaceSheet.show(
-                context,
-                repositoryUrl: details.match.githubUrl,
-              ),
             ),
       bottomNavigationBar: details == null
           ? null
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                child: DsButton(
-                  label: 'Request to collaborate',
-                  onPressed: () => presentCollaborationRequestFlow(
-                    context,
-                    projectName: details.match.projectName,
-                    maintainerName: 'Project maintainer',
-                    initials: details.match.projectName
-                        .split(RegExp(r'[/\s\-]'))
-                        .where((p) => p.isNotEmpty)
-                        .take(2)
-                        .map((p) => p[0].toUpperCase())
-                        .join(),
-                    matchPercent: details.match.score.round(),
-                  ),
+                child: Row(
+                  children: [
+                    if (hasWorkspace) ...[
+                      Expanded(
+                        child: DsButton(
+                          label: 'Preview',
+                          icon: AppIcons.forward,
+                          variant: DsButtonVariant.quiet,
+                          onPressed: () => ProjectWorkspaceSheet.show(
+                            context,
+                            repositoryUrl: details.match.githubUrl,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                    ],
+                    Expanded(
+                      child: DsButton(
+                        label: 'Request',
+                        onPressed: () => presentCollaborationRequestFlow(
+                          context,
+                          projectName: details.match.projectName,
+                          maintainerName: 'Project maintainer',
+                          initials: details.match.projectName
+                              .split(RegExp(r'[/\s\-]'))
+                              .where((p) => p.isNotEmpty)
+                              .take(2)
+                              .map((p) => p[0].toUpperCase())
+                              .join(),
+                          matchPercent: details.match.score.round(),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

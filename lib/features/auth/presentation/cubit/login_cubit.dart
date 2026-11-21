@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -25,6 +27,8 @@ class LoginCubit extends Cubit<LoginState> {
   final SignInWithGoogle _signInWithGoogle;
   final SignInWithGitHub _signInWithGitHub;
 
+  Completer<bool>? _gitHubDeviceCompleter;
+
   Future<void> signIn({required String email, required String password}) {
     return _run(
       () => _signInWithEmail(
@@ -36,17 +40,50 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> signInWithGoogle() =>
       _run(() => _signInWithGoogle(const NoParams()));
 
-  Future<void> signInWithGitHub() =>
-      _run(() => _signInWithGitHub(const NoParams()));
+  Future<void> signInWithGitHub() {
+    return _run(
+      () => _signInWithGitHub(
+        SignInWithGitHubParams(
+          onDeviceCode: (userCode, verificationUri) async {
+            final completer = Completer<bool>();
+            _gitHubDeviceCompleter = completer;
+            emit(
+              LoginGitHubDeviceCode(
+                userCode: userCode,
+                verificationUri: verificationUri.toString(),
+              ),
+            );
+            return completer.future;
+          },
+        ),
+      ),
+    );
+  }
+
+  void cancelGitHubDeviceCode() {
+    final completer = _gitHubDeviceCompleter;
+    if (completer == null || completer.isCompleted) return;
+    completer.complete(false);
+  }
+
+  void _finishGitHubDevicePrompt({required bool proceed}) {
+    final completer = _gitHubDeviceCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(proceed);
+    }
+    _gitHubDeviceCompleter = null;
+  }
 
   Future<void> _run(Future<Result<void>> Function() action) async {
-    if (state is LoginLoading) return;
+    if (state is LoginLoading || state is LoginGitHubDeviceCode) return;
     emit(const LoginLoading());
     final result = await action();
     switch (result) {
       case Success():
+        _finishGitHubDevicePrompt(proceed: true);
         emit(const LoginSuccess());
       case FailureResult(:final failure):
+        _finishGitHubDevicePrompt(proceed: false);
         if (failure is CancelledFailure) {
           emit(const LoginInitial());
           return;
@@ -57,5 +94,11 @@ class LoginCubit extends Cubit<LoginState> {
         }
         emit(LoginFailure(failure.message));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _finishGitHubDevicePrompt(proceed: false);
+    return super.close();
   }
 }

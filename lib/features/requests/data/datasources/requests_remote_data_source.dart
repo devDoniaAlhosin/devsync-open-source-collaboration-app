@@ -57,6 +57,46 @@ class RequestsRemoteDataSource {
     return items;
   }
 
+  /// Emits whether the signed-in user has a pending / isNew received request.
+  Stream<bool> watchHasPendingReceived() {
+    return _auth.authStateChanges().asyncExpand((user) {
+      if (user == null) return Stream.value(false);
+      return _requests
+          .where('ownerId', isEqualTo: user.uid)
+          .snapshots()
+          .map((snapshot) {
+            for (final doc in snapshot.docs) {
+              final status = doc.data()['status'];
+              if (status == 'pending' || status == 'isNew') return true;
+            }
+            return false;
+          });
+    });
+  }
+
+  /// Sent requests that block another join attempt for the same project.
+  Future<Set<String>> fetchUnavailableProjectIds() async {
+    final uid = _uid;
+    final snapshot = await _requests.where('senderId', isEqualTo: uid).get();
+    return unavailableProjectIdsFrom(snapshot.docs.map((doc) => doc.data()));
+  }
+
+  /// `pending` / `isNew` / `accepted` project IDs from raw request docs.
+  static Set<String> unavailableProjectIdsFrom(
+    Iterable<Map<String, dynamic>> requests,
+  ) {
+    final ids = <String>{};
+    for (final data in requests) {
+      final status = data['status'];
+      if (status != 'pending' && status != 'isNew' && status != 'accepted') {
+        continue;
+      }
+      final projectId = (data['projectId'] as String?)?.trim() ?? '';
+      if (projectId.isNotEmpty) ids.add(projectId);
+    }
+    return ids;
+  }
+
   Future<RequestItem> createRequest({required RequestItem item}) async {
     final uid = _uid;
     final projectId = item.projectId.trim();
@@ -174,6 +214,13 @@ class RequestsRemoteDataSource {
         throw StateError('Request is no longer pending.');
       }
 
+      // Rules allow only status + respondedAt on owner respond.
+      final subtitle = switch (status) {
+        RequestStatus.accepted => 'Accepted',
+        RequestStatus.declined => 'Declined',
+        RequestStatus.pending || RequestStatus.isNew => 'Pending',
+      };
+
       transaction.update(ref, {
         'status': status.name,
         'respondedAt': FieldValue.serverTimestamp(),
@@ -182,7 +229,11 @@ class RequestsRemoteDataSource {
       return RequestModel.fromFirestore(
         snapshot,
         currentUserId: uid,
-      ).copyWith(status: status, respondedAt: DateTime.now());
+      ).copyWith(
+        status: status,
+        subtitle: subtitle,
+        respondedAt: DateTime.now(),
+      );
     });
   }
 }

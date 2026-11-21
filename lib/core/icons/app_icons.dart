@@ -34,6 +34,7 @@ abstract final class AppIcons {
   static const IconData notifications = LucideIcons.bell;
   static const IconData bookmark = LucideIcons.bookmark;
   static const IconData externalLink = LucideIcons.arrowUpRight;
+  static const IconData copy = LucideIcons.copy;
   static const IconData settings = LucideIcons.settings;
   static const IconData users = LucideIcons.users;
   static const IconData zap = LucideIcons.zap;

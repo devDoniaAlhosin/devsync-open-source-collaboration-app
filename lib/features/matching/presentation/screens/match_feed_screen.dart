@@ -15,8 +15,10 @@ import '../../../../core/widgets/ds_fade_switch.dart';
 import '../../../../core/widgets/ds_icon_button.dart';
 import '../../../../core/widgets/ds_page_fade.dart';
 import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../shell/presentation/widgets/inbox_badge_builder.dart';
 import '../../domain/entities/match_item.dart';
 import '../../domain/failures/matching_failures.dart';
 import '../cubit/matching_cubit.dart';
@@ -33,7 +35,6 @@ import '../widgets/match_info_sheet.dart';
 import 'ai_analytics_screen.dart';
 import 'ai_matching_studio_screen.dart';
 import 'project_details_screen.dart';
-import 'prompt_quality_screen.dart';
 
 class MatchFeedScreen extends StatefulWidget {
   final MatchingCubit? cubit;
@@ -74,34 +75,42 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                 state.errorMessage == null &&
                 state.viewMode == MatchingViewMode.deck &&
                 state.currentDeckMatch == null;
-            return Scaffold(
-              appBar: DsAppBar(
-                title: isEmptyFeed ? 'Your matches' : 'For you',
-                eyebrow: 'DEVSYNC',
-                showMenu: true,
-                onMenu: () {
-                  if (widget.onMenuPressed != null) {
-                    widget.onMenuPressed!();
-                    return;
-                  }
-                  openHostDrawer(context);
-                },
-                onNotifications: () =>
-                    Navigator.of(context).pushNamed(AppRoutes.notifications),
-                actions: [
-                  DsIconButton(
-                    icon: AppIcons.bookmark,
-                    tooltip: 'Liked matches',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(AppRoutes.likedMatches);
+            return InboxBadgeBuilder(
+              builder: (context, hasUnreadNotifications, _) {
+                return Scaffold(
+                  appBar: DsAppBar(
+                    title: isEmptyFeed ? 'Your matches' : 'For you',
+                    eyebrow: 'DEVSYNC',
+                    showMenu: true,
+                    onMenu: () {
+                      if (widget.onMenuPressed != null) {
+                        widget.onMenuPressed!();
+                        return;
+                      }
+                      openHostDrawer(context);
                     },
+                    onNotifications: () => Navigator.of(
+                      context,
+                    ).pushNamed(AppRoutes.notifications),
+                    notificationBadge: hasUnreadNotifications,
+                    actions: [
+                      DsIconButton(
+                        icon: AppIcons.bookmark,
+                        tooltip: 'Liked matches',
+                        onPressed: () {
+                          Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.likedMatches);
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              body: SafeArea(
-                top: false,
-                child: DsPageFade(child: _buildPageContent(state)),
-              ),
+                  body: SafeArea(
+                    top: false,
+                    child: DsPageFade(child: _buildPageContent(state)),
+                  ),
+                );
+              },
             );
           },
         ),
@@ -122,10 +131,49 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     super.initState();
     _ownsCubit = widget.cubit == null;
     _cubit = widget.cubit ?? getIt<MatchingCubit>();
-    if (_ownsCubit) _cubit.loadInitialData();
 
+    // Deck mode first so the first paint never flashes studio.
     final initialMode = widget.initialViewMode ?? MatchingViewMode.deck;
     _cubit.setViewMode(initialMode);
+    if (_ownsCubit) _cubit.loadInitialData();
+  }
+
+  Widget _buildFeedBody(MatchingState state) {
+    final loading =
+        state.status == MatchingStatus.loading ||
+        state.isLoading ||
+        state.isGenerating;
+
+    // Skeleton leaves immediately — no stacked fade/scale that looks like a
+    // real match card vanishing into empty.
+    if (loading) {
+      return KeyedSubtree(
+        key: const ValueKey<String>('loading'),
+        child: _buildLoadingSkeleton(),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: AppAnimations.fast,
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeOut,
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
+      child: KeyedSubtree(
+        key: ValueKey<String>(_contentKey(state)),
+        child: _buildContent(state),
+      ),
+    );
+  }
+
+  String _contentKey(MatchingState state) {
+    if (state.hasError) return 'error';
+    if (state.isEmptyState ||
+        state.failure is NoMatchesFailure ||
+        state.currentDeckMatch == null) {
+      return 'empty';
+    }
+    return state.viewMode.name;
   }
 
   Widget _buildContent(MatchingState state) {
@@ -140,7 +188,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       return MatchFeedEmptyState(
         hasSkills: state.profile.declaredSkills.isNotEmpty,
         hasReviewedAll: false,
-        onRefresh: _cubit.retry,
         onAddSkills: _openMatchingProfile,
         onConnectGitHub: _openMatchingProfile,
       );
@@ -169,11 +216,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   }
 
   Widget _buildLoadingSkeleton() {
-    return const Align(
-      alignment: Alignment.topCenter,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: MatchCardSkeleton(),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        children: [
+          MatchCardSkeleton(),
+          Spacer(),
+          MatchActionBarSkeleton(),
+          SizedBox(height: AppSpacing.xs),
+        ],
       ),
     );
   }
@@ -188,7 +239,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       return MatchFeedEmptyState(
         hasSkills: state.profile.declaredSkills.isNotEmpty,
         hasReviewedAll: state.matches.isNotEmpty,
-        onRefresh: _cubit.loadInitialData,
         onAddSkills: _openMatchingProfile,
         onConnectGitHub: _openMatchingProfile,
       );
@@ -214,6 +264,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       ExploreDevSyncItem(
         title: 'AI Studio',
         subtitle: 'Tune your match\nprompts',
+        icon: AppIcons.sparkle,
         onTap: () => Navigator.of(context).push(
           DsFadePageRoute<void>(
             builder: (_) => AiMatchingStudioScreen(cubit: _cubit),
@@ -221,27 +272,26 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
         ),
       ),
       ExploreDevSyncItem(
-        title: 'Refresh matches',
-        subtitle: 'Find new\nrecommendations',
-        onTap: () => Navigator.of(context).push(
-          DsFadePageRoute<bool>(
-            builder: (_) => MatchingProgressScreen(cubit: _cubit),
-          ),
-        ),
-      ),
-      ExploreDevSyncItem(
         title: 'Insights',
         subtitle: 'Review your\nmatch results',
+        icon: AppIcons.chart,
         onTap: _openAnalytics,
       ),
       ExploreDevSyncItem(
         title: 'Prompt guide',
         subtitle: 'Improve your\npreferences',
-        onTap: () => Navigator.of(context).push(
-          DsFadePageRoute<bool>(builder: (_) => const PromptQualityScreen()),
-        ),
+        icon: AppIcons.zap,
+        onTap: () => Navigator.of(context).pushNamed(AppRoutes.promptQuality),
       ),
     ];
+  }
+
+  void _openRefreshMatches() {
+    Navigator.of(context).push(
+      DsFadePageRoute<bool>(
+        builder: (_) => MatchingProgressScreen(cubit: _cubit),
+      ),
+    );
   }
 
   String _greetingName(BuildContext context) {
@@ -319,56 +369,17 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
                     );
                   },
                 ),
-                ExploreDevSyncSection(items: _buildExploreItems()),
+                ExploreDevSyncSection(
+                  items: _buildExploreItems(),
+                  trailing: DsIconButton(
+                    icon: AppIcons.refresh,
+                    tooltip: 'Refresh matches',
+                    onPressed: _openRefreshMatches,
+                  ),
+                ),
               ],
             ),
-            
-            
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: AppAnimations.slow,
-                switchInCurve: AppAnimations.emphasized,
-                switchOutCurve: Curves.easeOut,
-                transitionBuilder: (child, animation) {
-                  final fade = CurvedAnimation(
-                    parent: animation,
-                    curve: AppAnimations.emphasized,
-                  );
-                  return FadeTransition(
-                    opacity: fade,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.03),
-                        end: Offset.zero,
-                      ).animate(fade),
-                      child: ScaleTransition(
-                        scale: Tween<double>(
-                          begin: 0.985,
-                          end: 1,
-                        ).animate(fade),
-                        child: child,
-                      ),
-                    ),
-                  );
-                },
-                layoutBuilder: (currentChild, previousChildren) {
-                  return Stack(
-                    alignment: Alignment.topCenter,
-                    children: <Widget>[...previousChildren, ?currentChild],
-                  );
-                },
-                child: KeyedSubtree(
-                  key: ValueKey<String>(
-                    state.isLoading
-                        ? 'loading'
-                        : state.errorMessage != null
-                        ? 'error'
-                        : state.viewMode.name,
-                  ),
-                  child: _buildContent(state),
-                ),
-              ),
-            ),
+            Expanded(child: _buildFeedBody(state)),
           ],
         ),
       ),
@@ -393,7 +404,15 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     await _cubit.generateMatches();
     if (!mounted) return;
     final state = _cubit.state;
-    _notify(state.errorMessage ?? '${state.matches.length} matches generated');
+    final error = state.errorMessage;
+    if (error != null) {
+      _notify(error, tone: DsToastTone.error);
+    } else {
+      _notify(
+        '${state.matches.length} matches generated',
+        tone: DsToastTone.success,
+      );
+    }
   }
 
   Future<void> _handleDeckAction(
@@ -407,11 +426,19 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
       _notify(
         _cubit.state.actionErrorMessage ??
             'Could not save this action. Try again.',
+        tone: DsToastTone.error,
       );
       return;
     }
     final verb = action == MatchSwipeAction.request ? 'saved' : 'skipped';
-    _notify('${match.projectName} $verb');
+    _notify('${match.projectName} $verb', tone: DsToastTone.success);
+  }
+
+  Future<void> _undo() async {
+    await _cubit.undoLastDeckAction();
+    if (!mounted) return;
+    final error = _cubit.state.actionErrorMessage;
+    if (error != null) _notify(error, tone: DsToastTone.error);
   }
 
   Future<void> _undo() async {
@@ -431,14 +458,8 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     );
   }
 
-  void _notify(String message) {
-    final messenger =
-        _scaffoldMessengerKey.currentState ??
-        ScaffoldMessenger.maybeOf(context);
-    messenger?.hideCurrentSnackBar();
-    messenger?.showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+  void _notify(String message, {DsToastTone tone = DsToastTone.info}) {
+    showDsToast(context, message, tone: tone);
   }
 
   Future<void> _openAnalytics() async {

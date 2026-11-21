@@ -5,6 +5,7 @@ class AppUser {
     this.displayName,
     this.photoUrl,
     this.authProviders = const [],
+    this.githubLogin,
     this.needsEmailVerification = false,
   });
 
@@ -13,5 +14,10 @@ class AppUser {
   final String? displayName;
   final String? photoUrl;
   final List<String> authProviders;
+
+  /// GitHub username captured at OAuth sign-in (Firestore).
+  final String? githubLogin;
   final bool needsEmailVerification;
+
+  bool get hasGithubProvider => authProviders.contains('github.com');
 }

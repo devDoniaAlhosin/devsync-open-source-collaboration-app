@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/icons/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../../domain/entities/project.dart';
 import '../../project_layout.dart';
 import '../cubit/projects_cubit.dart';
@@ -192,9 +193,7 @@ class _AddOrEditProjectScreenState extends State<AddOrEditProjectScreen> {
     }
 
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(error)));
+    showDsToast(context, error, tone: DsToastTone.error);
   }
 
   String _normalizeGithub(String value) {

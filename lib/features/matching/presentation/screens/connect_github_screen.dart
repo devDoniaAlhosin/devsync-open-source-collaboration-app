@@ -101,9 +101,25 @@ class _ConnectGithubScreenState extends State<ConnectGithubScreen> {
           title: 'Connect GitHub',
           stepLabel: '02 / 03',
           onThemeToggle: DevSyncApp.toggleTheme,
-          bottom: DsButton(
-            label: 'Continue',
-            onPressed: result == null ? null : () => _continue(result),
+          bottom: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DsButton(
+                label: 'Continue',
+                onPressed: result == null ? null : () => _continue(result),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              DsButton(
+                label: 'Skip for now',
+                variant: DsButtonVariant.quiet,
+                onPressed: scanning
+                    ? null
+                    : () => Navigator.of(context).pushNamedAndRemoveUntil(
+                          AppRoutes.home,
+                          (route) => false,
+                        ),
+              ),
+            ],
           ),
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -43,7 +43,11 @@ class Profile {
     );
   }
 
+  /// Default “Last 20 weeks” window shown on the profile heatmap.
   static const int weeks = 20;
+
+  /// Max weeks kept from GitHub’s contribution calendar (~1 year).
+  static const int maxWeeks = 52;
   static const int days = 7;
 
   final String name;
@@ -61,6 +65,9 @@ class Profile {
   final List<String> topRepositories;
 
   bool get hasGithub => githubUrl.trim().isNotEmpty;
+
+  /// True until Edit profile has been saved at least once (bio required there).
+  bool get needsOnboarding => bio.trim().isEmpty;
 
   String get githubUsername {
     final parts = githubUrl

@@ -7,6 +7,8 @@ import '../../app/devsync_app.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/di/injection.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/notifications/notification_preferences.dart';
+import '../../core/result/result.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/ds_app_bar.dart';
@@ -18,6 +20,7 @@ import '../../core/widgets/ds_page_fade.dart';
 import '../../core/widgets/ds_segmented_control.dart';
 import '../../core/widgets/ds_staggered_entrance.dart';
 import '../../core/widgets/ds_text_field.dart';
+import '../../core/widgets/ds_toast.dart';
 import '../../core/widgets/ds_toggle.dart';
 import '../auth/presentation/cubit/auth_cubit.dart';
 
@@ -34,9 +37,67 @@ enum _SessionAction { idle, signingOut, deleting }
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyRequests = true;
   bool _notifyMatches = true;
-  bool _notifyTasks = false;
+  bool _prefsReady = false;
   int _flavor = 0;
   _SessionAction _sessionAction = _SessionAction.idle;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPrefs();
+  }
+
+  Future<void> _loadNotificationPrefs() async {
+    if (!getIt.isRegistered<NotificationPreferencesService>()) {
+      setState(() => _prefsReady = true);
+      return;
+    }
+    final prefs = await getIt<NotificationPreferencesService>().load();
+    if (!mounted) return;
+    setState(() {
+      _notifyRequests = prefs.requests;
+      _notifyMatches = prefs.matches;
+      _prefsReady = true;
+    });
+  }
+
+  Future<void> _setNotifyRequests(bool value) async {
+    setState(() => _notifyRequests = value);
+    final service = getIt.isRegistered<NotificationPreferencesService>()
+        ? getIt<NotificationPreferencesService>()
+        : null;
+    if (service == null) return;
+    try {
+      await service.setRequests(value);
+    } on Object {
+      if (!mounted) return;
+      setState(() => _notifyRequests = !value);
+      showDsToast(
+        context,
+        'Could not save notification setting',
+        tone: DsToastTone.error,
+      );
+    }
+  }
+
+  Future<void> _setNotifyMatches(bool value) async {
+    setState(() => _notifyMatches = value);
+    final service = getIt.isRegistered<NotificationPreferencesService>()
+        ? getIt<NotificationPreferencesService>()
+        : null;
+    if (service == null) return;
+    try {
+      await service.setMatches(value);
+    } on Object {
+      if (!mounted) return;
+      setState(() => _notifyMatches = !value);
+      showDsToast(
+        context,
+        'Could not save notification setting',
+        tone: DsToastTone.error,
+      );
+    }
+  }
 
   int get _themeIndex => switch (DevSyncApp.themeMode) {
     ThemeMode.system => 0,
@@ -82,24 +143,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _confirmDelete() async {
     if (_sessionBusy) return;
-    final confirmed = await showDialog<bool>(
+    final authState = getIt<AuthCubit>().state;
+    final providers = authState is AuthAuthenticated
+        ? authState.user.authProviders
+        : const <String>[];
+    final reauth = providers.contains('password')
+        ? _DeleteReauth.password
+        : providers.contains('google.com')
+        ? _DeleteReauth.google
+        : providers.contains('github.com')
+        ? _DeleteReauth.github
+        : _DeleteReauth.none;
+
+    final confirmed = await showDialog<_DeleteAccountResult>(
       context: context,
       barrierColor: const Color(0x9E050F0E),
-      builder: (context) => const _DeleteAccountDialog(),
+      builder: (context) => _DeleteAccountDialog(reauth: reauth),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed == null || !mounted) return;
 
     setState(() => _sessionAction = _SessionAction.deleting);
     unawaited(_showSessionBusy(_SessionAction.deleting));
 
-    final result = await getIt<AuthCubit>().deleteAccount();
+    final result = await getIt<AuthCubit>().deleteAccount(
+      password: confirmed.password,
+    );
     if (!mounted) return;
-    result.fold((failure) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(failure.message)));
-    }, (_) {});
-    await _returnToGate();
+
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    if (rootNav.canPop()) rootNav.pop();
+    setState(() => _sessionAction = _SessionAction.idle);
+
+    switch (result) {
+      case FailureResult(:final failure):
+        showDsToast(context, failure.message, tone: DsToastTone.error);
+      case Success():
+        await _returnToGate();
+    }
   }
 
   @override
@@ -110,6 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return PopScope(
       canPop: !_sessionBusy,
       child: Scaffold(
+        backgroundColor: context.ds.background,
         appBar: DsAppBar(
           title: 'Settings',
           eyebrow: 'WORKSPACE',
@@ -159,29 +240,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             trailing: DsToggle(
                               value: _notifyRequests,
                               semanticLabel: 'Requests',
-                              onChanged: (v) =>
-                                  setState(() => _notifyRequests = v),
+                              onChanged: (v) {
+                                if (_prefsReady) _setNotifyRequests(v);
+                              },
                             ),
                           ),
                           DsInfoRow(
                             icon: AppIcons.zap,
                             title: 'New matches',
-                            showDivider: true,
                             trailing: DsToggle(
                               value: _notifyMatches,
                               semanticLabel: 'Matches',
-                              onChanged: (v) =>
-                                  setState(() => _notifyMatches = v),
-                            ),
-                          ),
-                          DsInfoRow(
-                            icon: AppIcons.success,
-                            title: 'Task changes',
-                            trailing: DsToggle(
-                              value: _notifyTasks,
-                              semanticLabel: 'Tasks',
-                              onChanged: (v) =>
-                                  setState(() => _notifyTasks = v),
+                              onChanged: (v) {
+                                if (_prefsReady) _setNotifyMatches(v);
+                              },
                             ),
                           ),
                         ],
@@ -262,13 +334,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: ds.textMuted,
                             ),
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Prompt quality is an if-time screen',
-                                  ),
-                                ),
-                              );
+                              Navigator.of(
+                                context,
+                              ).pushNamed(AppRoutes.promptQuality);
                             },
                           ),
                           DsInfoRow(
@@ -280,12 +348,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: ds.textMuted,
                             ),
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'We only use public GitHub activity to suggest projects.',
-                                  ),
-                                ),
+                              showDsToast(
+                                context,
+                                'We only use public GitHub activity to suggest projects.',
+                                tone: DsToastTone.info,
                               );
                             },
                           ),
@@ -415,8 +481,18 @@ class _SessionBusyView extends StatelessWidget {
   }
 }
 
+enum _DeleteReauth { password, google, github, none }
+
+class _DeleteAccountResult {
+  const _DeleteAccountResult({this.password});
+
+  final String? password;
+}
+
 class _DeleteAccountDialog extends StatefulWidget {
-  const _DeleteAccountDialog();
+  const _DeleteAccountDialog({required this.reauth});
+
+  final _DeleteReauth reauth;
 
   @override
   State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
@@ -424,20 +500,53 @@ class _DeleteAccountDialog extends StatefulWidget {
 
 class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
   final _confirm = TextEditingController();
+  final _password = TextEditingController();
   bool _submitting = false;
 
   @override
   void dispose() {
     _confirm.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  bool get _canDelete => _confirm.text.trim().toUpperCase() == 'DELETE';
+  bool get _needsPassword => widget.reauth == _DeleteReauth.password;
+
+  bool get _canDelete {
+    if (_confirm.text.trim().toUpperCase() != 'DELETE') return false;
+    if (_needsPassword && _password.text.isEmpty) return false;
+    return true;
+  }
+
+  String get _body {
+    const base =
+        'This permanently deletes your profile, projects, join requests, '
+        'and match feedback. It can’t be undone.';
+    return switch (widget.reauth) {
+      _DeleteReauth.google =>
+        '$base\n\nNext, Google will ask you to confirm it’s you.',
+      _DeleteReauth.github =>
+        '$base\n\nNext, GitHub will ask you to confirm it’s you.',
+      _DeleteReauth.password =>
+        '$base\n\nEnter your password to confirm.',
+      _DeleteReauth.none => base,
+    };
+  }
+
+  String get _ctaLabel => switch (widget.reauth) {
+    _DeleteReauth.google => 'Continue with Google',
+    _DeleteReauth.github => 'Continue with GitHub',
+    _ => 'Delete account',
+  };
 
   void _submit() {
     if (!_canDelete || _submitting) return;
     setState(() => _submitting = true);
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(
+      _DeleteAccountResult(
+        password: _needsPassword ? _password.text : null,
+      ),
+    );
   }
 
   @override
@@ -477,11 +586,20 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'This removes your profile, skills and requests. It can’t be undone.',
+                _body,
                 style: textTheme.bodyMedium?.copyWith(color: ds.textMuted),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.lg),
+              if (_needsPassword) ...[
+                DsTextField(
+                  label: 'Password',
+                  controller: _password,
+                  obscureText: true,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
               DsTextField(
                 label: 'Type DELETE to confirm',
                 controller: _confirm,
@@ -489,7 +607,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               ),
               const SizedBox(height: AppSpacing.lg),
               DsButton(
-                label: 'Delete account',
+                label: _ctaLabel,
                 variant: DsButtonVariant.dangerFilled,
                 isLoading: _submitting,
                 onPressed: _canDelete && !_submitting ? _submit : null,
@@ -500,7 +618,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                 variant: DsButtonVariant.quiet,
                 onPressed: _submitting
                     ? null
-                    : () => Navigator.of(context).pop(false),
+                    : () => Navigator.of(context).pop(),
               ),
             ],
           ),

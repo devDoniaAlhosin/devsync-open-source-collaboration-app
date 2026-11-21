@@ -11,6 +11,7 @@ abstract final class AppRoutes {
   static const String settings = '/settings';
   static const String feed = '/feed';
   static const String likedMatches = '/liked-matches';
+  static const String choosePath = '/choose-path';
   static const String connectGithub = '/connect-github';
   static const String editProfile = '/edit-profile';
   static const String discover = '/discover';
@@ -25,6 +26,7 @@ abstract final class AppRoutes {
   static const String aiStudio = '/ai-studio';
   static const String aiInsights = '/ai-insights';
   static const String insights = '/insights';
+  static const String promptQuality = '/prompt-quality';
   static const String community = '/community';
   static const String notifications = '/notifications';
 }

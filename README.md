@@ -156,7 +156,7 @@ See [Project status and roadmap](#13-project-status-and-roadmap) for post–30 N
 | Project management | Jira | Scrum board, sprints, task tracking |
 | Design | DevSync brand system | Teal / forest palette; shared `Ds*` widgets in `lib/core/` |
 
-**Firestore:** `users/{uid}` identity is implemented. Planned: `projects`, `matches`, `feedback`, `requests`. If-time: `tasks`.
+**Firestore:** `users/{uid}`, `projects`, `views`, `requests`, and `feedback` are wired in the app. Rules live in `firestore.rules` (deploy with `firebase deploy --only firestore:rules`). Matching scores come from Vercel (no `matches` collection writes yet). If-time: `tasks`.
 
 <p align="center">
   <img src="docs/devsync-logos/devsync-logos/png/devsync-icon.png" alt="DevSync icon" height="48"/>
@@ -246,7 +246,7 @@ Dio is **not** in the stack. Auth and matching use `dart:io` `HttpClient` (or a 
 
 ### Matching flow (planned)
 
-Matching’s HTTP surface is **`POST /matches/generate` only**. Ranked results come back in that POST response; they are not fetched with GET. Cache and like/skip feedback live in Firestore.
+Matching’s HTTP surface is **`POST /matches/generate` only**. Ranked results come back in that POST response; they are not fetched with GET. Like/skip feedback is stored per user/project in Firestore; matching results and cache remain demo/local for now.
 
 1. Collect GitHub activity and declared skills into a structured profile
 2. Send the profile and candidate projects to **`POST https://devsync-backend-two.vercel.app/matches/generate`** (JSON locked to `MatchRequestModel` / `MatchItemModel` / `MatchResponseModel`)
@@ -399,6 +399,7 @@ Firebase Auth + Firestore and the Vercel DevSync API are **required for product 
 4. Use sibling repo **`devsync_backend`** for OTP / email / matching. Production: [`https://devsync-backend-two.vercel.app`](https://devsync-backend-two.vercel.app). Flutter defaults to that host; override with `--dart-define=DEVSYNC_API_BASE=...` or `--dart-define=DEVSYNC_API_LOCAL=true` for local `npm run dev`
 5. Put `GEMINI_API_KEY` only in Vercel (or local `.env` for the backend) — never in the Flutter app or this repo
 6. Configure GitHub API access according to the team’s agreed approach (public data only; respect rate limits)
+7. **GitHub sign-in (Android):** create a GitHub OAuth App, enable **Device Flow**, paste Client ID + secret into Firebase Auth → GitHub provider. Client ID lives in `lib/core/config/app_oauth_config.dart` (optional `--dart-define=GITHUB_OAUTH_CLIENT_ID=...` override) — avoids Custom Tabs “missing initial state”
 
 Exact project IDs, package names, and credentials are shared privately within the team — they are intentionally omitted from this README.
 
@@ -443,7 +444,6 @@ Course and project documents live under [`docs/`](docs/). Use these as the sourc
 | Requirements Gathering | [DevSync-3-Requirements-Gathering.pdf](docs/DevSync-3-Requirements-Gathering.pdf) |
 | System Analysis and Design | [DevSync-4-System-Analysis-and-Design.pdf](docs/DevSync-4-System-Analysis-and-Design.pdf) |
 | Feature Summaries (all members) | [DevSync-Feature-Summaries-All-Members.pdf](docs/DevSync-Feature-Summaries-All-Members.pdf) |
-| Projects Firestore schema | [projects-firestore-schema.md](docs/projects-firestore-schema.md) |
 | Brand Task Guide and Prototype | [GitHub Pages hub `#prototype`](https://devdoniaalhosin.github.io/devsync-open-source-collaboration-app/#prototype) |
 | Brand Guidelines | [DevSync_Brand_Guidelines.pdf](docs/DevSync_Brand_Guidelines.pdf) |
 | Brand Guide (HTML) | [DevSync Brand Guide.html](docs/DevSync%20Brand%20Guide.html) |
@@ -489,10 +489,10 @@ Do **not** commit `google-services.json` variants that embed private keys beyond
 | Verify email / forgot password / sign-in with code | Implemented — real SMTP OTP via Vercel DevSync API (`AuthEmailApi`) |
 | Settings (prototype screen 21) | Implemented — appearance, notification toggles, Free/Pro preview, sign out, delete dialog |
 | Google / GitHub sign-in | Coded; enable providers in Firebase Console (SHA-1 for Google) |
-| Profile, Projects, Feed, Requests | Planned — owners and due dates in §3 |
-| DevSync API (Vercel) | Hosted at [devsync-backend-two.vercel.app](https://devsync-backend-two.vercel.app) — OTP live; `/matches/generate` stub until Gemini on `feature/matching-gemini` |
-| GitHub API / FCM / live Gemini matching | Planned — FCM without Cloud Functions; Gemini on Vercel then wire Flutter HTTP data source |
-| Remaining product features | Planned (owners and due dates in §3) |
+| Profile, Projects, Feed, Requests | Implemented — Firestore-backed profile/projects/requests; feed via Vercel `/matches/generate` |
+| DevSync API (Vercel) | Hosted at [devsync-backend-two.vercel.app](https://devsync-backend-two.vercel.app) — OTP + `/matches/generate` |
+| GitHub API / FCM | GitHub public scan + FCM token bootstrap implemented; push *send* on request events still needs a server path |
+| Remaining product features | Tasks board / notifications inbox still stub or dummy |
 | Install-link release / App Bundle | First obfuscated build by 12 Nov; final 30 Nov 2026 |
 | App store deployment | Out of scope for this course delivery |
 

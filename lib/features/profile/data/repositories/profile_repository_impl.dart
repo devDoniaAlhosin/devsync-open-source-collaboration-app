@@ -102,6 +102,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
     required int repos,
     required int commits,
     required List<LanguageShare> languages,
+    String? bioSuggestion,
+    List<List<int>> activity = const [],
   }) async {
     final username = githubUsername.trim();
     if (username.isEmpty) {
@@ -116,15 +118,28 @@ class ProfileRepositoryImpl implements ProfileRepository {
         for (final l in languages)
           if (!current.skills.contains(l.name)) l.name,
       ];
+      final suggestion = bioSuggestion?.trim();
+      final shouldPrefillBio =
+          current.bio.trim().isEmpty &&
+          suggestion != null &&
+          suggestion.isNotEmpty;
+      final bio = shouldPrefillBio
+          ? (suggestion.length > _bioLimit
+                ? '${suggestion.substring(0, _bioLimit - 1).trimRight()}…'
+                : suggestion)
+          : current.bio;
+
       return Success(
         await _remote.save(
           current.copyWith(
             githubUrl: 'github.com/$username',
+            bio: bio,
             repos: repos,
             commits: commits,
             languageCount: languages.length,
             languages: languages,
             suggestedSkills: suggested,
+            activity: activity.isNotEmpty ? activity : null,
           ),
         ),
       );
@@ -152,7 +167,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
       return const NetworkFailure();
     }
     if (e is GithubProfileException) {
-      return const UnexpectedFailure();
+      return UnexpectedFailure(e.message);
     }
     if (e is FirebaseException) {
       switch (e.code) {

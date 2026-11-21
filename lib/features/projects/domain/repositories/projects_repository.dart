@@ -17,6 +17,9 @@ abstract class ProjectsRepository {
   /// implementation from the current Firebase session.
   Future<Result<List<Project>>> getProjects();
 
+  /// One project document, with viewer-relative flags resolved.
+  Future<Result<Project>> getProject(String projectId);
+
   /// Aggregated details for the project screen: cached AI match data, GitHub
   /// repository metrics, owner profile and the last seven days of views.
   Future<Result<ProjectStats>> getStats(String projectId);
@@ -27,6 +30,9 @@ abstract class ProjectsRepository {
   /// writes a non-empty `ownerName`. AI-owned fields (`matchPercentage`,
   /// alignment data, GitHub metrics) are never written from the client.
   Future<Result<Project>> upsert(Project project);
+
+  /// Deletes a project the signed-in user owns.
+  Future<Result<void>> delete(String projectId);
 
   /// Number of accepted collaboration requests across the user's projects.
   Future<Result<int>> getJoinedContributions();

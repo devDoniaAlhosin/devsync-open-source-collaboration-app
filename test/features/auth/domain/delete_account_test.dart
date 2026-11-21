@@ -1,6 +1,5 @@
 import 'package:devsync_open_source_collaboration_app/core/error/failures.dart';
 import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
-import 'package:devsync_open_source_collaboration_app/core/usecase/usecase.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/domain/usecases/delete_account.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,7 +10,7 @@ void main() {
     final repository = FakeAuthRepository();
     final useCase = DeleteAccount(repository);
 
-    final result = await useCase(const NoParams());
+    final result = await useCase(const DeleteAccountParams());
 
     expect(result, isA<Success<void>>());
     expect(repository.deleteCalls, 1);
@@ -25,7 +24,7 @@ void main() {
     );
     final useCase = DeleteAccount(repository);
 
-    final result = await useCase(const NoParams());
+    final result = await useCase(const DeleteAccountParams(password: 'x'));
 
     expect(result, isA<FailureResult<void>>());
     expect(

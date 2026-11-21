@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/ds_app_bar.dart';
 import '../../core/widgets/ds_bottom_nav.dart';
 import '../../core/widgets/ds_tab_switcher.dart';
@@ -10,6 +11,7 @@ import '../profile/presentation/screens/profile_screen.dart';
 import '../projects/presentation/screens/projects_shell.dart';
 import '../requests/presentation/screens/requests_screen.dart';
 import 'app_drawer.dart';
+import 'presentation/widgets/inbox_badge_builder.dart';
 
 /// Bottom-nav shell with feature destinations.
 class HomeShellScreen extends StatefulWidget {
@@ -59,7 +61,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       icon: AppIcons.inbox,
       route: AppRoutes.requests,
       owner: 'Yousef',
-      showBadge: true,
+      badgeKind: _BadgeKind.requests,
     ),
     _Dest(
       label: 'Profile',
@@ -104,60 +106,70 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       ),
     );
 
-    return Scaffold(
-      key: _scaffoldKey,
-      extendBody: true,
-      drawer: AppDrawer(
-        onSelectTab: (i) => setState(() => _index = i),
-      ),
-      appBar: hideShellAppBar
-          ? null
-          : DsAppBar(
-              title: dest.title,
-              eyebrow: dest.eyebrow,
-              showMenu: true,
-              onMenu: _openDrawer,
-              onNotifications: () {
-                Navigator.of(context).pushNamed(AppRoutes.notifications);
-              },
-              notificationBadge: true,
+    return InboxBadgeBuilder(
+      builder: (context, hasUnreadNotifications, hasNewRequests) {
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: context.ds.background,
+          extendBody: true,
+          drawer: AppDrawer(
+            onSelectTab: (i) => setState(() => _index = i),
+          ),
+          appBar: hideShellAppBar
+              ? null
+              : DsAppBar(
+                  title: dest.title,
+                  eyebrow: dest.eyebrow,
+                  showMenu: true,
+                  onMenu: _openDrawer,
+                  onNotifications: () {
+                    Navigator.of(context).pushNamed(AppRoutes.notifications);
+                  },
+                  notificationBadge: hasUnreadNotifications,
+                ),
+          body: MediaQuery(
+            data: paddedMedia,
+            child: DsTabSwitcher(
+              index: _paneIndex,
+              children: [
+                MatchFeedScreen(
+                  onMenuPressed: _openDrawer,
+                  onOpenProfile: () => setState(() => _index = 4),
+                ),
+                ProjectsShell(
+                  showBottomNav: false,
+                  initialTab: _index == 2 ? 1 : 0,
+                  onMenuPressed: _openDrawer,
+                ),
+                RequestsScreen(onMenuPressed: _openDrawer),
+                ProfileScreen(onMenuPressed: _openDrawer),
+              ],
             ),
-      body: MediaQuery(
-        data: paddedMedia,
-        child: DsTabSwitcher(
-          index: _paneIndex,
-          children: [
-            MatchFeedScreen(
-              onMenuPressed: _openDrawer,
-              onOpenProfile: () => setState(() => _index = 4),
-            ),
-            ProjectsShell(
-              showBottomNav: false,
-              initialTab: _index == 2 ? 1 : 0,
-              onMenuPressed: _openDrawer,
-            ),
-            RequestsScreen(onMenuPressed: _openDrawer),
-            ProfileScreen(onMenuPressed: _openDrawer),
-          ],
-        ),
-      ),
-      bottomNavigationBar: DsBottomNav(
-        index: _index,
-        onChanged: (i) => setState(() => _index = i),
-        items: [
-          for (final d in _destinations)
-            DsBottomNavItem(
-              icon: d.icon,
-              brandMark: d.brandMark,
-              label: d.label,
-              prominent: d.prominent,
-              showBadge: d.showBadge,
-            ),
-        ],
-      ),
+          ),
+          bottomNavigationBar: DsBottomNav(
+            index: _index,
+            onChanged: (i) => setState(() => _index = i),
+            items: [
+              for (final d in _destinations)
+                DsBottomNavItem(
+                  icon: d.icon,
+                  brandMark: d.brandMark,
+                  label: d.label,
+                  prominent: d.prominent,
+                  showBadge: switch (d.badgeKind) {
+                    _BadgeKind.requests => hasNewRequests,
+                    _BadgeKind.none => false,
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
+
+enum _BadgeKind { none, requests }
 
 class _Dest {
   const _Dest({
@@ -169,7 +181,7 @@ class _Dest {
     required this.route,
     required this.owner,
     this.prominent = false,
-    this.showBadge = false,
+    this.badgeKind = _BadgeKind.none,
   }) : assert(icon != null || brandMark, 'Provide an icon or brandMark');
 
   final String label;
@@ -180,5 +192,5 @@ class _Dest {
   final String route;
   final String owner;
   final bool prominent;
-  final bool showBadge;
+  final _BadgeKind badgeKind;
 }

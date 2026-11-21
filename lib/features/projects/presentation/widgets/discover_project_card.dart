@@ -12,14 +12,12 @@ import 'tech_tag.dart';
 class DiscoverProjectCard extends StatefulWidget {
   const DiscoverProjectCard({
     required this.project,
-    required this.requested,
     required this.onTap,
     required this.onRequest,
     super.key,
   });
 
   final Project project;
-  final bool requested;
   final VoidCallback onTap;
   final VoidCallback onRequest;
 
@@ -51,13 +49,6 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                 ? AppColors.teal.withValues(alpha: 0.36)
                 : context.ds.border,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _hovered ? 0.28 : 0.14),
-              blurRadius: _hovered ? 28 : 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
         ),
         child: Material(
           color: Colors.transparent,
@@ -160,19 +151,24 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                   const SizedBox(height: 14),
                   LayoutBuilder(
                     builder: (context, constraints) {
+                      final project = widget.project;
+                      final locked = !project.canRequestJoin;
+                      final label = project.joined
+                          ? 'Joined'
+                          : project.hasPendingRequest
+                          ? 'Request sent'
+                          : 'Request to join';
                       final button = SizedBox(
                         height: 48,
                         child: ProjectActionButton(
-                          label: widget.requested
-                              ? 'Request sent'
-                              : 'Request to join',
-                          icon: widget.requested ? AppIcons.success : null,
-                          variant: widget.requested
+                          label: label,
+                          icon: locked ? AppIcons.success : null,
+                          variant: locked
                               ? ProjectActionButtonVariant.secondary
                               : ProjectActionButtonVariant.primary,
                           expand: false,
                           compact: true,
-                          onPressed: widget.requested ? null : widget.onRequest,
+                          onPressed: locked ? null : widget.onRequest,
                         ),
                       );
                       final meta = Row(
@@ -208,19 +204,13 @@ class _DiscoverProjectCardState extends State<DiscoverProjectCard> {
                             SizedBox(
                               height: 48,
                               child: ProjectActionButton(
-                                label: widget.requested
-                                    ? 'Request sent'
-                                    : 'Request to join',
-                                icon: widget.requested
-                                    ? AppIcons.success
-                                    : null,
-                                variant: widget.requested
+                                label: label,
+                                icon: locked ? AppIcons.success : null,
+                                variant: locked
                                     ? ProjectActionButtonVariant.secondary
                                     : ProjectActionButtonVariant.primary,
                                 compact: true,
-                                onPressed: widget.requested
-                                    ? null
-                                    : widget.onRequest,
+                                onPressed: locked ? null : widget.onRequest,
                               ),
                             ),
                           ],

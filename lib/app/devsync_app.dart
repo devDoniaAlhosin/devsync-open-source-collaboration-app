@@ -1,15 +1,19 @@
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/connect_github_entry.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/insights_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/profile_screen.dart';
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../core/di/injection.dart';
 import '../core/theme/app_animations.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/ds_fade_switch.dart';
 import '../core/widgets/ds_splash.dart';
+import '../core/widgets/ds_toast.dart';
+import '../features/auth/presentation/cubit/auth_cubit.dart';
+import '../features/auth/presentation/screens/choose_path_screen.dart';
 import '../features/auth/presentation/screens/code_sign_in_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
@@ -22,6 +26,7 @@ import '../features/matching/presentation/screens/ai_analytics_screen.dart';
 import '../features/matching/presentation/screens/ai_matching_studio_screen.dart';
 import '../features/matching/presentation/screens/liked_matches_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
+import '../features/matching/presentation/screens/prompt_quality_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart'
     as matching_details;
 import '../features/requests/presentation/screens/connected_celebration_screen.dart';
@@ -43,9 +48,39 @@ class DevSyncApp extends StatefulWidget {
   /// Set `false` in widget tests to skip the open animation.
   final bool showSplash;
 
+  static final _navigatorKey = GlobalKey<NavigatorState>();
+  static final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  static bool _pendingRequestsNavigation = false;
+
   static _DevSyncAppState? _state;
 
   static ThemeMode get themeMode => _state?._themeMode ?? ThemeMode.light;
+
+  static void openRequests() {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      _pendingRequestsNavigation = true;
+      return;
+    }
+
+    _pendingRequestsNavigation = false;
+    navigator.pushNamedAndRemoveUntil(
+      AppRoutes.home,
+      (route) => false,
+      arguments: 3,
+    );
+  }
+
+  static void showNotification(String title, String body) {
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
+
+    showDsToast(
+      context,
+      body.isEmpty ? title : '$title\n$body',
+      tone: DsToastTone.info,
+    );
+  }
 
   /// Toggle light / dark from the app bar.
   static void toggleTheme() => _state?._toggleTheme();
@@ -68,6 +103,9 @@ class _DevSyncAppState extends State<DevSyncApp> {
     _booting = widget.showSplash;
     _appVisible = !widget.showSplash;
     _syncSystemUi(_themeMode);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (DevSyncApp._pendingRequestsNavigation) DevSyncApp.openRequests();
+    });
   }
 
   @override
@@ -112,21 +150,23 @@ class _DevSyncAppState extends State<DevSyncApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final app = MaterialApp(
       title: 'DevSync',
       debugShowCheckedModeBanner: false,
+      navigatorKey: DevSyncApp._navigatorKey,
+      scaffoldMessengerKey: DevSyncApp._scaffoldMessengerKey,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
       builder: (context, child) {
-        final app = child ?? const SizedBox.shrink();
-        if (!widget.showSplash) return app;
-        if (!_booting) return app;
+        final content = child ?? const SizedBox.shrink();
+        if (!widget.showSplash) return content;
+        if (!_booting) return content;
 
         return Stack(
           fit: StackFit.expand,
           children: [
-            if (_appVisible) _LaunchReveal(child: app),
+            if (_appVisible) _LaunchReveal(child: content),
             DsSplash(
               onReveal: () {
                 if (!mounted) return;
@@ -143,6 +183,13 @@ class _DevSyncAppState extends State<DevSyncApp> {
       },
       initialRoute: AppRoutes.intro,
       onGenerateRoute: _onGenerateRoute,
+    );
+
+    if (!getIt.isRegistered<AuthCubit>()) return app;
+
+    return BlocProvider.value(
+      value: getIt<AuthCubit>(),
+      child: app,
     );
   }
 
@@ -162,6 +209,7 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.verifyEmail => VerifyEmailScreen(
         email: _emailArg(settings.arguments),
       ),
+      AppRoutes.choosePath => const ChoosePathScreen(),
       AppRoutes.settings => const SettingsScreen(),
       AppRoutes.home => HomeShellScreen(
         initialIndex: settings.arguments is int
@@ -170,14 +218,16 @@ class _DevSyncAppState extends State<DevSyncApp> {
       ),
       AppRoutes.feed => const MatchFeedScreen(),
       AppRoutes.likedMatches => const LikedMatchesScreen(),
-      AppRoutes.editProfile => const EditProfileEntry(),
+      AppRoutes.editProfile => EditProfileEntry.fromArgs(settings.arguments),
       AppRoutes.analytics => const AiAnalyticsScreen(),
       AppRoutes.aiStudio => const AiMatchingStudioScreen(),
       AppRoutes.projects => const ProjectsShell(initialTab: 1),
       AppRoutes.projectDetail => _projectDetailPage(settings.arguments),
       AppRoutes.profile => const ProfileScreen(),
-      AppRoutes.connectGithub => const ConnectGithubEntry(),
-      AppRoutes.requests => const RequestsScreen(),
+      AppRoutes.connectGithub =>
+          ConnectGithubEntry.fromArgs(settings.arguments),
+      // Always host inside the shell so the menu can open the drawer.
+      AppRoutes.requests => const HomeShellScreen(initialIndex: 3),
       AppRoutes.notificationPermission => NotificationPermissionScreen(
         args: settings.arguments is NotificationPermissionArgs
             ? settings.arguments! as NotificationPermissionArgs
@@ -199,14 +249,15 @@ class _DevSyncAppState extends State<DevSyncApp> {
       AppRoutes.tasks => const StubScreen(
         title: 'Task board',
         owner: 'Donia',
-        description: 'If-time board for collaboration tasks.',
+        description: 'Task board is not available right now.',
       ),
       AppRoutes.aiInsights => const AiAnalyticsScreen(),
       AppRoutes.insights => const InsightsScreen(),
+      AppRoutes.promptQuality => const PromptQualityScreen(),
       AppRoutes.community => const StubScreen(
         title: 'Community',
         owner: 'If time',
-        description: 'Community screen is planned after the core freeze.',
+        description: 'Community is not available right now.',
       ),
       AppRoutes.notifications => const NotificationsScreen(),
       _ => null,

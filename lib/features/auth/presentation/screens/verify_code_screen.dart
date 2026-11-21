@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_otp_field.dart';
+import '../../../../core/widgets/ds_toast.dart';
 import '../cubit/verify_code_cubit.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/auth_social_buttons.dart';
@@ -100,17 +101,17 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
           switch (state) {
             case VerifyCodeSent():
               _startCountdown();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Verification code sent')),
+              showDsToast(
+                context,
+                'Verification code sent',
+                tone: DsToastTone.success,
               );
             case VerifyCodeSuccess():
               Navigator.of(
                 context,
               ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
             case VerifyCodeFailure(:final message):
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(message)));
+              showDsToast(context, message, tone: DsToastTone.error);
             default:
               break;
           }

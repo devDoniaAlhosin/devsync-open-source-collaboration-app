@@ -10,21 +10,30 @@ class MatchActionRecord extends Equatable {
     required this.action,
     required this.match,
     required this.removesSavedMatchOnUndo,
+    this.previousFeedback,
   });
 
   final int index;
   final MatchSwipeAction action;
   final MatchItem match;
   final bool removesSavedMatchOnUndo;
+  final MatchFeedbackAction? previousFeedback;
 
   @override
-  List<Object?> get props => [index, action, match, removesSavedMatchOnUndo];
+  List<Object?> get props => [
+    index,
+    action,
+    match,
+    removesSavedMatchOnUndo,
+    previousFeedback,
+  ];
 }
 
 final class MatchingState extends Equatable {
   const MatchingState({
-    this.status = MatchingStatus.initial,
-    this.isLoading = false,
+    // Start loading on deck so Matches never flashes studio/empty before fetch.
+    this.status = MatchingStatus.loading,
+    this.isLoading = true,
     this.isGenerating = false,
     this.isSaving = false,
     this.isLoadingAnalytics = false,
@@ -34,7 +43,7 @@ final class MatchingState extends Equatable {
     this.failure,
     this.matches = const [],
     this.preferences = MatchingPreferences.defaultPreferences,
-    this.viewMode = MatchingViewMode.studio,
+    this.viewMode = MatchingViewMode.deck,
     this.currentDeckIndex = 0,
     this.actionHistory = const [],
     this.feedback = const [],

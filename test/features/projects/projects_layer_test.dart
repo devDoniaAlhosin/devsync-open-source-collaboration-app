@@ -5,6 +5,7 @@ import 'package:devsync_open_source_collaboration_app/features/projects/data/mod
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/entities/project.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/entities/project_stats.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/repositories/projects_repository.dart';
+import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/delete_project.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/get_joined_contributions.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/get_project_stats.dart';
 import 'package:devsync_open_source_collaboration_app/features/projects/domain/usecases/get_projects.dart';
@@ -42,6 +43,22 @@ void main() {
 
       expect(model.isOwner, isTrue);
       expect(model.hasPendingRequest, isTrue);
+
+      // Accepted (and pending) IDs from Discover mark the request CTA as spent.
+      final accepted = ProjectModel.fromMap(
+        'p2',
+        {
+          'ownerId': 'u2',
+          'title': 'joined-app',
+          'description': 'Already accepted',
+          'githubUrl': 'https://github.com/devsync/joined',
+          'techStack': const ['Dart'],
+          'requiredContributors': 1,
+        },
+        currentUserId: 'viewer',
+        pendingRequestProjectIds: const {'p2'},
+      );
+      expect(accepted.hasPendingRequest, isTrue);
       expect(model.matchPercentage, 100);
       expect(model.github.stars, 12);
       expect(model.alignments.single.label, 'Dart');
@@ -115,7 +132,7 @@ void main() {
   });
 
   group('ProjectsCubit', () {
-    test('load keeps stats for owned projects and joins count', () async {
+    test('load skips per-project stats and keeps joins count', () async {
       final repository = _FakeProjectsRepository();
       final cubit = _cubitFor(repository);
 
@@ -123,7 +140,7 @@ void main() {
 
       final loaded = cubit.state as ProjectsLoaded;
       expect(loaded.projects, hasLength(2));
-      expect(loaded.stats.keys, ['owned']);
+      expect(loaded.stats, isEmpty);
       expect(loaded.joinedContributors, 4);
       expect(loaded.discoverProjects.single.id, 'discover');
     });
@@ -190,6 +207,42 @@ void main() {
       expect(cubit.state, isA<ProjectsLoaded>());
       expect(cubit.state, isNot(isA<ProjectOperationSuccess>()));
     });
+
+    test('delete removes the project and emits success', () async {
+      final cubit = _cubitFor(_FakeProjectsRepository());
+      await cubit.load();
+
+      final error = await cubit.delete('owned');
+
+      expect(error, isNull);
+      final state = cubit.state;
+      expect(state, isA<ProjectOperationSuccess>());
+      expect((state as ProjectOperationSuccess).message, 'Project deleted.');
+      expect(state.ownedProjects, isEmpty);
+    });
+
+    test('delete failure keeps the loaded list', () async {
+      final cubit = _cubitFor(_FakeProjectsRepository(failDelete: true));
+      await cubit.load();
+
+      final error = await cubit.delete('owned');
+
+      expect(error, isNotNull);
+      expect(cubit.state, isA<ProjectsLoaded>());
+      expect(cubit.state, isNot(isA<ProjectOperationSuccess>()));
+      expect((cubit.state as ProjectsLoaded).ownedProjects, hasLength(1));
+    });
+
+    test('create then delete leaves discover projects intact', () async {
+      final cubit = _cubitFor(_FakeProjectsRepository());
+      await cubit.load();
+      await cubit.upsert(_newProject(), isNew: true);
+      await cubit.delete('new-project');
+
+      final state = cubit.state as ProjectOperationSuccess;
+      expect(state.discoverProjects.single.id, 'discover');
+      expect(state.projects.any((p) => p.id == 'new-project'), isFalse);
+    });
   });
 }
 
@@ -198,6 +251,7 @@ ProjectsCubit _cubitFor(ProjectsRepository repository) {
     getProjects: GetProjects(repository),
     getProjectStats: GetProjectStats(repository),
     upsertProject: UpsertProject(repository),
+    deleteProject: DeleteProject(repository),
     getJoinedContributions: GetJoinedContributions(repository),
     recordProjectView: RecordProjectView(repository),
   );
@@ -219,9 +273,13 @@ Project _newProject() {
 }
 
 class _FakeProjectsRepository implements ProjectsRepository {
-  _FakeProjectsRepository({this.failUpsert = false});
+  _FakeProjectsRepository({
+    this.failUpsert = false,
+    this.failDelete = false,
+  });
 
   final bool failUpsert;
+  final bool failDelete;
 
   Project get ownedProject => Project(
     id: 'owned',
@@ -258,6 +316,13 @@ class _FakeProjectsRepository implements ProjectsRepository {
   }
 
   @override
+  Future<Result<Project>> getProject(String projectId) async {
+    if (projectId == ownedProject.id) return Success(ownedProject);
+    if (projectId == discoverProject.id) return Success(discoverProject);
+    return const FailureResult(NotFoundFailure('Project not found'));
+  }
+
+  @override
   Future<Result<ProjectStats>> getStats(String projectId) async {
     return Success(
       ProjectStats(
@@ -285,6 +350,16 @@ class _FakeProjectsRepository implements ProjectsRepository {
     return Success(
       project.copyWith(id: 'new-project', isOwner: true, ownerId: 'u1'),
     );
+  }
+
+  @override
+  Future<Result<void>> delete(String projectId) async {
+    if (failDelete) {
+      return const FailureResult(
+        PermissionFailure('You can only change your own projects'),
+      );
+    }
+    return const Success(null);
   }
 
   @override

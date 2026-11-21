@@ -26,6 +26,9 @@ dependencies:
   flutter_svg: ^2.2.3
   firebase_messaging: ^17.0.1
 
+  material_ui: any
+  url_launcher: ^6.3.3
+  flutter_secure_storage: ^11.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
