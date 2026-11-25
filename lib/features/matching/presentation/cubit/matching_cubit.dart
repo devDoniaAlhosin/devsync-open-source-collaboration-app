@@ -62,6 +62,8 @@ class MatchingCubit extends Cubit<MatchingState> {
   bool _lastRequestWasGenerating = false;
   bool _loadInFlight = false;
 
+  bool get isLoadInFlight => _loadInFlight;
+
   MatchingAnalytics get analytics {
     final projectSkills = <String, List<String>>{};
     for (final match in state.matches) {
@@ -545,10 +547,7 @@ class MatchingCubit extends Cubit<MatchingState> {
       }
       if (undoFeedbackResult case FailureResult(:final failure)) {
         emit(
-          state.copyWith(
-            isSaving: false,
-            actionErrorMessage: failure.message,
-          ),
+          state.copyWith(isSaving: false, actionErrorMessage: failure.message),
         );
         return;
       }

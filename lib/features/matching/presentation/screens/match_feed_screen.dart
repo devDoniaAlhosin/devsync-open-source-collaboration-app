@@ -441,13 +441,6 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
     if (error != null) _notify(error, tone: DsToastTone.error);
   }
 
-  Future<void> _undo() async {
-    await _cubit.undoLastDeckAction();
-    if (!mounted) return;
-    final error = _cubit.state.actionErrorMessage;
-    if (error != null) _notify(error);
-  }
-
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {
     Navigator.of(context).pushNamed(
       AppRoutes.projectDetail,

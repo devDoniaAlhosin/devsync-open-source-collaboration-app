@@ -88,18 +88,11 @@ class MatchFeedEmptyState extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    if (onRefresh != null) ...[
-                      DsButton(label: 'Refresh matches', onPressed: onRefresh),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
                     DsButton(label: 'Add skills', onPressed: onAddSkills),
                     const SizedBox(height: AppSpacing.md),
                     DsButton(
                       label: 'GitHub profile',
-                      leading: DsGithubIcon(
-                        size: 18,
-                        color: ds.textPrimary,
-                      ),
+                      leading: DsGithubIcon(size: 18, color: ds.textPrimary),
                       variant: DsButtonVariant.quiet,
                       onPressed: onConnectGitHub,
                     ),

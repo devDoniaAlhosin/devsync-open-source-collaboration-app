@@ -137,7 +137,8 @@ void main() {
     test('initial state has empty matches and no error', () {
       expect(cubit.state.matches, isEmpty);
       expect(cubit.state.errorMessage, isNull);
-      expect(cubit.state.isLoading, isFalse);
+      expect(cubit.state.isLoading, isTrue);
+      expect(cubit.state.viewMode, MatchingViewMode.deck);
     });
 
     test('loadInitialData populates matches from mock data source', () async {
@@ -244,11 +245,18 @@ void main() {
       },
     );
 
-    test('initial state has MatchingStatus.initial and isInitial true', () {
-      expect(cubit.state.status, MatchingStatus.initial);
-      expect(cubit.state.isInitial, isTrue);
+    test('initial state starts in MatchingStatus.loading on deck', () {
+      expect(cubit.state.status, MatchingStatus.loading);
+      expect(cubit.state.isLoadingState, isTrue);
       expect(cubit.state.isSuccess, isFalse);
       expect(cubit.state.isFailure, isFalse);
+      expect(
+        const MatchingState(
+          profile: _testProfile,
+          status: MatchingStatus.initial,
+        ).isInitial,
+        isTrue,
+      );
     });
 
     test('loading and success state transitions on loadInitialData', () async {

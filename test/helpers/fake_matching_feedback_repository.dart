@@ -1,4 +1,3 @@
-import 'package:devsync_open_source_collaboration_app/core/error/failures.dart';
 import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/entities/match_feedback_action.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/domain/repositories/matching_feedback_repository.dart';
@@ -13,6 +12,7 @@ class FakeMatchingFeedbackRepository implements MatchingFeedbackRepository {
   Future<Result<MatchFeedbackAction?>> saveFeedback({
     required String projectId,
     required MatchFeedbackAction action,
+    String? promptVersion,
   }) async {
     switch (result) {
       case Success<void>():

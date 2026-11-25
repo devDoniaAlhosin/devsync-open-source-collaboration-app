@@ -68,7 +68,7 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
   }
 
   Widget _buildBody(BuildContext context, MatchingState state) {
-    if (state.isLoading) {
+    if (state.isLoading && _cubit.isLoadInFlight) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.errorMessage != null) {
