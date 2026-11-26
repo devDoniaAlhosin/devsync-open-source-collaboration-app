@@ -49,6 +49,11 @@ import '../../features/requests/presentation/cubit/requests_cubit.dart';
 import '../../features/requests/domain/usecases/create_request.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/profile/domain/usecases/save_github_scan.dart';
+import '../../features/profile/data/datasources/insights_remote_data_source.dart';
+import '../../features/profile/data/repositories/insights_repository_impl.dart';
+import '../../features/profile/domain/repositories/insights_repository.dart';
+import '../../features/profile/domain/usecases/get_insights.dart';
+import '../../features/profile/presentation/cubit/insights_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -125,6 +130,7 @@ Future<void> configureDependencies() async {
 
   _registerMatching();
   _registerProfile();
+  _registerInsights();
   registerProjectsDependencies(getIt);
   _registerRequests();
 }
@@ -168,6 +174,21 @@ void _registerProfile() {
         scanGithubProfile: getIt(),
       ),
     );
+}
+
+void _registerInsights() {
+  if (getIt.isRegistered<InsightsRepository>()) return;
+
+  getIt
+    ..registerLazySingleton(() => InsightsRemoteDataSource())
+    ..registerLazySingleton<InsightsRepository>(
+      () => InsightsRepositoryImpl(
+        profileRemoteDataSource: getIt(),
+        insightsRemoteDataSource: getIt(),
+      ),
+    )
+    ..registerLazySingleton(() => GetInsights(getIt()))
+    ..registerFactory(() => InsightsCubit(getInsights: getIt()));
 }
 
 void _registerRequests() {
