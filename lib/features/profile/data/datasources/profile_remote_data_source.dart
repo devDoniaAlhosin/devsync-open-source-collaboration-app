@@ -30,7 +30,14 @@ class ProfileRemoteDataSource {
 
   Future<Profile> fetch() async {
     final user = _requireUser();
-    final snap = await _doc(user.uid).get();
+    final snap = await _doc(user.uid).get().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+        message: 'No connection. Check your internet and try again.',
+      ),
+    );
     final fallbackName = (user.displayName ?? '').trim().isNotEmpty
         ? user.displayName!.trim()
         : (user.email?.split('@').first ?? 'Developer');
