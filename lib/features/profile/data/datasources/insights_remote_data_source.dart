@@ -33,15 +33,24 @@ class GithubPeriodCounts {
 class InsightsRemoteDataSource {
   InsightsRemoteDataSource({
     http.Client? client,
+    Future<String?> Function()? tokenProvider,
     String? token,
     Duration timeout = const Duration(seconds: 12),
   }) : _client = client ?? http.Client(),
-       _token = token ?? const String.fromEnvironment('GITHUB_TOKEN'),
+       _tokenProvider = tokenProvider,
+       _tokenOverride = token ?? const String.fromEnvironment('GITHUB_TOKEN'),
        _timeout = timeout;
 
   final http.Client _client;
-  final String _token;
+  final Future<String?> Function()? _tokenProvider;
+  final String _tokenOverride;
   final Duration _timeout;
+
+  Future<String> _resolveToken() async {
+    if (_tokenOverride.trim().isNotEmpty) return _tokenOverride.trim();
+    final fromStore = await _tokenProvider?.call();
+    return fromStore?.trim() ?? '';
+  }
 
   Future<List<GithubEvent>> fetchEvents(String username) {
     return _guard(() async {
@@ -157,14 +166,15 @@ class InsightsRemoteDataSource {
     }
   }
 
-  Future<http.Response> _get(Uri uri) {
+  Future<http.Response> _get(Uri uri) async {
+    final token = await _resolveToken();
     return _client
         .get(
           uri,
           headers: {
             'Accept': 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
-            if (_token.isNotEmpty) 'Authorization': 'Bearer $_token',
+            if (token.isNotEmpty) 'Authorization': 'Bearer $token',
           },
         )
         .timeout(_timeout);

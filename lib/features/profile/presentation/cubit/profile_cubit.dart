@@ -18,16 +18,28 @@ class ProfileCubit extends Cubit<ProfileState> {
     required UpdateProfile updateProfile,
     required SaveGithubScan saveGithubScan,
     required ScanGithubProfile scanGithubProfile,
+    Future<String?> Function()? resolveGithubLoginHint,
   }) : _getProfile = getProfile,
        _updateProfile = updateProfile,
        _saveGithubScan = saveGithubScan,
        _scanGithubProfile = scanGithubProfile,
+       _resolveGithubLoginHint = resolveGithubLoginHint,
        super(const ProfileInitial());
 
   final GetProfile _getProfile;
   final UpdateProfile _updateProfile;
   final SaveGithubScan _saveGithubScan;
   final ScanGithubProfile _scanGithubProfile;
+  final Future<String?> Function()? _resolveGithubLoginHint;
+
+  /// Prefill username from OAuth store / user doc (wired in DI).
+  Future<String> loadGithubLoginHint() async {
+    try {
+      return (await _resolveGithubLoginHint?.call())?.trim() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
 
   Profile? get _current => switch (state) {
     ProfileLoaded(:final profile) ||

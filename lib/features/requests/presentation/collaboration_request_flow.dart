@@ -5,7 +5,7 @@ import '../../../core/di/injection.dart';
 import '../../../core/widgets/ds_toast.dart';
 import '../../projects/domain/entities/project.dart';
 import '../domain/entities/collaboration_request.dart';
-import 'cubit/requests_cubit.dart';
+import '../domain/usecases/create_request.dart';
 import 'screens/notification_permission_screen.dart';
 import 'widgets/request_join_sheet.dart';
 
@@ -47,19 +47,17 @@ Future<bool> presentCollaborationRequestFlow(
     matchPercent: matchPercent,
   );
 
-  final requestsCubit = getIt<RequestsCubit>();
-  final RequestJoinResult? result;
-  try {
-    result = await showRequestJoinSheet(
-      context,
-      item: requestItem,
-      maintainerName: maintainerName,
-      onSend: (message) =>
-          requestsCubit.create(requestItem.copyWith(message: message)),
-    );
-  } finally {
-    await requestsCubit.close();
-  }
+  // Use the use case directly — do not open/close a factory RequestsCubit
+  // (that would close the Requests tab cubit if it shared an instance).
+  final createRequest = getIt<CreateRequest>();
+  final result = await showRequestJoinSheet(
+    context,
+    item: requestItem,
+    maintainerName: maintainerName,
+    onSend: (message) => createRequest(
+      CreateRequestParams(item: requestItem.copyWith(message: message)),
+    ),
+  );
 
   if (!context.mounted || result == null) return false;
 

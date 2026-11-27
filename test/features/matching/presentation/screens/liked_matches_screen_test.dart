@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Widget buildSubject(LikedMatchesLocalDataSource dataSource) {
+  Widget buildSubject(LikedMatchesDataSource dataSource) {
     return MaterialApp(
       theme: AppTheme.light(),
       builder: (context, child) => MediaQuery(

@@ -56,9 +56,12 @@ class ProfileRemoteDataSource {
 
   Future<Profile> save(Profile profile) async {
     final user = _requireUser();
+    // Canonical skills live under profile.skills; mirror top-level for matching.
     await _doc(user.uid)
         .set({
           'profile': ProfileModel.toMap(profile),
+          'skills': profile.skills,
+          'declaredSkills': profile.skills,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true))
         .timeout(

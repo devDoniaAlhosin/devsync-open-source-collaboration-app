@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../app/app_routes.dart';
-import '../../core/icons/app_icons.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/ds_button.dart';
-import '../../core/widgets/ds_icon.dart';
-import '../../core/widgets/ds_icon_button.dart';
-import '../../core/widgets/ds_logo.dart';
+import '../../../../app/app_routes.dart';
+import '../../../../core/icons/app_icons.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_button.dart';
+import '../../../../core/widgets/ds_icon.dart';
+import '../../../../core/widgets/ds_icon_button.dart';
+import '../../../../core/widgets/ds_logo.dart';
 
 /// Prototype sidebar — Workspace, Intelligence, Account. No team/ownership.
 class AppDrawer extends StatelessWidget {

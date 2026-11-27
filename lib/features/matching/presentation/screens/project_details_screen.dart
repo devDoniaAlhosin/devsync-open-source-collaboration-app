@@ -11,20 +11,21 @@ import '../../domain/entities/match_item.dart';
 import '../widgets/project_details_chrome.dart';
 import '../widgets/project_details_content.dart';
 
-class ProjectDetailsArguments {
+class MatchProjectDetailsArguments {
   final MatchItem match;
 
   final List<String> currentUserSkills;
-  const ProjectDetailsArguments({
+  const MatchProjectDetailsArguments({
     required this.match,
     this.currentUserSkills = const [],
   });
 }
 
-class ProjectDetailsScreen extends StatelessWidget {
-  final ProjectDetailsArguments? arguments;
+/// Match-deck project details (distinct from projects feature ProjectDetailsScreen).
+class MatchProjectDetailsScreen extends StatelessWidget {
+  final MatchProjectDetailsArguments? arguments;
 
-  const ProjectDetailsScreen({super.key, this.arguments});
+  const MatchProjectDetailsScreen({super.key, this.arguments});
 
   @override
   Widget build(BuildContext context) {

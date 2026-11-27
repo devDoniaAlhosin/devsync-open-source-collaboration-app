@@ -38,6 +38,7 @@ class GetMatchingAnalyticsUseCase {
           .toList(growable: false),
     );
     if (feedback.isEmpty) {
+      // Never substitute demo charts here — UI shows empty / debug-only sample.
       return const Success<MatchingAnalytics>(MatchingAnalytics.empty);
     }
 

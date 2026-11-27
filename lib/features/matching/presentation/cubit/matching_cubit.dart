@@ -1,10 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/usecase/usecase.dart';
 import '../../../projects/domain/usecases/get_projects.dart';
 import '../../../requests/domain/usecases/get_unavailable_project_ids.dart';
 import '../../data/datasources/liked_matches_local_data_source.dart';
+import '../../data/datasources/prompt_version_preference.dart';
 import '../../data/models/match_request_model.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/feedback_record.dart';
@@ -29,7 +31,7 @@ part 'matching_state.dart';
 class MatchingCubit extends Cubit<MatchingState> {
   MatchingCubit({
     required MatchingRepository repository,
-    required LikedMatchesLocalDataSource likedMatchesDataSource,
+    required LikedMatchesDataSource likedMatchesDataSource,
     required GetRankedMatchesUseCase getRankedMatchesUseCase,
     MatchingProfileRepository? profileRepository,
     GetProjects? getProjects,
@@ -37,6 +39,7 @@ class MatchingCubit extends Cubit<MatchingState> {
     GetUserFeedbackUseCase? getUserFeedbackUseCase,
     GetMatchingAnalyticsUseCase? getMatchingAnalyticsUseCase,
     SaveMatchFeedback? saveMatchFeedback,
+    PromptVersionPreference? promptVersionPreference,
     UserProfile? profile,
   }) : _repository = repository,
        _getRankedMatchesUseCase = getRankedMatchesUseCase,
@@ -47,22 +50,38 @@ class MatchingCubit extends Cubit<MatchingState> {
        _getUserFeedbackUseCase = getUserFeedbackUseCase,
        _getMatchingAnalyticsUseCase = getMatchingAnalyticsUseCase,
        _saveMatchFeedback = saveMatchFeedback,
-       super(MatchingState(profile: profile ?? UserProfile.empty));
+       _promptVersionPreference = promptVersionPreference,
+       super(
+         MatchingState(
+           profile: profile ?? UserProfile.empty,
+           promptVersion: promptVersionPreference?.read(),
+         ),
+       );
 
   final MatchingRepository _repository;
   final GetRankedMatchesUseCase _getRankedMatchesUseCase;
-  final LikedMatchesLocalDataSource _likedMatchesDataSource;
+  final LikedMatchesDataSource _likedMatchesDataSource;
   final MatchingProfileRepository? _profileRepository;
   final GetProjects? _getProjects;
   final GetUnavailableProjectIds? _getUnavailableProjectIds;
   final GetUserFeedbackUseCase? _getUserFeedbackUseCase;
   final GetMatchingAnalyticsUseCase? _getMatchingAnalyticsUseCase;
   final SaveMatchFeedback? _saveMatchFeedback;
+  final PromptVersionPreference? _promptVersionPreference;
 
   bool _lastRequestWasGenerating = false;
   bool _loadInFlight = false;
 
   bool get isLoadInFlight => _loadInFlight;
+
+  /// Persist and prefer the highest-performing prompt version from quality metrics.
+  Future<void> applyPreferredPromptVersion(String version) async {
+    final trimmed = version.trim();
+    if (trimmed.isEmpty) return;
+    await _promptVersionPreference?.write(trimmed);
+    if (isClosed) return;
+    emit(state.copyWith(promptVersion: trimmed));
+  }
 
   MatchingAnalytics get analytics {
     final projectSkills = <String, List<String>>{};
@@ -102,10 +121,11 @@ class MatchingCubit extends Cubit<MatchingState> {
     final getMatchingAnalytics = _getMatchingAnalyticsUseCase;
     if (getMatchingAnalytics == null) {
       final computed = analytics;
-      // Data today: fall back to demoAnalytics when no real feedback exists yet.
-      // Replace with real Firestore aggregation once feedback collection is wired.
+      // Sample chart only in debug when the user has no feedback yet.
       final effective = computed.isEmpty
-          ? MatchingAnalytics.demoAnalytics
+          ? (kDebugMode
+                ? MatchingAnalytics.demoAnalytics
+                : computed)
           : computed;
       emit(
         state.copyWith(

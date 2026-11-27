@@ -77,6 +77,7 @@ import '../../features/profile/data/repositories/insights_repository_impl.dart';
 import '../../features/profile/domain/repositories/insights_repository.dart';
 import '../../features/profile/domain/usecases/get_insights.dart';
 import '../../features/profile/presentation/cubit/insights_cubit.dart';
+import '../../features/matching/data/datasources/prompt_version_preference.dart';
 import '../notifications/fcm_service.dart';
 import '../notifications/notification_preferences.dart';
 
@@ -85,7 +86,7 @@ final GetIt getIt = GetIt.instance;
 /// Composition root. Safe to call more than once (tests / hot restart).
 Future<void> configureDependencies({
   void Function(String title, String body)? onForegroundMessage,
-  void Function()? onNotificationOpened,
+  void Function(String? type)? onNotificationOpened,
 }) async {
   if (getIt.isRegistered<AuthRepository>()) {
     _ensureNotificationPreferences();
@@ -99,6 +100,7 @@ Future<void> configureDependencies({
   getIt
     ..registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance)
     ..registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance)
+    ..registerLazySingleton(() => PromptVersionPreference(prefs))
     ..registerLazySingleton(
       () => NotificationPreferencesService(
         prefs: getIt(),
@@ -198,7 +200,7 @@ void _ensureNotificationPreferences() {
 
 void _registerFcmService(
   void Function(String title, String body)? onForegroundMessage,
-  void Function()? onNotificationOpened,
+  void Function(String? type)? onNotificationOpened,
 ) {
   if (onForegroundMessage == null ||
       onNotificationOpened == null ||
@@ -238,7 +240,7 @@ void _registerMatching() {
         auth: getIt<FirebaseAuth>(),
       ),
     )
-    ..registerLazySingleton<LikedMatchesLocalDataSource>(
+    ..registerLazySingleton<LikedMatchesDataSource>(
       () => FirestoreLikedMatchesDataSource(
         firestore: getIt<FirebaseFirestore>(),
         auth: getIt<FirebaseAuth>(),
@@ -275,10 +277,13 @@ void _registerMatching() {
     ..registerFactory(
       () => MatchingCubit(
         repository: getIt<MatchingRepository>(),
-        likedMatchesDataSource: getIt<LikedMatchesLocalDataSource>(),
+        likedMatchesDataSource: getIt<LikedMatchesDataSource>(),
         getRankedMatchesUseCase: getIt<GetRankedMatchesUseCase>(),
         saveMatchFeedback: getIt<SaveMatchFeedback>(),
         profileRepository: getIt<MatchingProfileRepository>(),
+        promptVersionPreference: getIt.isRegistered<PromptVersionPreference>()
+            ? getIt<PromptVersionPreference>()
+            : null,
         getProjects: getIt.isRegistered<GetProjects>()
             ? getIt<GetProjects>()
             : null,
@@ -325,6 +330,15 @@ void _registerProfile() {
         updateProfile: getIt(),
         saveGithubScan: getIt(),
         scanGithubProfile: getIt(),
+        resolveGithubLoginHint: () async {
+          final fromStore = await getIt<GithubTokenStore>().readLogin();
+          if (fromStore != null && fromStore.trim().isNotEmpty) {
+            return fromStore.trim();
+          }
+          final uid = getIt<FirebaseAuth>().currentUser?.uid;
+          if (uid == null) return null;
+          return getIt<UserRemoteDataSource>().fetchGithubLogin(uid);
+        },
       ),
     );
 }
@@ -333,7 +347,11 @@ void _registerInsights() {
   if (getIt.isRegistered<InsightsRepository>()) return;
 
   getIt
-    ..registerLazySingleton(() => InsightsRemoteDataSource())
+    ..registerLazySingleton(
+      () => InsightsRemoteDataSource(
+        tokenProvider: () => getIt<GithubTokenStore>().readToken(),
+      ),
+    )
     ..registerLazySingleton<InsightsRepository>(
       () => InsightsRepositoryImpl(
         profileRemoteDataSource: getIt(),

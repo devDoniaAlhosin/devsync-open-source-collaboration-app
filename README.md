@@ -389,6 +389,10 @@ flutter analyze
 flutter test
 ```
 
+### Testing scenarios (Phase 6)
+
+Manual test scenarios for Phase 6 are tracked in this sheet: [DevSync Phase 6 testing scenarios](https://docs.google.com/spreadsheets/d/150oveq7ubWYy7yIUVXs2rToPll8Uf3DtU1SY4vc_pD4/edit?usp=sharing).
+
 ### Firebase, DevSync API, GitHub, and LLM setup
 
 Firebase Auth + Firestore and the Vercel DevSync API are **required for product features**. Matching Gemini is **not fully wired** yet (API stub + Flutter mock). When configuring:

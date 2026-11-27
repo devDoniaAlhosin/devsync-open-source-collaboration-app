@@ -107,7 +107,7 @@ class _CountingRemoteDataSource implements MatchingRemoteDataSource {
 MatchingCubit _buildCubit({
   MatchingRemoteDataSource? remoteDataSource,
   UserProfile? profile,
-  LikedMatchesLocalDataSource? likedMatchesDataSource,
+  LikedMatchesDataSource? likedMatchesDataSource,
 }) {
   final repository = MatchingRepositoryImpl(
     remoteDataSource: remoteDataSource ?? _DefaultRemoteDataSource(),

@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/app_routes.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../shell/home_shell_screen.dart';
+import '../../../shell/presentation/screens/home_shell_screen.dart';
 import '../cubit/auth_cubit.dart';
 import '../screens/intro_screen.dart';
 import '../screens/verify_email_screen.dart';

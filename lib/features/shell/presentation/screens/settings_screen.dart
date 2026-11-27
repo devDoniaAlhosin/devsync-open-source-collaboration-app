@@ -2,27 +2,28 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../app/app_routes.dart';
-import '../../app/devsync_app.dart';
-import '../../core/constants/app_assets.dart';
-import '../../core/di/injection.dart';
-import '../../core/icons/app_icons.dart';
-import '../../core/notifications/notification_preferences.dart';
-import '../../core/result/result.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/ds_app_bar.dart';
-import '../../core/widgets/ds_button.dart';
-import '../../core/widgets/ds_card.dart';
-import '../../core/widgets/ds_icon.dart';
-import '../../core/widgets/ds_info_row.dart';
-import '../../core/widgets/ds_page_fade.dart';
-import '../../core/widgets/ds_segmented_control.dart';
-import '../../core/widgets/ds_staggered_entrance.dart';
-import '../../core/widgets/ds_text_field.dart';
-import '../../core/widgets/ds_toast.dart';
-import '../../core/widgets/ds_toggle.dart';
-import '../auth/presentation/cubit/auth_cubit.dart';
+import '../../../../app/app_routes.dart';
+import '../../../../app/devsync_app.dart';
+import '../../../../core/config/app_flavor.dart';
+import '../../../../core/constants/app_assets.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/icons/app_icons.dart';
+import '../../../../core/notifications/notification_preferences.dart';
+import '../../../../core/result/result.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/ds_app_bar.dart';
+import '../../../../core/widgets/ds_button.dart';
+import '../../../../core/widgets/ds_card.dart';
+import '../../../../core/widgets/ds_icon.dart';
+import '../../../../core/widgets/ds_info_row.dart';
+import '../../../../core/widgets/ds_page_fade.dart';
+import '../../../../core/widgets/ds_segmented_control.dart';
+import '../../../../core/widgets/ds_staggered_entrance.dart';
+import '../../../../core/widgets/ds_text_field.dart';
+import '../../../../core/widgets/ds_toast.dart';
+import '../../../../core/widgets/ds_toggle.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 /// Prototype screen 21. Settings — Donia.
 class SettingsScreen extends StatefulWidget {
@@ -38,12 +39,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyRequests = true;
   bool _notifyMatches = true;
   bool _prefsReady = false;
-  int _flavor = 0;
+  /// Preview index; build flavor comes from [AppFlavorConfig].
+  late int _flavor;
   _SessionAction _sessionAction = _SessionAction.idle;
 
   @override
   void initState() {
     super.initState();
+    _flavor = AppFlavorConfig.isPro ? 1 : 0;
     _loadNotificationPrefs();
   }
 
@@ -105,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ThemeMode.light => 2,
   };
 
-  bool get _isPro => _flavor == 1;
+  bool get _isPro => _flavor == 1 || AppFlavorConfig.isPro;
 
   bool get _sessionBusy => _sessionAction != _SessionAction.idle;
 
@@ -313,6 +316,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             labels: const ['Free', 'Pro'],
                             index: _flavor,
                             onChanged: (i) => setState(() => _flavor = i),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            'Build flavor: ${AppFlavorConfig.label}. '
+                            'Ship with --flavor free|pro '
+                            '(--dart-define=FLAVOR=pro for Pro).',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: ds.textMuted,
+                            ),
                           ),
                         ],
                       ),

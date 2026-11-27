@@ -24,7 +24,7 @@ Future<void> bootstrap() async {
   }
   await configureDependencies(
     onForegroundMessage: DevSyncApp.showNotification,
-    onNotificationOpened: DevSyncApp.openRequests,
+    onNotificationOpened: DevSyncApp.openFromNotification,
   );
   try {
     await getIt<FcmService>().initialize();
