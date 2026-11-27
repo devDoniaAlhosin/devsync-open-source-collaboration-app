@@ -19,15 +19,18 @@ class GithubProfileRemoteDataSource {
   GithubProfileRemoteDataSource({
     http.Client? client,
     Future<String?> Function()? tokenProvider,
+    Future<void> Function()? onInvalidToken,
     String? token,
     Duration timeout = const Duration(seconds: 12),
   }) : _client = client ?? http.Client(),
        _tokenProvider = tokenProvider,
+       _onInvalidToken = onInvalidToken,
        _tokenOverride = token ?? const String.fromEnvironment('GITHUB_TOKEN'),
        _timeout = timeout;
 
   final http.Client _client;
   final Future<String?> Function()? _tokenProvider;
+  final Future<void> Function()? _onInvalidToken;
   final String _tokenOverride;
   final Duration _timeout;
 
@@ -41,11 +44,20 @@ class GithubProfileRemoteDataSource {
     }
 
     try {
-      final token = await _resolveToken();
-      final userResponse = await _get(
+      // Stale OAuth tokens return 401 even on public endpoints — drop and retry.
+      var token = await _resolveToken();
+      var userResponse = await _get(
         Uri.https('api.github.com', '/users/$login'),
         token: token,
       );
+      if (userResponse.statusCode == 401 && token.isNotEmpty) {
+        await _dropInvalidToken();
+        token = '';
+        userResponse = await _get(
+          Uri.https('api.github.com', '/users/$login'),
+          token: token,
+        );
+      }
       if (userResponse.statusCode == 404) {
         throw const GithubUserNotFoundException();
       }
@@ -99,6 +111,11 @@ class GithubProfileRemoteDataSource {
     if (_tokenOverride.trim().isNotEmpty) return _tokenOverride.trim();
     final fromStore = await _tokenProvider?.call();
     return fromStore?.trim() ?? '';
+  }
+
+  Future<void> _dropInvalidToken() async {
+    if (_tokenOverride.trim().isNotEmpty) return;
+    await _onInvalidToken?.call();
   }
 
   Future<Map<String, int>> _languageCounts(

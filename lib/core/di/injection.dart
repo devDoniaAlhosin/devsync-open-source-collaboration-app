@@ -312,6 +312,7 @@ void _registerProfile() {
     ..registerLazySingleton(
       () => GithubProfileRemoteDataSource(
         tokenProvider: () => getIt<GithubTokenStore>().readToken(),
+        onInvalidToken: () => getIt<GithubTokenStore>().clear(),
       ),
     )
     ..registerLazySingleton<ProfileRepository>(

@@ -85,9 +85,7 @@ class AuthRemoteDataSource {
 
   Future<void> _ensureGoogleInitialized() async {
     if (_googleReady) return;
-    // Optional Web client ID for Android ID tokens:
-    // flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=xxx.apps.googleusercontent.com
-    const serverClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+    final serverClientId = AppOAuthConfig.googleServerClientId;
     await _googleSignIn.initialize(
       serverClientId: serverClientId.isEmpty ? null : serverClientId,
     );
@@ -258,8 +256,8 @@ class AuthRemoteDataSource {
           code: 'missing-id-token',
           message:
               'Google Sign-In did not return an ID token. '
-              'Enable the Google provider in Firebase Console and set '
-              'GOOGLE_SERVER_CLIENT_ID to your Web client ID.',
+              'Enable the Google provider in Firebase Console and confirm '
+              'AppOAuthConfig.googleServerClientId is your Web client ID.',
         );
       }
       final credential = GoogleAuthProvider.credential(idToken: idToken);
