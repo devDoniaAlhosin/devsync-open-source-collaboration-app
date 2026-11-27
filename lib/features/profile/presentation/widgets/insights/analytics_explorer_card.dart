@@ -92,7 +92,7 @@ class AnalyticsExplorerCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            'Demo activity · ${period.longLabel}',
+            'GitHub activity · ${period.longLabel}',
             style: textTheme.bodySmall?.copyWith(color: ds.textMuted),
           ),
         ],

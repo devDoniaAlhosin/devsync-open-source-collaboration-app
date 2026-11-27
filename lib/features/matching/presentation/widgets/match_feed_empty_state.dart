@@ -92,10 +92,7 @@ class MatchFeedEmptyState extends StatelessWidget {
                     const SizedBox(height: AppSpacing.md),
                     DsButton(
                       label: 'GitHub profile',
-                      leading: DsGithubIcon(
-                        size: 18,
-                        color: ds.textPrimary,
-                      ),
+                      leading: DsGithubIcon(size: 18, color: ds.textPrimary),
                       variant: DsButtonVariant.quiet,
                       onPressed: onConnectGitHub,
                     ),
