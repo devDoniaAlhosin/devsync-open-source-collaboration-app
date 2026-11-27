@@ -29,14 +29,14 @@ import 'project_details_screen.dart';
 class LikedMatchesScreen extends StatefulWidget {
   const LikedMatchesScreen({super.key, this.dataSource});
 
-  final LikedMatchesLocalDataSource? dataSource;
+  final LikedMatchesDataSource? dataSource;
 
   @override
   State<LikedMatchesScreen> createState() => _LikedMatchesScreenState();
 }
 
 class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
-  late final LikedMatchesLocalDataSource _dataSource;
+  late final LikedMatchesDataSource _dataSource;
   List<MatchItem> _likedMatches = [];
   bool _isLoading = true;
   String? _error;
@@ -44,7 +44,7 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
   @override
   void initState() {
     super.initState();
-    _dataSource = widget.dataSource ?? getIt<LikedMatchesLocalDataSource>();
+    _dataSource = widget.dataSource ?? getIt<LikedMatchesDataSource>();
     _loadLikedMatches();
   }
 
@@ -183,8 +183,8 @@ class _LikedMatchesScreenState extends State<LikedMatchesScreen> {
                                 onView: () {
                                   Navigator.of(context).push(
                                     DsFadePageRoute<void>(
-                                      builder: (_) => ProjectDetailsScreen(
-                                        arguments: ProjectDetailsArguments(
+                                      builder: (_) => MatchProjectDetailsScreen(
+                                        arguments: MatchProjectDetailsArguments(
                                           match: match,
                                         ),
                                       ),

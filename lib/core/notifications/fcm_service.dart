@@ -28,8 +28,14 @@ class FcmService {
   final FirebaseAuth auth;
   final FirebaseFirestore firestore;
   final void Function(String title, String body) onForegroundMessage;
-  final void Function() onNotificationOpened;
+  /// [type] is the FCM data `type` (e.g. request_accepted, project_updated).
+  final void Function(String? type) onNotificationOpened;
   final NotificationPreferencesService? preferences;
+
+  static String? typeOf(RemoteMessage message) {
+    final type = message.data['type'];
+    return type is String && type.isNotEmpty ? type : null;
+  }
 
   Future<void> initialize() async {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -53,12 +59,14 @@ class FcmService {
       );
     });
 
-    FirebaseMessaging.onMessageOpenedApp.listen((_) {
-      onNotificationOpened();
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      onNotificationOpened(typeOf(message));
     });
 
     final initialMessage = await messaging.getInitialMessage();
-    if (initialMessage != null) onNotificationOpened();
+    if (initialMessage != null) {
+      onNotificationOpened(typeOf(initialMessage));
+    }
 
     // Persist every registration / refresh so /notify can multicast.
     messaging.onRegistered.listen(_saveToken);

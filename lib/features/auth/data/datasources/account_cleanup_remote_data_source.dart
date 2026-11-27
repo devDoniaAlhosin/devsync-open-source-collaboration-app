@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/constants/firestore_collections.dart';
 
@@ -19,12 +20,28 @@ List<List<T>> chunkForBatch<T>(List<T> items, int size) {
 /// Removes a user's Firestore docs before Auth delete.
 ///
 /// Order: feedbacks → matches → requests (sent, owned) → projects → views →
-/// FCM tokens → `users/{uid}`.
+/// notifications → FCM tokens → `users/{uid}`.
 class AccountCleanupRemoteDataSource {
-  AccountCleanupRemoteDataSource({FirebaseFirestore? firestore})
-    : _firestoreOverride = firestore;
+  AccountCleanupRemoteDataSource({
+    FirebaseFirestore? firestore,
+    @visibleForTesting
+    Future<void> Function(String collection, String field, String uid)?
+        deleteByField,
+    @visibleForTesting
+    Future<void> Function(String uid, String subcollection)?
+        deleteSubcollection,
+    @visibleForTesting Future<void> Function(String uid)? deleteUserDoc,
+  }) : _firestoreOverride = firestore,
+       _deleteByFieldOverride = deleteByField,
+       _deleteSubcollectionOverride = deleteSubcollection,
+       _deleteUserDocOverride = deleteUserDoc;
 
   final FirebaseFirestore? _firestoreOverride;
+  final Future<void> Function(String collection, String field, String uid)?
+  _deleteByFieldOverride;
+  final Future<void> Function(String uid, String subcollection)?
+  _deleteSubcollectionOverride;
+  final Future<void> Function(String uid)? _deleteUserDocOverride;
 
   FirebaseFirestore get _firestore =>
       _firestoreOverride ?? FirebaseFirestore.instance;
@@ -80,7 +97,7 @@ class AccountCleanupRemoteDataSource {
     await _runStep(
       () => _deleteSubcollection(trimmed, FirestoreCollections.fcmTokens),
     );
-    await _runStep(() => _users.doc(trimmed).delete());
+    await _runStep(() => _deleteUserDoc(trimmed));
   }
 
   Future<void> _runStep(Future<void> Function() action) async {
@@ -96,6 +113,12 @@ class AccountCleanupRemoteDataSource {
     String field,
     String uid,
   ) async {
+    final override = _deleteByFieldOverride;
+    if (override != null) {
+      await override(collection, field, uid);
+      return;
+    }
+
     while (true) {
       final snapshot = await _firestore
           .collection(collection)
@@ -110,6 +133,12 @@ class AccountCleanupRemoteDataSource {
   }
 
   Future<void> _deleteSubcollection(String uid, String subcollection) async {
+    final override = _deleteSubcollectionOverride;
+    if (override != null) {
+      await override(uid, subcollection);
+      return;
+    }
+
     final parent = _users.doc(uid);
     while (true) {
       final snapshot = await parent
@@ -121,6 +150,15 @@ class AccountCleanupRemoteDataSource {
         snapshot.docs.map((doc) => doc.reference).toList(growable: false),
       );
     }
+  }
+
+  Future<void> _deleteUserDoc(String uid) async {
+    final override = _deleteUserDocOverride;
+    if (override != null) {
+      await override(uid);
+      return;
+    }
+    await _users.doc(uid).delete();
   }
 
   Future<void> _commitDeletes(List<DocumentReference> refs) async {

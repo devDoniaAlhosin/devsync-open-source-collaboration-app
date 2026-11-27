@@ -22,6 +22,7 @@ class NotificationPreferences {
     switch (type) {
       case 'request_received':
       case 'request_accepted':
+      case 'request_declined':
       case 'project_updated':
         return true;
       default:

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../../app/app_routes.dart';
-import '../../core/icons/app_icons.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/ds_app_bar.dart';
-import '../../core/widgets/ds_bottom_nav.dart';
-import '../../core/widgets/ds_tab_switcher.dart';
-import '../matching/presentation/screens/match_feed_screen.dart';
-import '../profile/presentation/screens/profile_screen.dart';
-import '../projects/presentation/screens/projects_shell.dart';
-import '../requests/presentation/screens/requests_screen.dart';
-import 'app_drawer.dart';
-import 'presentation/widgets/inbox_badge_builder.dart';
+import '../../../../app/app_routes.dart';
+import '../../../../core/icons/app_icons.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/ds_app_bar.dart';
+import '../../../../core/widgets/ds_bottom_nav.dart';
+import '../../../../core/widgets/ds_tab_switcher.dart';
+import '../../../matching/presentation/screens/match_feed_screen.dart';
+import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../projects/presentation/screens/projects_shell.dart';
+import '../../../requests/presentation/screens/requests_screen.dart';
+import '../widgets/app_drawer.dart';
+import '../widgets/inbox_badge_builder.dart';
 
 /// Bottom-nav shell with feature destinations.
 class HomeShellScreen extends StatefulWidget {

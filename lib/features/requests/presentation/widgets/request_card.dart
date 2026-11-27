@@ -9,7 +9,7 @@ import 'package:devsync_open_source_collaboration_app/features/projects/domain/u
 import 'package:devsync_open_source_collaboration_app/features/projects/presentation/screens/project_details_screen.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/domain/entities/collaboration_request.dart';
 import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/connected_celebration_screen.dart';
-import 'package:devsync_open_source_collaboration_app/features/requests/presentation/widgets/request_details.dart';
+import 'package:devsync_open_source_collaboration_app/features/requests/presentation/screens/request_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/requests_cubit.dart';

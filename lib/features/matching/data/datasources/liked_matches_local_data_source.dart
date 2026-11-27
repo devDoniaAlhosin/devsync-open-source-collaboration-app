@@ -8,14 +8,18 @@ import '../../domain/entities/match_item.dart';
 import '../../../projects/data/models/project_model.dart';
 import '../models/match_record_model.dart';
 
-abstract class LikedMatchesLocalDataSource {
+/// Persists liked / hearted matches (Firestore-backed in production).
+abstract class LikedMatchesDataSource {
   Future<List<MatchItem>> getLikedMatches();
   Future<void> addLikedMatch(MatchItem match, {String? promptVersion});
   Future<void> removeLikedMatch(String projectId);
   Future<void> clearLikedMatches();
 }
 
-class FirestoreLikedMatchesDataSource implements LikedMatchesLocalDataSource {
+@Deprecated('Use LikedMatchesDataSource')
+typedef LikedMatchesLocalDataSource = LikedMatchesDataSource;
+
+class FirestoreLikedMatchesDataSource implements LikedMatchesDataSource {
   FirestoreLikedMatchesDataSource({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
@@ -249,7 +253,7 @@ class LikedMatchesException implements Exception {
   String toString() => message;
 }
 
-class InMemoryLikedMatchesDataSource implements LikedMatchesLocalDataSource {
+class InMemoryLikedMatchesDataSource implements LikedMatchesDataSource {
   InMemoryLikedMatchesDataSource();
 
   static final InMemoryLikedMatchesDataSource instance =

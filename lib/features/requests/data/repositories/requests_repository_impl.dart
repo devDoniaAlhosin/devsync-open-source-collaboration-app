@@ -83,6 +83,11 @@ class RequestsRepositoryImpl implements RequestsRepository {
           requestId: requestId,
           event: 'request_accepted',
         );
+      } else if (status == RequestStatus.declined) {
+        unawaitedNotify(
+          requestId: requestId,
+          event: 'request_declined',
+        );
       }
       return Success(updated);
     } on StateError catch (e) {

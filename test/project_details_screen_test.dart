@@ -42,6 +42,6 @@ void main() {
 
     expect(find.text('Project details'), findsOneWidget);
     expect(find.text('flutter/packages'), findsWidgets);
-    expect(find.byType(ProjectDetailsScreen), findsOneWidget);
+    expect(find.byType(MatchProjectDetailsScreen), findsOneWidget);
   });
 }

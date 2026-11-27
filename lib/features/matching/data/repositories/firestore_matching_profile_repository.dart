@@ -70,10 +70,11 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
     }
 
     try {
+      // Write nested profile.skills as canonical; keep top-level mirrors in sync.
       await _users.doc(user.uid).set({
+        'profile': {'skills': normalized},
         'skills': normalized,
         'declaredSkills': normalized,
-        'profile': {'skills': normalized},
         'matchingProfileUpdatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       if (_auth.currentUser?.uid != user.uid) {
@@ -101,6 +102,7 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
         ? Map<String, dynamic>.from(data['profile'] as Map)
         : const <String, dynamic>{};
 
+    // Canonical: profile.skills. Fall back to legacy top-level mirrors.
     final skillsFromProfileMap = _readStringList(
       profileMap['skills'],
       maxItems: 100,
@@ -117,11 +119,12 @@ class FirestoreMatchingProfileRepository implements MatchingProfileRepository {
       maxLength: 100,
     );
 
-    final mergedSkills = <String>{
-      ...skillsFromProfileMap,
-      ...skillsFromUsersDoc,
-      ...declaredSkillsList,
-    }.toList();
+    final mergedSkills = skillsFromProfileMap.isNotEmpty
+        ? skillsFromProfileMap
+        : <String>{
+            ...skillsFromUsersDoc,
+            ...declaredSkillsList,
+          }.toList();
 
     var languages = _readLanguages(data['githubLanguages']);
     if (languages.isEmpty && profileMap['languages'] is List) {

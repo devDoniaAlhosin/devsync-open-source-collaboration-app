@@ -33,6 +33,14 @@ class PromptQualityMetrics extends Equatable {
 
   double? get latestRelevance => versions.isEmpty ? null : versions.last.relevance;
 
+  /// Highest-relevance prompt version (for auto-optimize / apply).
+  PromptQualityVersion? get bestVersion {
+    if (versions.isEmpty) return null;
+    return versions.reduce(
+      (a, b) => a.relevance >= b.relevance ? a : b,
+    );
+  }
+
   double? get improvementPercentage {
     if (versions.length < 2 || versions.first.relevance == 0) return null;
     return (versions.last.relevance / versions.first.relevance - 1) * 100;

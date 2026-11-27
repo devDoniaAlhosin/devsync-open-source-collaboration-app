@@ -1,7 +1,7 @@
 import 'package:devsync_open_source_collaboration_app/core/di/injection.dart';
 import 'package:devsync_open_source_collaboration_app/core/widgets/ds_bottom_nav.dart';
 import 'package:devsync_open_source_collaboration_app/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:devsync_open_source_collaboration_app/features/shell/home_shell_screen.dart';
+import 'package:devsync_open_source_collaboration_app/features/shell/presentation/screens/home_shell_screen.dart';
 // ignore: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

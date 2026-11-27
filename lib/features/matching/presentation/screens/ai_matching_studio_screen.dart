@@ -111,8 +111,8 @@ class _AiMatchingStudioScreenState extends State<AiMatchingStudioScreen> {
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {
     Navigator.of(context).push(
       DsFadePageRoute<void>(
-        builder: (_) => ProjectDetailsScreen(
-          arguments: ProjectDetailsArguments(
+        builder: (_) => MatchProjectDetailsScreen(
+          arguments: MatchProjectDetailsArguments(
             match: match,
             currentUserSkills: state.profile.declaredSkills,
           ),

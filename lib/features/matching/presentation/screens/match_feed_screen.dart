@@ -444,7 +444,7 @@ class _MatchFeedScreenState extends State<MatchFeedScreen> {
   void _navigateToProjectDetails(MatchItem match, MatchingState state) {
     Navigator.of(context).pushNamed(
       AppRoutes.projectDetail,
-      arguments: ProjectDetailsArguments(
+      arguments: MatchProjectDetailsArguments(
         match: match,
         currentUserSkills: state.profile.declaredSkills,
       ),

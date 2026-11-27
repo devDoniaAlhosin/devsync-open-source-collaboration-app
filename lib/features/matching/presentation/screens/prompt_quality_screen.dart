@@ -6,8 +6,11 @@ import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/ds_app_bar.dart';
+import '../../../../core/widgets/ds_button.dart';
 import '../../../../core/widgets/ds_card.dart';
 import '../../../../core/widgets/ds_empty_state.dart';
+import '../../../../core/widgets/ds_toast.dart';
+import '../../data/datasources/prompt_version_preference.dart';
 import '../../domain/entities/prompt_quality_metrics.dart';
 import '../../domain/usecases/get_prompt_quality_metrics.dart';
 import '../widgets/prompt_quality_trend.dart';
@@ -183,11 +186,31 @@ class _PromptQualityScreenState extends State<PromptQualityScreen> {
                     ],
                   ),
                 ),
+                if (metrics.bestVersion != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  DsButton(
+                    label:
+                        'Use best version (${metrics.bestVersion!.label})',
+                    onPressed: () => _applyBest(metrics.bestVersion!.label),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _applyBest(String version) async {
+    if (getIt.isRegistered<PromptVersionPreference>()) {
+      await getIt<PromptVersionPreference>().write(version);
+    }
+    if (!mounted) return;
+    showDsToast(
+      context,
+      'Matching will prefer prompt $version on the next feed load.',
+      tone: DsToastTone.success,
     );
   }
 }

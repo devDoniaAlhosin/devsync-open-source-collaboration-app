@@ -28,16 +28,16 @@ import '../features/matching/presentation/screens/liked_matches_screen.dart';
 import '../features/matching/presentation/screens/match_feed_screen.dart';
 import '../features/matching/presentation/screens/prompt_quality_screen.dart';
 import '../features/matching/presentation/screens/project_details_screen.dart'
-    as matching_details;
+    as match_details;
 import '../features/requests/presentation/screens/connected_celebration_screen.dart';
 import '../features/requests/presentation/screens/notification_permission_screen.dart';
 import '../features/projects/domain/entities/project.dart';
 import '../features/projects/presentation/screens/project_details_screen.dart';
 import '../features/projects/presentation/screens/projects_shell.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
-import '../features/shell/home_shell_screen.dart';
-import '../features/shell/settings_screen.dart';
-import '../features/shell/stub_screen.dart';
+import '../features/shell/presentation/screens/home_shell_screen.dart';
+import '../features/shell/presentation/screens/settings_screen.dart';
+import '../features/shell/presentation/screens/stub_screen.dart';
 import 'app_routes.dart';
 import 'package:devsync_open_source_collaboration_app/features/profile/presentation/screens/edit_profile_entry.dart';
 
@@ -50,26 +50,41 @@ class DevSyncApp extends StatefulWidget {
 
   static final _navigatorKey = GlobalKey<NavigatorState>();
   static final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-  static bool _pendingRequestsNavigation = false;
+  static String? _pendingNotificationType;
+  static bool _pendingNotificationNavigation = false;
 
   static _DevSyncAppState? _state;
 
   static ThemeMode get themeMode => _state?._themeMode ?? ThemeMode.light;
 
-  static void openRequests() {
+  /// Home shell tab for an FCM / inbox event type.
+  static int tabForNotificationType(String? type) {
+    if (type == null || type.isEmpty) return 3;
+    if (type == 'project_updated') return 1; // Discover
+    if (type == 'new_match' || type.startsWith('match_')) return 0; // Matches
+    // request_received / accepted / declined → Requests
+    return 3;
+  }
+
+  static void openFromNotification([String? type]) {
     final navigator = _navigatorKey.currentState;
     if (navigator == null) {
-      _pendingRequestsNavigation = true;
+      _pendingNotificationNavigation = true;
+      _pendingNotificationType = type;
       return;
     }
 
-    _pendingRequestsNavigation = false;
+    _pendingNotificationNavigation = false;
+    _pendingNotificationType = null;
     navigator.pushNamedAndRemoveUntil(
       AppRoutes.home,
       (route) => false,
-      arguments: 3,
+      arguments: tabForNotificationType(type),
     );
   }
+
+  /// Opens the Requests tab (inbox taps / legacy callers).
+  static void openRequests() => openFromNotification('request_received');
 
   static void showNotification(String title, String body) {
     final context = _navigatorKey.currentContext;
@@ -104,7 +119,9 @@ class _DevSyncAppState extends State<DevSyncApp> {
     _appVisible = !widget.showSplash;
     _syncSystemUi(_themeMode);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (DevSyncApp._pendingRequestsNavigation) DevSyncApp.openRequests();
+      if (DevSyncApp._pendingNotificationNavigation) {
+        DevSyncApp.openFromNotification(DevSyncApp._pendingNotificationType);
+      }
     });
   }
 
@@ -246,19 +263,12 @@ class _DevSyncAppState extends State<DevSyncApp> {
               ),
       ),
       AppRoutes.discover => const ProjectsShell(initialTab: 0),
-      AppRoutes.tasks => const StubScreen(
-        title: 'Task board',
-        owner: 'Donia',
-        description: 'Task board is not available right now.',
-      ),
+      // Out of delivery scope — land on home Matches.
+      AppRoutes.tasks => const HomeShellScreen(),
       AppRoutes.aiInsights => const AiAnalyticsScreen(),
       AppRoutes.insights => const InsightsScreen(),
       AppRoutes.promptQuality => const PromptQualityScreen(),
-      AppRoutes.community => const StubScreen(
-        title: 'Community',
-        owner: 'If time',
-        description: 'Community is not available right now.',
-      ),
+      AppRoutes.community => const HomeShellScreen(),
       AppRoutes.notifications => const NotificationsScreen(),
       _ => null,
     };
@@ -272,8 +282,8 @@ class _DevSyncAppState extends State<DevSyncApp> {
   }
 
   static Widget _projectDetailPage(Object? args) {
-    if (args is matching_details.ProjectDetailsArguments) {
-      return matching_details.ProjectDetailsScreen(arguments: args);
+    if (args is match_details.MatchProjectDetailsArguments) {
+      return match_details.MatchProjectDetailsScreen(arguments: args);
     }
     if (args is Project) {
       return ProjectDetailsScreen(project: args);

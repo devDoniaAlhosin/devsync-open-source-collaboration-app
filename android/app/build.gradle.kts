@@ -30,6 +30,24 @@ android {
         versionName = flutter.versionName
     }
 
+    // AGP 9 defaults resValues off; required for flavor resValue() app_name.
+    buildFeatures {
+        resValues = true
+    }
+
+    flavorDimensions += "tier"
+    productFlavors {
+        // No applicationIdSuffix: google-services.json only registers the base package.
+        create("free") {
+            dimension = "tier"
+            resValue("string", "app_name", "DevSync")
+        }
+        create("pro") {
+            dimension = "tier"
+            resValue("string", "app_name", "DevSync Pro")
+        }
+    }
+
     // AGP 8+/9 can omit jni from the APK unless legacy packaging is used.
     // Without this, the device crashes with MissingLibraryException: libflutter.so.
     packaging {
@@ -42,9 +60,14 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Upload keystore still TODO — debug signing keeps `flutter run --release` working.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
