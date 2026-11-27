@@ -1,5 +1,4 @@
 import 'package:devsync_open_source_collaboration_app/core/result/result.dart';
-import 'package:devsync_open_source_collaboration_app/core/usecase/usecase.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/liked_matches_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_local_data_source.dart';
 import 'package:devsync_open_source_collaboration_app/features/matching/data/datasources/matching_remote_data_source.dart';
@@ -29,68 +28,71 @@ const _profile = UserProfile(
 );
 
 void main() {
-  test('excludes owned, pending, and accepted projects from ranked feed', () async {
-    final remote = _RecordingRemote(
-      const MatchResponseModel(
-        promptVersion: 'v1',
-        matches: [
-          MatchItemModel(
-            projectId: 'open-1',
-            projectName: 'Open',
-            description: 'Still available',
-            githubUrl: 'https://github.com/a/open',
-            neededSkills: ['Flutter'],
-            score: 90,
-            reason: 'Skill match',
-            maintainerId: 'owner-a',
-          ),
-          MatchItemModel(
-            projectId: 'accepted-1',
-            projectName: 'Accepted',
-            description: 'Already joined',
-            githubUrl: 'https://github.com/a/accepted',
-            neededSkills: ['Flutter'],
-            score: 95,
-            reason: 'Skill match',
-            maintainerId: 'owner-b',
-          ),
-          MatchItemModel(
-            projectId: 'owned-1',
-            projectName: 'Mine',
-            description: 'Own project',
-            githubUrl: 'https://github.com/a/mine',
-            neededSkills: ['Flutter'],
-            score: 99,
-            reason: 'Skill match',
-            maintainerId: 'viewer-1',
-          ),
-        ],
-      ),
-    );
+  test(
+    'excludes owned, pending, and accepted projects from ranked feed',
+    () async {
+      final remote = _RecordingRemote(
+        const MatchResponseModel(
+          promptVersion: 'v1',
+          matches: [
+            MatchItemModel(
+              projectId: 'open-1',
+              projectName: 'Open',
+              description: 'Still available',
+              githubUrl: 'https://github.com/a/open',
+              neededSkills: ['Flutter'],
+              score: 90,
+              reason: 'Skill match',
+              maintainerId: 'owner-a',
+            ),
+            MatchItemModel(
+              projectId: 'accepted-1',
+              projectName: 'Accepted',
+              description: 'Already joined',
+              githubUrl: 'https://github.com/a/accepted',
+              neededSkills: ['Flutter'],
+              score: 95,
+              reason: 'Skill match',
+              maintainerId: 'owner-b',
+            ),
+            MatchItemModel(
+              projectId: 'owned-1',
+              projectName: 'Mine',
+              description: 'Own project',
+              githubUrl: 'https://github.com/a/mine',
+              neededSkills: ['Flutter'],
+              score: 99,
+              reason: 'Skill match',
+              maintainerId: 'viewer-1',
+            ),
+          ],
+        ),
+      );
 
-    final repository = MatchingRepositoryImpl(
-      remoteDataSource: remote,
-      localDataSource: InMemoryMatchingLocalDataSource(),
-    );
+      final repository = MatchingRepositoryImpl(
+        remoteDataSource: remote,
+        localDataSource: InMemoryMatchingLocalDataSource(),
+      );
 
-    final cubit = MatchingCubit(
-      repository: repository,
-      likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
-      getRankedMatchesUseCase: GetRankedMatchesUseCase(repository),
-      profile: _profile,
-      getProjects: GetProjects(_FakeProjectsRepository()),
-      getUnavailableProjectIds: GetUnavailableProjectIds(
-        _FakeRequestsRepository(unavailableIds: {'accepted-1', 'pending-1'}),
-      ),
-    );
+      final cubit = MatchingCubit(
+        repository: repository,
+        likedMatchesDataSource: InMemoryLikedMatchesDataSource(),
+        getRankedMatchesUseCase: GetRankedMatchesUseCase(repository),
+        profile: _profile,
+        getProjects: GetProjects(_FakeProjectsRepository()),
+        getUnavailableProjectIds: GetUnavailableProjectIds(
+          _FakeRequestsRepository(unavailableIds: {'accepted-1', 'pending-1'}),
+        ),
+      );
 
-    await cubit.loadInitialData();
+      await cubit.loadInitialData();
 
-    expect(remote.lastRequest?.projects?.map((c) => c.projectId), ['open-1']);
-    expect(cubit.state.matches.map((m) => m.projectId), ['open-1']);
+      expect(remote.lastRequest?.projects?.map((c) => c.projectId), ['open-1']);
+      expect(cubit.state.matches.map((m) => m.projectId), ['open-1']);
 
-    await cubit.close();
-  });
+      await cubit.close();
+    },
+  );
 }
 
 class _RecordingRemote implements MatchingRemoteDataSource {
